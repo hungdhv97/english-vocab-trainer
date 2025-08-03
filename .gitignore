@@ -1,0 +1,18 @@
+# Frontend
+frontend/node_modules
+frontend/dist
+frontend/.env
+frontend/.env.local
+frontend/coverage
+frontend/.DS_Store
+
+# Backend
+backend/bin
+backend/vendor
+backend/coverage
+backend/.DS_Store
+
+# General
+.env
+*.log
+build/
