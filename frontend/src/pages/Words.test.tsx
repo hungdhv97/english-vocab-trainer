@@ -3,8 +3,8 @@ import { describe, it, expect } from 'vitest';
 import Words from '@/pages/Words';
 
 describe('Words page', () => {
-  it('renders the page title', () => {
+  it('renders the page title', async () => {
     render(<Words />);
-    expect(screen.getByText('Words')).toBeInTheDocument();
+    expect(await screen.findByText('Words')).toBeInTheDocument();
   });
 });
