@@ -36,101 +36,9 @@ export default function Words() {
       const data: Word[] = await response.json()
       setWords(data)
     } catch (e: unknown) {
-      setError((e as Error).message) finally {
-      setLoading(false)
-    }
-  }
-
-  // Add a new word
-  const addWord = async () => {
-    if (!newEnglishWord || !newVietnameseWord) {
-      alert("English and Vietnamese words are required.")
-      return
-    }
-    try {
-      const response = await fetch(`${API_BASE_URL}/words`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          english: newEnglishWord,
-          vietnamese: newVietnameseWord,
-          example: newExample,
-        }),
-      })
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      const addedWord: Word = await response.json()
-      setWords((prevWords) => [...prevWords, addedWord])
-      setNewEnglishWord("")
-      setNewVietnameseWord("")
-      setNewExample("")
-    } catch (e: unknown) {
-      setError((e as Error).message)
-  }
-
-  // Start editing a word
-  const startEditing = (word: Word) => {
-    setEditingWordId(word.id)
-    setEditedEnglishWord(word.english)
-    setEditedVietnameseWord(word.vietnamese)
-    setEditedExample(word.example || "")
-  }
-
-  // Update an existing word
-  const updateWord = async (id: number) => {
-    if (!editedEnglishWord || !editedVietnameseWord) {
-      alert("English and Vietnamese words are required for update.")
-      return
-    }
-    try {
-      const response = await fetch(`${API_BASE_URL}/words/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          id: id,
-          english: editedEnglishWord,
-          vietnamese: editedVietnameseWord,
-          example: editedExample,
-        }),
-      })
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      const updatedWord: Word = await response.json()
-      setWords((prevWords) =>
-        prevWords.map((word) => (word.id === id ? updatedWord : word))
-      )
-      setEditingWordId(null)
-      setEditedEnglishWord("")
-      setEditedVietnameseWord("")
-      setEditedExample("")
-    } catch (e: unknown) {
-      setError((e as Error).message)
-  }
-
-  // Delete a word
-  const deleteWord = async (id: number) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/words/${id}`, {
-        method: "DELETE",
-      })
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      setWords((prevWords) => prevWords.filter((word) => word.id !== id))
-    } catch (e: unknown) {
-      setError((e as Error).message)
-  }
-
-  } catch (e: unknown) {
-      setError((e as Error).message)
+      setError((e as Error).message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -161,7 +69,7 @@ export default function Words() {
       setNewVietnameseWord("")
       setNewExample("")
     } catch (e: unknown) {
-      setError((e as Error).message)
+      setError((e as Error).message);
     }
   }
 
@@ -172,6 +80,7 @@ export default function Words() {
     setEditedVietnameseWord(word.vietnamese)
     setEditedExample(word.example || "")
   }
+
   // Update an existing word
   const updateWord = async (id: number) => {
     if (!editedEnglishWord || !editedVietnameseWord) {
@@ -203,7 +112,7 @@ export default function Words() {
       setEditedVietnameseWord("")
       setEditedExample("")
     } catch (e: unknown) {
-      setError((e as Error).message)
+      setError((e as Error).message);
     }
   }
 
@@ -218,7 +127,7 @@ export default function Words() {
       }
       setWords((prevWords) => prevWords.filter((word) => word.id !== id))
     } catch (e: unknown) {
-      setError((e as Error).message)
+      setError((e as Error).message);
     }
   }
 
