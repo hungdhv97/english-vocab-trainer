@@ -35,9 +35,8 @@ export default function Words() {
       }
       const data: Word[] = await response.json()
       setWords(data)
-    } catch (e: any) {
-      setError(e.message)
-    } finally {
+    } catch (e: unknown) {
+      setError((e as Error).message) finally {
       setLoading(false)
     }
   }
@@ -68,9 +67,8 @@ export default function Words() {
       setNewEnglishWord("")
       setNewVietnameseWord("")
       setNewExample("")
-    } catch (e: any) {
-      setError(e.message)
-    }
+    } catch (e: unknown) {
+      setError((e as Error).message)
   }
 
   // Start editing a word
@@ -111,9 +109,8 @@ export default function Words() {
       setEditedEnglishWord("")
       setEditedVietnameseWord("")
       setEditedExample("")
-    } catch (e: any) {
-      setError(e.message)
-    }
+    } catch (e: unknown) {
+      setError((e as Error).message)
   }
 
   // Delete a word
@@ -126,9 +123,8 @@ export default function Words() {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       setWords((prevWords) => prevWords.filter((word) => word.id !== id))
-    } catch (e: any) {
-      setError(e.message)
-    }
+    } catch (e: unknown) {
+      setError((e as Error).message)
   }
 
   } catch (e: unknown) {
@@ -175,7 +171,7 @@ export default function Words() {
     setEditedEnglishWord(word.english)
     setEditedVietnameseWord(word.vietnamese)
     setEditedExample(word.example || "")
-  }
+  }
   // Update an existing word
   const updateWord = async (id: number) => {
     if (!editedEnglishWord || !editedVietnameseWord) {
