@@ -1,7 +1,7 @@
 import { Link, Routes, Route } from 'react-router-dom';
-import History from './pages/History.tsx';
-import TodayReview from './pages/TodayReview.tsx';
-import Words from './pages/Words.tsx';
+import History from './pages/History';
+import TodayReview from './pages/TodayReview';
+import Words from './pages/Words';
 
 function App() {
   return (
@@ -9,7 +9,7 @@ function App() {
       <nav style={{ padding: '10px', borderBottom: '1px solid #ccc' }}>
         <ul style={{ listStyle: 'none', padding: 0, display: 'flex', gap: '20px' }}>
           <li>
-            <Link to="/">Today Review</Link>
+            <Link to="/">Today Reviewwwwwwwwwwww</Link>
           </li>
           <li>
             <Link to="/words">Words</Link>

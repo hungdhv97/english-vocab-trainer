@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Word } from "@/types" // Import the Word interface
+import type { Word } from "@/types" // Import the Word interface
 
 export default function Words() {
   const [words, setWords] = useState<Word[]>([])
