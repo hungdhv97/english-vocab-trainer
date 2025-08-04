@@ -7,6 +7,13 @@ on:
     branches: [ "main" ]
 
 jobs:
+  editorconfig-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run EditorConfig Checker
+        uses: editorconfig-checker/action-editorconfig-checker@main
+
   frontend-checks:
     runs-on: ubuntu-latest
     defaults:
