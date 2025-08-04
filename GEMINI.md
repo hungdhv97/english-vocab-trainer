@@ -17,19 +17,19 @@ Here are some commands you can ask Gemini to execute:
 
 - **Run all frontend tests:**
   ```
-  npm test --prefix frontend
+  cd frontend && npm test
   ```
 - **Lint the frontend codebase:**
   ```
-  npm run lint --prefix frontend
+  cd frontend && npm run lint
   ```
 - **Check TypeScript types:**
-  ```
-  npm run typecheck --prefix frontend
+    ```
+  cd frontend && npm run typecheck
   ```
 - **Run the frontend development server:**
   ```
-  npm run dev --prefix frontend
+  cd frontend && npm run dev
   ```
 
 ### Backend
@@ -47,15 +47,15 @@ Here are some commands you can ask Gemini to execute:
 
 - **Build and start all services:**
   ```
-  docker-compose up --build -d
+  docker compose up --build -d
   ```
 - **Stop all services:**
   ```
-  docker-compose down
+  docker compose down
   ```
 - **View service logs:**
   ```
-  docker-compose logs -f
+  docker compose logs -f
   ```
 
 ## Example Prompts for Gemini
@@ -67,3 +67,4 @@ Here are some examples of how you can ask Gemini to assist with development task
 - **"Add a new API endpoint `GET /api/v1/words` to fetch a list of words from the database. Remember to include service and handler logic."**
 - **"Create a new React component named `WordCard` in the `frontend/src/components/` directory. It should accept a word and its definition as props."**
 - **"Explain the purpose of the `internal/auth/auth.go` file."**
+- **"Start all services and check frontend logs."**
