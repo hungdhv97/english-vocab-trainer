@@ -9,7 +9,7 @@ function App() {
       <nav style={{ padding: '10px', borderBottom: '1px solid #ccc' }}>
         <ul style={{ listStyle: 'none', padding: 0, display: 'flex', gap: '20px' }}>
           <li>
-            <Link to="/">Today Reviewwwwwwwwwwww</Link>
+            <Link to="/">Today Review</Link>
           </li>
           <li>
             <Link to="/words">Words</Link>
