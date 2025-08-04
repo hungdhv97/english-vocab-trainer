@@ -68,4 +68,4 @@ Here are some examples of how you can ask Gemini to assist with development task
 - **"Create a new React component named `WordCard` in the `frontend/src/components/` directory. It should accept a word and its definition as props."**
 - **"Explain the purpose of the `internal/auth/auth.go` file."**
 - **"Start all services and check frontend logs."**
-- **"Commit all changes and push to main."**
+- **"Commit all changes, push to main, and check CI until successful."**
