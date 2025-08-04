@@ -4,13 +4,11 @@ import "time"
 
 // Word represents a vocabulary word.
 	type Word struct {
-	ID            int64     `json:"id"`
-	Word          string    `json:"word"`
-	Pronunciation string    `json:"pronunciation,omitempty"`
-	Definition    string    `json:"definition"`
-	PartOfSpeech  string    `json:"part_of_speech,omitempty"`
-	Example       string    `json:"example,omitempty"`
-	CreatedAt     time.Time `json:"created_at"`
+	ID        int64     `json:"id"`
+	English   string    `json:"english"`
+	Vietnamese string    `json:"vietnamese"`
+	Example   string    `json:"example,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // User represents a user of the application.
