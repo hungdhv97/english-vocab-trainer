@@ -2,12 +2,19 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import Game from './Game';
 import { vi } from 'vitest';
 
-test('level 2 scoring', () => {
+test('level 2 scoring', async () => {
+  const fetchMock = vi.fn().mockResolvedValue({
+    json: async () => [{ en: 'apple', vi: 'táo' }],
+  });
+  vi.stubGlobal('fetch', fetchMock);
+
   const spy = vi.spyOn(Math, 'random').mockReturnValue(0);
 
   render(<Game />);
 
   fireEvent.click(screen.getByText('Mức 2'));
+  await screen.findByText('apple');
+
   const input = screen.getByRole('textbox');
   const submit = screen.getByText('Trả lời');
 
@@ -20,4 +27,5 @@ test('level 2 scoring', () => {
   expect(screen.getByText(/Điểm: 0/)).toBeInTheDocument();
 
   spy.mockRestore();
+  vi.unstubAllGlobals();
 });

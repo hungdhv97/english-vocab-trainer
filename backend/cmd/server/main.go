@@ -1,13 +1,16 @@
 package main
 
 import (
+	_ "embed"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gemini-demo-apps/vocab-app/internal/handler"
-	"github.com/gemini-demo-apps/vocab-app/internal/service"
 	"github.com/gemini-demo-apps/vocab-app/internal/models"
+	"github.com/gemini-demo-apps/vocab-app/internal/service"
 
 	"github.com/gorilla/mux"
 )
@@ -52,8 +55,7 @@ func (r *inMemoryWordRepository) DeleteWord(id int64) error {
 }
 
 func main() {
-	// Initialize in-memory repository (replace with actual DB connection in production)
-	repo := &inMemoryWordRepository{words: []models.Word{}}
+	repo := &inMemoryWordRepository{words: loadDictionary()}
 
 	// Initialize service and handler
 	svc := service.NewService(repo)
@@ -82,4 +84,27 @@ func main() {
 	if err := http.ListenAndServe(":8080", r); err != nil {
 		log.Fatal(err)
 	}
+}
+
+//go:embed dictionary.json
+var dictionary []byte
+
+func loadDictionary() []models.Word {
+	var raw []struct {
+		En string `json:"en"`
+		Vi string `json:"vi"`
+	}
+	if err := json.Unmarshal(dictionary, &raw); err != nil {
+		log.Fatalf("failed to load dictionary: %v", err)
+	}
+	words := make([]models.Word, len(raw))
+	for i, w := range raw {
+		words[i] = models.Word{
+			ID:         int64(i + 1),
+			English:    w.En,
+			Vietnamese: w.Vi,
+			CreatedAt:  time.Now(),
+		}
+	}
+	return words
 }

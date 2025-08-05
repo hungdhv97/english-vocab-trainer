@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import words from './assets/dictionary.json';
+import { useState, useEffect } from 'react';
 
 type Difficulty = 1 | 2 | 3 | 4 | 5 | 6;
 interface Word {
@@ -7,14 +6,10 @@ interface Word {
   vi: string;
 }
 
-function getRandomWord(): Word {
-  const index = Math.floor(Math.random() * words.length);
-  return words[index];
-}
-
 export default function Game() {
   const [level, setLevel] = useState<Difficulty | null>(null);
-  const [current, setCurrent] = useState<Word>(getRandomWord());
+  const [words, setWords] = useState<Word[]>([]);
+  const [current, setCurrent] = useState<Word | null>(null);
   const [answer, setAnswer] = useState('');
   const [score, setScore] = useState(0);
   const [wrongStreak, setWrongStreak] = useState(1);
@@ -22,9 +17,26 @@ export default function Game() {
 
   const target = level && level >= 4 ? 10 : 5;
 
+  useEffect(() => {
+    fetch('http://localhost:8080/api/v1/words')
+      .then((res) => res.json())
+      .then((data: Word[]) => {
+        setWords(data);
+        const index = Math.floor(Math.random() * data.length);
+        setCurrent(data[index]);
+      });
+  }, []);
+
+  function getRandomWord() {
+    const index = Math.floor(Math.random() * words.length);
+    return words[index];
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!level) return;
+
+    if (!current) return;
 
     const isCorrect =
       answer.trim().toLowerCase() === current.vi.trim().toLowerCase();
@@ -77,6 +89,14 @@ export default function Game() {
             ))}
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (!current) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p>Loading...</p>
       </div>
     );
   }
