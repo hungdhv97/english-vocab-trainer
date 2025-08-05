@@ -1,23 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
-
-type Difficulty = 1 | 2 | 3 | 4 | 5 | 6;
-interface Word {
-  english: string;
-  vietnamese: string;
-}
-
-type RawWord = {
-  English?: string;
-  english?: string;
-  en?: string;
-  Vietnamese?: string;
-  vietnamese?: string;
-  vi?: string;
-};
+import type { Difficulty, Word } from '@/types';
+import LevelSelector from '@/components/game/LevelSelector';
+import WordDisplay from '@/components/game/WordDisplay';
+import AnswerInput from '@/components/game/AnswerInput';
+import Feedback from '@/components/game/Feedback';
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || 'http://localhost:8090/api/v1';
@@ -37,14 +24,10 @@ export default function Game() {
   useEffect(() => {
     fetch(`${API_BASE_URL}/words`)
       .then((res) => res.json())
-      .then((data: RawWord[]) => {
-        const normalized: Word[] = data.map((w) => ({
-          english: w.english ?? w.English ?? w.en ?? '',
-          vietnamese: w.vietnamese ?? w.Vietnamese ?? w.vi ?? '',
-        }));
-        setWords(normalized);
-        const index = Math.floor(Math.random() * normalized.length);
-        setCurrent(normalized[index]);
+      .then((data: Word[]) => {
+        setWords(data);
+        const index = Math.floor(Math.random() * data.length);
+        setCurrent(data[index]);
       });
   }, []);
 
@@ -96,22 +79,7 @@ export default function Game() {
   }
 
   if (!level) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Card className="w-full max-w-sm text-center">
-          <CardHeader>
-            <CardTitle className="text-2xl">Select level</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-3 gap-2">
-            {[1, 2, 3, 4, 5, 6].map((l) => (
-              <Button key={l} onClick={() => setLevel(l as Difficulty)}>
-                Level {l}
-              </Button>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <LevelSelector onSelectLevel={setLevel} />;
   }
 
   if (!current) {
@@ -133,29 +101,15 @@ export default function Game() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-xl font-semibold">{current.english}</p>
+          <WordDisplay word={current} />
           {!finished && (
-            <form onSubmit={handleSubmit} className="flex space-x-2">
-              <Input
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                className="flex-1"
-              />
-              <Button type="submit">Submit</Button>
-            </form>
+            <AnswerInput
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              onSubmit={handleSubmit}
+            />
           )}
-          <p
-            key={feedbackKey}
-            className={cn(
-              'min-h-[1.5rem]',
-              feedback === 'correct' &&
-                'text-green-600 animate-in fade-in zoom-in',
-              feedback === 'incorrect' && 'text-red-600 animate-shake',
-            )}
-          >
-            {feedback === 'correct' && 'Correct!'}
-            {feedback === 'incorrect' && 'Incorrect!'}
-          </p>
+          <Feedback feedback={feedback} feedbackKey={feedbackKey} />
           {finished && <p>Finished!</p>}
         </CardContent>
       </Card>

@@ -1,6 +1,6 @@
+export type Difficulty = 1 | 2 | 3 | 4 | 5 | 6;
+
 export interface Word {
-  id: number;
   english: string;
   vietnamese: string;
-  example?: string; // Optional example sentence
 }
