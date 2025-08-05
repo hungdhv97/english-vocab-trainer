@@ -1,4 +1,13 @@
 import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 type Difficulty = 1 | 2 | 3 | 4 | 5 | 6;
 interface Word {
@@ -25,7 +34,8 @@ export default function Game() {
   const [answer, setAnswer] = useState('');
   const [score, setScore] = useState(0);
   const [wrongStreak, setWrongStreak] = useState(1);
-  const [message, setMessage] = useState('');
+  const [feedback, setFeedback] = useState<'correct' | 'incorrect' | ''>('');
+  const [feedbackKey, setFeedbackKey] = useState(0);
 
   const target = level && level >= 4 ? 10 : 5;
 
@@ -61,9 +71,9 @@ export default function Game() {
     if (isCorrect) {
       setScore((s) => s + 1);
       setWrongStreak(1);
-      setMessage('Correct!');
+      setFeedback('correct');
     } else {
-      setMessage('Incorrect!');
+      setFeedback('incorrect');
       setWrongStreak((s) => s + 1);
       setScore((s) => {
         switch (level) {
@@ -87,25 +97,24 @@ export default function Game() {
 
     setAnswer('');
     setCurrent(getRandomWord());
+    setFeedbackKey((k) => k + 1);
   }
 
   if (!level) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="text-center space-y-4">
-          <h1 className="text-2xl font-bold">Select level</h1>
-          <div className="space-x-2">
+        <Card className="w-full max-w-sm text-center">
+          <CardHeader>
+            <CardTitle className="text-2xl">Select level</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-3 gap-2">
             {[1, 2, 3, 4, 5, 6].map((l) => (
-              <button
-                key={l}
-                className="px-4 py-2 border rounded"
-                onClick={() => setLevel(l as Difficulty)}
-              >
+              <Button key={l} onClick={() => setLevel(l as Difficulty)}>
                 Level {l}
-              </button>
+              </Button>
             ))}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -122,24 +131,36 @@ export default function Game() {
 
   return (
     <div className="flex items-center justify-center h-screen">
-      <div className="text-center space-y-4">
-        <p className="text-lg">Score: {score}/{target}</p>
-        <p className="text-xl font-semibold">{current.english}</p>
-        {!finished && (
-          <form onSubmit={handleSubmit} className="space-x-2">
-            <input
-              className="border px-2 py-1"
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-            />
-            <button type="submit" className="px-4 py-1 border rounded">
-              Submit
-            </button>
-          </form>
-        )}
-        <p>{message}</p>
-        {finished && <p>Finished!</p>}
-      </div>
+      <Card className="w-full max-w-md text-center">
+        <CardHeader>
+          <CardTitle>Score: {score}/{target}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-xl font-semibold">{current.english}</p>
+          {!finished && (
+            <form onSubmit={handleSubmit} className="flex space-x-2">
+              <Input
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+                className="flex-1"
+              />
+              <Button type="submit">Submit</Button>
+            </form>
+          )}
+          <p
+            key={feedbackKey}
+            className={cn(
+              'min-h-[1.5rem]',
+              feedback === 'correct' && 'text-green-600 animate-in fade-in zoom-in',
+              feedback === 'incorrect' && 'text-red-600 animate-shake'
+            )}
+          >
+            {feedback === 'correct' && 'Correct!'}
+            {feedback === 'incorrect' && 'Incorrect!'}
+          </p>
+          {finished && <p>Finished!</p>}
+        </CardContent>
+      </Card>
     </div>
   );
 }
