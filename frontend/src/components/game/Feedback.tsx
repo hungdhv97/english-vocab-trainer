@@ -2,10 +2,15 @@ import { cn } from '@/lib/utils';
 
 interface FeedbackProps {
   feedback: 'correct' | 'incorrect' | '';
+  answer?: string;
   feedbackKey: number;
 }
 
-export default function Feedback({ feedback, feedbackKey }: FeedbackProps) {
+export default function Feedback({
+  feedback,
+  answer,
+  feedbackKey,
+}: FeedbackProps) {
   return (
     <p
       key={feedbackKey}
@@ -16,7 +21,7 @@ export default function Feedback({ feedback, feedbackKey }: FeedbackProps) {
       )}
     >
       {feedback === 'correct' && 'Correct!'}
-      {feedback === 'incorrect' && 'Incorrect!'}
+      {feedback === 'incorrect' && `Incorrect! Correct: ${answer}`}
     </p>
   );
 }

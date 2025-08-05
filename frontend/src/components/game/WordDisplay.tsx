@@ -5,5 +5,5 @@ interface WordDisplayProps {
 }
 
 export default function WordDisplay({ word }: WordDisplayProps) {
-  return <p className="text-xl font-semibold">{word.english}</p>;
+  return <p className="text-xl font-semibold">{word.word_text}</p>;
 }

@@ -1,33 +1,36 @@
 package models
 
-import "time"
+import (
+	"github.com/google/uuid"
+	"time"
+)
 
-// Word represents a vocabulary word.
-	type Word struct {
-	ID        int64     `json:"id"`
-	English   string    `json:"english"`
-	Vietnamese string    `json:"vietnamese"`
-	Example   string    `json:"example,omitempty"`
-	CreatedAt time.Time `json:"created_at"`
+// User represents a player of the game.
+type User struct {
+	ID           int64     `json:"user_id"`
+	Username     string    `json:"username"`
+	PasswordHash string    `json:"-"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
-// User represents a user of the application.
-	type User struct {
-	ID        int64     `json:"id"`
-	Username  string    `json:"username"`
-	Password  string    `json:"-"`
-	Role      string    `json:"role"`
-	CreatedAt time.Time `json:"created_at"`
+// Word represents a single word in a specific language.
+type Word struct {
+	ID           int64     `json:"word_id"`
+	ConceptID    uuid.UUID `json:"concept_id"`
+	LanguageCode string    `json:"language_code"`
+	WordText     string    `json:"word_text"`
+	Difficulty   string    `json:"difficulty"`
 }
 
-// ReviewLog represents a single review event for a user and a word.
-	type ReviewLog struct {
-	ID           int64     `json:"id"`
+// Play records a single answer attempt by a user.
+type Play struct {
+	ID           int64     `json:"play_id"`
 	UserID       int64     `json:"user_id"`
 	WordID       int64     `json:"word_id"`
-	NextReview   time.Time `json:"next_review"`
-	Interval     int       `json:"interval"`
-	Repetitions  int       `json:"repetitions"`
-	EaseFactor   float64   `json:"ease_factor"`
-	LastReviewed time.Time `json:"last_reviewed"`
+	UserAnswer   string    `json:"user_answer"`
+	IsCorrect    bool      `json:"is_correct"`
+	ResponseTime int       `json:"response_time"`
+	EarnedScore  int       `json:"earned_score"`
+	PlayedAt     time.Time `json:"played_at"`
+	SessionTag   uuid.UUID `json:"session_tag"`
 }
