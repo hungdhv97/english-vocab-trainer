@@ -1,5 +1,4 @@
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 
 interface AnswerInputProps {
   value: string;
@@ -9,9 +8,13 @@ interface AnswerInputProps {
 
 export default function AnswerInput({ value, onChange, onSubmit }: AnswerInputProps) {
   return (
-    <form onSubmit={onSubmit} className="flex space-x-2">
-      <Input value={value} onChange={onChange} className="flex-1" />
-      <Button type="submit">Submit</Button>
+    <form onSubmit={onSubmit}>
+      <Input
+        value={value}
+        onChange={onChange}
+        className="text-center"
+        autoFocus
+      />
     </form>
   );
 }

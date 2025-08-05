@@ -50,7 +50,7 @@ const levelDescriptions: Record<Difficulty, React.ReactNode> = {
 export default function LevelSelector({ onSelectLevel }: LevelSelectorProps) {
   return (
     <div className="flex items-center justify-center h-screen">
-      <Card className="w-full max-w-sm text-center">
+      <Card className="w-full max-w-md text-center h-80 flex flex-col justify-center">
         <CardHeader>
           <CardTitle className="text-2xl">Select level</CardTitle>
         </CardHeader>

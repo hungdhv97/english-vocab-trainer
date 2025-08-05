@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 import type { Difficulty, Word } from '@/types';
 import LevelSelector from '@/components/game/LevelSelector';
 import WordDisplay from '@/components/game/WordDisplay';
@@ -22,14 +24,16 @@ export default function Game() {
   const target = level && level >= 4 ? 10 : 5;
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/words`)
-      .then((res) => res.json())
-      .then((data: Word[]) => {
-        setWords(data);
-        const index = Math.floor(Math.random() * data.length);
-        setCurrent(data[index]);
-      });
-  }, []);
+    if (level) {
+      fetch(`${API_BASE_URL}/words`)
+        .then((res) => res.json())
+        .then((data: Word[]) => {
+          setWords(data);
+          const index = Math.floor(Math.random() * data.length);
+          setCurrent(data[index]);
+        });
+    }
+  }, [level]);
 
   function getRandomWord() {
     const index = Math.floor(Math.random() * words.length);
@@ -41,13 +45,11 @@ export default function Game() {
     if (!level || !current) return;
 
     const isCorrect =
-      answer.trim().toLowerCase() ===
-      current.vietnamese.trim().toLowerCase();
+      answer.trim().toLowerCase() === current.vietnamese.trim().toLowerCase();
 
     if (isCorrect) {
       const newScore = score + 1;
       setScore(newScore);
-      setWrongStreak(1);
 
       if (newScore >= target) {
         setCurrent(null);
@@ -84,6 +86,14 @@ export default function Game() {
     setFeedbackKey((k) => k + 1);
   }
 
+  function handleReset() {
+    setLevel(null);
+    setScore(0);
+    setAnswer('');
+    setFeedback('');
+    setCurrent(null);
+  }
+
   const finished = score >= target;
 
   if (!level) {
@@ -100,7 +110,15 @@ export default function Game() {
 
   return (
     <div className="flex items-center justify-center h-screen">
-      <Card className="w-full max-w-md text-center">
+      <Card className="w-full max-w-md text-center relative h-80 flex flex-col justify-center">
+        <Button
+          onClick={handleReset}
+          variant="ghost"
+          size="icon"
+          className="absolute top-[10px] left-[10px]"
+        >
+          <ArrowLeft />
+        </Button>
         <CardHeader>
           <CardTitle>
             Score: {score}/{target}
