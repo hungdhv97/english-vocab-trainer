@@ -7,11 +7,14 @@ import LevelSelector from '@/components/game/LevelSelector';
 import WordDisplay from '@/components/game/WordDisplay';
 import AnswerInput from '@/components/game/AnswerInput';
 import Feedback from '@/components/game/Feedback';
+import { fetchRandomWords, submitAnswer, createSession } from '@/lib/api';
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8090/api/v1';
+interface Props {
+  userId: number;
+  onShowHistory: () => void;
+}
 
-export default function Game() {
+export default function Game({ userId, onShowHistory }: Props) {
   const [level, setLevel] = useState<Difficulty | null>(null);
   const [words, setWords] = useState<Word[]>([]);
   const [current, setCurrent] = useState<Word | null>(null);
@@ -19,38 +22,50 @@ export default function Game() {
   const [score, setScore] = useState(0);
   const [wrongStreak, setWrongStreak] = useState(1);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | ''>('');
+  const [feedbackAnswer, setFeedbackAnswer] = useState('');
   const [feedbackKey, setFeedbackKey] = useState(0);
 
   const target = level && level >= 4 ? 10 : 5;
 
   useEffect(() => {
     if (level) {
-      fetch(`${API_BASE_URL}/words`)
-        .then((res) => res.json())
-        .then((data: Word[]) => {
-          setWords(data);
-          const index = Math.floor(Math.random() * data.length);
-          setCurrent(data[index]);
-        });
+      const diff = mapLevel(level);
+      createSession();
+      fetchRandomWords(20, 'en', diff).then((data: Word[]) => {
+        setWords(data);
+        const index = Math.floor(Math.random() * data.length);
+        setCurrent(data[index]);
+      });
     }
   }, [level]);
+
+  function mapLevel(l: Difficulty): string {
+    if (l <= 2) return 'easy';
+    if (l <= 4) return 'medium';
+    return 'hard';
+  }
 
   function getRandomWord() {
     const index = Math.floor(Math.random() * words.length);
     return words[index];
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!level || !current) return;
 
-    const isCorrect =
-      answer.trim().toLowerCase() === current.vietnamese.trim().toLowerCase();
+    const res = await submitAnswer({
+      word_id: current.word_id,
+      user_id: userId,
+      language_code: 'vi',
+      response_time: 0,
+      user_answer: answer,
+      earned_score: 1,
+    });
 
-    if (isCorrect) {
+    if (res.is_correct) {
       const newScore = score + 1;
       setScore(newScore);
-
       if (newScore >= target) {
         setCurrent(null);
         setFeedback('');
@@ -60,6 +75,7 @@ export default function Game() {
       }
     } else {
       setFeedback('incorrect');
+      setFeedbackAnswer(res.correct_answer);
       setWrongStreak((s) => s + 1);
       setScore((s) => {
         switch (level) {
@@ -119,6 +135,14 @@ export default function Game() {
         >
           <ArrowLeft />
         </Button>
+        <Button
+          onClick={onShowHistory}
+          variant="ghost"
+          size="sm"
+          className="absolute top-[10px] right-[10px]"
+        >
+          History
+        </Button>
         <CardHeader>
           <CardTitle>
             Score: {score}/{target}
@@ -135,7 +159,11 @@ export default function Game() {
                 onChange={(e) => setAnswer(e.target.value)}
                 onSubmit={handleSubmit}
               />
-              <Feedback feedback={feedback} feedbackKey={feedbackKey} />
+              <Feedback
+                feedback={feedback}
+                answer={feedbackAnswer}
+                feedbackKey={feedbackKey}
+              />
             </>
           )}
         </CardContent>
