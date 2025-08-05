@@ -26,22 +26,26 @@ services:
       - ./backend:/app
 
   postgres:
-    image: postgres:16-alpine
+    image: bitnami/postgresql:latest
     ports:
-      - "5433:5432"
+      - "54321:5432"
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: vocab
+      POSTGRESQL_USERNAME: user
+      POSTGRESQL_PASSWORD: password
+      POSTGRESQL_DATABASE: vocab
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/bitnami/postgresql
+    restart: always
 
   redis:
-    image: redis:7-alpine
+    image: bitnami/redis:latest
     ports:
       - "6379:6379"
+    environment:
+      REDIS_USERNAME: redis
+      REDIS_PASSWORD: redis_password
     volumes:
-      - redis_data:/data
+      - redis_data:/bitnami/redis
 
 volumes:
   postgres_data:
