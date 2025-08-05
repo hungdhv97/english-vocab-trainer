@@ -1,4 +1,4 @@
-module github.com/gemini-demo-apps/vocab-app
+module github.com/hungdhv97/english-vocab-trainer/backend
 
 go 1.24
 

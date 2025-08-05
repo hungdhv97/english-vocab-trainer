@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gemini-demo-apps/vocab-app/internal/models"
-	"github.com/gemini-demo-apps/vocab-app/internal/service"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/hungdhv97/english-vocab-trainer/backend/internal/models"
+	"github.com/hungdhv97/english-vocab-trainer/backend/internal/service"
 )
 
 // Handler provides HTTP handlers for the API.

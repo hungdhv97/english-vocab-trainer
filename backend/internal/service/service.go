@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gemini-demo-apps/vocab-app/internal/models"
 	"github.com/google/uuid"
+	"github.com/hungdhv97/english-vocab-trainer/backend/internal/models"
 )
 
 // Service provides game operations backed by an in-memory store.

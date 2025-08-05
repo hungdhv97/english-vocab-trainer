@@ -4,9 +4,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/gemini-demo-apps/vocab-app/internal/handler"
-	"github.com/gemini-demo-apps/vocab-app/internal/service"
 	"github.com/gorilla/mux"
+	"github.com/hungdhv97/english-vocab-trainer/backend/internal/handler"
+	"github.com/hungdhv97/english-vocab-trainer/backend/internal/service"
 )
 
 func main() {
