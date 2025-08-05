@@ -1,7 +1,8 @@
 {
-  "name": "frontend",
+  "name": "english-vocab-trainer-frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Frontend for the English Vocabulary Trainer",
   "type": "module",
   "scripts": {
     "dev": "vite",
