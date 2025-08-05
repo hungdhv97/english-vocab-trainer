@@ -38,18 +38,24 @@ export default function Game() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!level) return;
-
-    if (!current) return;
+    if (!level || !current) return;
 
     const isCorrect =
       answer.trim().toLowerCase() ===
-      current?.vietnamese?.trim()?.toLowerCase();
+      current.vietnamese.trim().toLowerCase();
 
     if (isCorrect) {
-      setScore((s) => s + 1);
+      const newScore = score + 1;
+      setScore(newScore);
       setWrongStreak(1);
-      setFeedback('correct');
+
+      if (newScore >= target) {
+        setCurrent(null);
+        setFeedback('');
+      } else {
+        setFeedback('correct');
+        setCurrent(getRandomWord());
+      }
     } else {
       setFeedback('incorrect');
       setWrongStreak((s) => s + 1);
@@ -71,26 +77,26 @@ export default function Game() {
             return s;
         }
       });
+      setCurrent(getRandomWord());
     }
 
     setAnswer('');
-    setCurrent(getRandomWord());
     setFeedbackKey((k) => k + 1);
   }
+
+  const finished = score >= target;
 
   if (!level) {
     return <LevelSelector onSelectLevel={setLevel} />;
   }
 
-  if (!current) {
+  if (!current && !finished) {
     return (
       <div className="flex items-center justify-center h-screen">
         <p>Loading...</p>
       </div>
     );
   }
-
-  const finished = score >= target;
 
   return (
     <div className="flex items-center justify-center h-screen">
@@ -101,16 +107,19 @@ export default function Game() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <WordDisplay word={current} />
-          {!finished && (
-            <AnswerInput
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-              onSubmit={handleSubmit}
-            />
+          {finished ? (
+            <p>Finished!</p>
+          ) : (
+            <>
+              {current && <WordDisplay word={current} />}
+              <AnswerInput
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+                onSubmit={handleSubmit}
+              />
+              <Feedback feedback={feedback} feedbackKey={feedbackKey} />
+            </>
           )}
-          <Feedback feedback={feedback} feedbackKey={feedbackKey} />
-          {finished && <p>Finished!</p>}
         </CardContent>
       </Card>
     </div>
