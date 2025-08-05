@@ -1,6 +1,6 @@
 # Gemini Development Guide
 
-This document provides guidance and examples on how to use the Gemini CLI to develop this application.
+This document explains how to use the Gemini CLI while working on the English Vocabulary Trainer.
 
 ## Technology Overview
 
@@ -24,7 +24,7 @@ Here are some commands you can ask Gemini to execute:
   cd frontend && npm run lint
   ```
 - **Check TypeScript types:**
-    ```
+  ```
   cd frontend && npm run typecheck
   ```
 - **Run the frontend development server:**
