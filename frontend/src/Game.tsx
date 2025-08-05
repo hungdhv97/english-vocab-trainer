@@ -6,6 +6,9 @@ interface Word {
   vi: string;
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
+  'http://localhost:8090/api/v1';
+
 export default function Game() {
   const [level, setLevel] = useState<Difficulty | null>(null);
   const [words, setWords] = useState<Word[]>([]);
@@ -18,7 +21,7 @@ export default function Game() {
   const target = level && level >= 4 ? 10 : 5;
 
   useEffect(() => {
-    fetch('http://localhost:8080/api/v1/words')
+    fetch(`${API_BASE_URL}/words`)
       .then((res) => res.json())
       .then((data: Word[]) => {
         setWords(data);
