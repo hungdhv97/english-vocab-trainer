@@ -25,12 +25,13 @@ export default function Game() {
 
   useEffect(() => {
     if (level) {
-      fetch(`${API_BASE_URL}/words`)
+      fetch(`${API_BASE_URL}/words?level=${level}`)
         .then((res) => res.json())
-        .then((data: Word[]) => {
-          setWords(data);
-          const index = Math.floor(Math.random() * data.length);
-          setCurrent(data[index]);
+        .then((data: string[]) => {
+          const wordObjs = data.map((en) => ({ english: en }));
+          setWords(wordObjs);
+          const index = Math.floor(Math.random() * wordObjs.length);
+          setCurrent(wordObjs[index]);
         });
     }
   }, [level]);
@@ -40,50 +41,58 @@ export default function Game() {
     return words[index];
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!level || !current) return;
 
-    const isCorrect =
-      answer.trim().toLowerCase() === current.vietnamese.trim().toLowerCase();
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/translate?word=${encodeURIComponent(current.english)}`
+      );
+      const data: { vietnamese: string } = await res.json();
+      const isCorrect =
+        data.vietnamese.trim().toLowerCase() === answer.trim().toLowerCase();
 
-    if (isCorrect) {
-      const newScore = score + 1;
-      setScore(newScore);
+      if (isCorrect) {
+        const newScore = score + 1;
+        setScore(newScore);
 
-      if (newScore >= target) {
-        setCurrent(null);
-        setFeedback('');
+        if (newScore >= target) {
+          setCurrent(null);
+          setFeedback('');
+        } else {
+          setFeedback('correct');
+          setCurrent(getRandomWord());
+        }
       } else {
-        setFeedback('correct');
+        setFeedback('incorrect');
+        setWrongStreak((s) => s + 1);
+        setScore((s) => {
+          switch (level) {
+            case 1:
+              return s;
+            case 2:
+              return s - 1;
+            case 3:
+              return s - 2;
+            case 4:
+              return 0;
+            case 5:
+              return s - wrongStreak;
+            case 6:
+              return s - wrongStreak * wrongStreak;
+            default:
+              return s;
+          }
+        });
         setCurrent(getRandomWord());
       }
-    } else {
-      setFeedback('incorrect');
-      setWrongStreak((s) => s + 1);
-      setScore((s) => {
-        switch (level) {
-          case 1:
-            return s;
-          case 2:
-            return s - 1;
-          case 3:
-            return s - 2;
-          case 4:
-            return 0;
-          case 5:
-            return s - wrongStreak;
-          case 6:
-            return s - wrongStreak * wrongStreak;
-          default:
-            return s;
-        }
-      });
-      setCurrent(getRandomWord());
-    }
 
-    setAnswer('');
-    setFeedbackKey((k) => k + 1);
+      setAnswer('');
+      setFeedbackKey((k) => k + 1);
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   function handleReset() {

@@ -5,109 +5,77 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gemini-demo-apps/vocab-app/internal/models"
 	"github.com/gemini-demo-apps/vocab-app/internal/service"
-
 	"github.com/gorilla/mux"
 )
 
-// Handler is the HTTP handler layer.
+// levelWordCount maps level to number of words returned.
+var levelWordCount = map[int]int{
+	1: 5,
+	2: 10,
+	3: 15,
+	4: 20,
+	5: 25,
+	6: 30,
+}
+
+// Handler handles HTTP requests.
 type Handler struct {
-	service service.Service
+	svc service.Service
 }
 
 // NewHandler creates a new Handler.
 func NewHandler(s service.Service) *Handler {
-	return &Handler{service: s}
+	return &Handler{svc: s}
 }
 
-// GetWords handles fetching all words.
-func (h *Handler) GetWords(w http.ResponseWriter, r *http.Request) {
+// GetRandomWords returns a random list of English words for a given level.
+func (h *Handler) GetRandomWords(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	words, err := h.service.GetAllWords()
+	levelStr := r.URL.Query().Get("level")
+	level, err := strconv.Atoi(levelStr)
+	if err != nil || level < 1 {
+		http.Error(w, "invalid level", http.StatusBadRequest)
+		return
+	}
+	limit, ok := levelWordCount[level]
+	if !ok {
+		http.Error(w, "unknown level", http.StatusBadRequest)
+		return
+	}
+	words, err := h.svc.GetRandomWords(level, limit)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	json.NewEncoder(w).Encode(words)
+	res := make([]string, len(words))
+	for i, word := range words {
+		res[i] = word.English
+	}
+	json.NewEncoder(w).Encode(res)
 }
 
-// CreateWord handles creating a new word.
-func (h *Handler) CreateWord(w http.ResponseWriter, r *http.Request) {
+// GetTranslation returns the Vietnamese translation for an English word.
+func (h *Handler) GetTranslation(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	var word models.Word
-	err := json.NewDecoder(r.Body).Decode(&word)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	english := r.URL.Query().Get("word")
+	if english == "" {
+		http.Error(w, "missing word", http.StatusBadRequest)
 		return
 	}
-
-	createdWord, err := h.service.CreateWord(word.English, word.Vietnamese, word.Example)
+	word, err := h.svc.GetWordByEnglish(english)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	json.NewEncoder(w).Encode(createdWord)
+	json.NewEncoder(w).Encode(struct {
+		Vietnamese string `json:"vietnamese"`
+	}{Vietnamese: word.Vietnamese})
 }
 
-// UpdateWord handles updating an existing word.
-func (h *Handler) UpdateWord(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	vars := mux.Vars(r)
-	idStr := vars["id"]
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		http.Error(w, "Invalid word ID", http.StatusBadRequest)
-		return
-	}
-
-	var word models.Word
-	err = json.NewDecoder(r.Body).Decode(&word)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	// Ensure the ID from the URL matches the ID in the request body (if provided)
-	if word.ID == 0 {
-		word.ID = id
-	} else if word.ID != id {
-		http.Error(w, "ID in URL and body do not match", http.StatusBadRequest)
-		return
-	}
-
-	updatedWord, err := h.service.UpdateWord(word.ID, word.English, word.Vietnamese, word.Example)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	json.NewEncoder(w).Encode(updatedWord)
-}
-
-// DeleteWord handles deleting a word.
-func (h *Handler) DeleteWord(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	vars := mux.Vars(r)
-	idStr := vars["id"]
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		http.Error(w, "Invalid word ID", http.StatusBadRequest)
-		return
-	}
-
-	err = h.service.DeleteWord(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusNoContent) // 204 No Content for successful deletion
-}
-
-// RegisterRoutes registers the HTTP routes.
+// RegisterRoutes registers HTTP routes.
 func (h *Handler) RegisterRoutes(r *mux.Router) {
 	api := r.PathPrefix("/api/v1").Subrouter()
-	api.HandleFunc("/words", h.GetWords).Methods("GET")
-	api.HandleFunc("/words", h.CreateWord).Methods("POST")
-	api.HandleFunc("/words/{id}", h.UpdateWord).Methods("PUT")
-	api.HandleFunc("/words/{id}", h.DeleteWord).Methods("DELETE")
+	api.HandleFunc("/words", h.GetRandomWords).Methods("GET")
+	api.HandleFunc("/translate", h.GetTranslation).Methods("GET")
 }
