@@ -1,4 +1,4 @@
-import Game from './Game';
+import Game from '@/Game';
 import { ModeToggle } from '@/components/mode-toggle';
 import { ThemeProvider } from '@/components/theme-provider';
 

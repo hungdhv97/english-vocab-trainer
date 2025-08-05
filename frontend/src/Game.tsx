@@ -1,12 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 type Difficulty = 1 | 2 | 3 | 4 | 5 | 6;
@@ -24,8 +19,8 @@ type RawWord = {
   vi?: string;
 };
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
-  'http://localhost:8090/api/v1';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8090/api/v1';
 
 export default function Game() {
   const [level, setLevel] = useState<Difficulty | null>(null);
@@ -86,7 +81,7 @@ export default function Game() {
           case 4:
             return 0;
           case 5:
-            return s - (wrongStreak);
+            return s - wrongStreak;
           case 6:
             return s - wrongStreak * wrongStreak;
           default:
@@ -133,7 +128,9 @@ export default function Game() {
     <div className="flex items-center justify-center h-screen">
       <Card className="w-full max-w-md text-center">
         <CardHeader>
-          <CardTitle>Score: {score}/{target}</CardTitle>
+          <CardTitle>
+            Score: {score}/{target}
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-xl font-semibold">{current.english}</p>
@@ -151,8 +148,9 @@ export default function Game() {
             key={feedbackKey}
             className={cn(
               'min-h-[1.5rem]',
-              feedback === 'correct' && 'text-green-600 animate-in fade-in zoom-in',
-              feedback === 'incorrect' && 'text-red-600 animate-shake'
+              feedback === 'correct' &&
+                'text-green-600 animate-in fade-in zoom-in',
+              feedback === 'incorrect' && 'text-red-600 animate-shake',
             )}
           >
             {feedback === 'correct' && 'Correct!'}
