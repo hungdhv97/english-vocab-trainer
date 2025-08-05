@@ -2,9 +2,18 @@ import { useState, useEffect } from 'react';
 
 type Difficulty = 1 | 2 | 3 | 4 | 5 | 6;
 interface Word {
-  en: string;
-  vi: string;
+  english: string;
+  vietnamese: string;
 }
+
+type RawWord = {
+  English?: string;
+  english?: string;
+  en?: string;
+  Vietnamese?: string;
+  vietnamese?: string;
+  vi?: string;
+};
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
   'http://localhost:8090/api/v1';
@@ -23,10 +32,14 @@ export default function Game() {
   useEffect(() => {
     fetch(`${API_BASE_URL}/words`)
       .then((res) => res.json())
-      .then((data: Word[]) => {
-        setWords(data);
-        const index = Math.floor(Math.random() * data.length);
-        setCurrent(data[index]);
+      .then((data: RawWord[]) => {
+        const normalized: Word[] = data.map((w) => ({
+          english: w.english ?? w.English ?? w.en ?? '',
+          vietnamese: w.vietnamese ?? w.Vietnamese ?? w.vi ?? '',
+        }));
+        setWords(normalized);
+        const index = Math.floor(Math.random() * normalized.length);
+        setCurrent(normalized[index]);
       });
   }, []);
 
@@ -43,14 +56,14 @@ export default function Game() {
 
     const isCorrect =
       answer.trim().toLowerCase() ===
-      current?.vi?.trim()?.toLowerCase();
+      current?.vietnamese?.trim()?.toLowerCase();
 
     if (isCorrect) {
       setScore((s) => s + 1);
       setWrongStreak(1);
-      setMessage('Đúng!');
+      setMessage('Correct!');
     } else {
-      setMessage('Sai!');
+      setMessage('Incorrect!');
       setWrongStreak((s) => s + 1);
       setScore((s) => {
         switch (level) {
@@ -80,7 +93,7 @@ export default function Game() {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center space-y-4">
-          <h1 className="text-2xl font-bold">Chọn mức độ</h1>
+          <h1 className="text-2xl font-bold">Select level</h1>
           <div className="space-x-2">
             {[1, 2, 3, 4, 5, 6].map((l) => (
               <button
@@ -88,7 +101,7 @@ export default function Game() {
                 className="px-4 py-2 border rounded"
                 onClick={() => setLevel(l as Difficulty)}
               >
-                Mức {l}
+                Level {l}
               </button>
             ))}
           </div>
@@ -110,8 +123,8 @@ export default function Game() {
   return (
     <div className="flex items-center justify-center h-screen">
       <div className="text-center space-y-4">
-        <p className="text-lg">Điểm: {score}/{target}</p>
-        <p className="text-xl font-semibold">{current.en}</p>
+        <p className="text-lg">Score: {score}/{target}</p>
+        <p className="text-xl font-semibold">{current.english}</p>
         {!finished && (
           <form onSubmit={handleSubmit} className="space-x-2">
             <input
@@ -120,12 +133,12 @@ export default function Game() {
               onChange={(e) => setAnswer(e.target.value)}
             />
             <button type="submit" className="px-4 py-1 border rounded">
-              Trả lời
+              Submit
             </button>
           </form>
         )}
         <p>{message}</p>
-        {finished && <p>Hoàn thành!</p>}
+        {finished && <p>Finished!</p>}
       </div>
     </div>
   );
