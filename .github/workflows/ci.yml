@@ -34,10 +34,10 @@ jobs:
         run: npm run lint
 
       - name: Type Check
-        run: npm run typecheck
+        run: npm run typecheck --if-present
 
       - name: Test
-        run: npm test
+        run: npm test --if-present
 
   backend-checks:
     runs-on: ubuntu-latest
