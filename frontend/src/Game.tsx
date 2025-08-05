@@ -42,7 +42,8 @@ export default function Game() {
     if (!current) return;
 
     const isCorrect =
-      answer.trim().toLowerCase() === current.vi.trim().toLowerCase();
+      answer.trim().toLowerCase() ===
+      current?.vi?.trim()?.toLowerCase();
 
     if (isCorrect) {
       setScore((s) => s + 1);
