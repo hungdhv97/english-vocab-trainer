@@ -1,38 +1,263 @@
 openapi: 3.0.0
 info:
-  title: Vocabulary Learning App API
+  title: English Vocabulary Trainer API
   version: 1.0.0
+servers:
+  - url: http://localhost:8090/api/v1
 paths:
-  /api/v1/words:
-    get:
-      summary: Get a list of words
+  /register:
+    post:
+      summary: Register a new user
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
       responses:
         '200':
-          description: A list of words
+          description: Registered user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Bad request
+
+  /login:
+    post:
+      summary: Login with username and password
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+
+  /session:
+    post:
+      summary: Create a new session tag
+      description: Sets an HttpOnly cookie named `session_tag` and returns its value.
+      tags: [auth]
+      responses:
+        '200':
+          description: Session tag created
+          headers:
+            Set-Cookie:
+              description: 'Sets session_tag cookie (HttpOnly)'
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+
+  /words/random:
+    get:
+      summary: Get random words by language and difficulty
+      tags: [words]
+      parameters:
+        - in: query
+          name: count
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - in: query
+          name: language
+          required: true
+          schema:
+            type: string
+            example: en
+        - in: query
+          name: difficulty
+          required: true
+          schema:
+            type: string
+            enum: [easy, medium, hard]
+      responses:
+        '200':
+          description: List of random words
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/Word'
+        '400':
+          description: Invalid parameters
+
+  /history/{userID}:
+    get:
+      summary: Get play history for a user
+      tags: [history]
+      parameters:
+        - in: path
+          name: userID
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: List of play entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Play'
+        '400':
+          description: Invalid user id
+
+  /answer:
+    post:
+      summary: Submit an answer and get the correct translation
+      description: Requires the `session_tag` cookie set by POST /session.
+      tags: [game]
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnswerRequest'
+      responses:
+        '200':
+          description: Result of the submitted answer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnswerResponse'
+        '400':
+          description: Invalid request (missing session_tag or bad input)
+
 components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: session_tag
   schemas:
-    Word:
+    User:
       type: object
       properties:
-        id:
+        user_id:
           type: integer
           format: int64
-        word:
-          type: string
-        pronunciation:
-          type: string
-        definition:
-          type: string
-        part_of_speech:
-          type: string
-        example:
+        username:
           type: string
         created_at:
           type: string
           format: date-time
+
+    Word:
+      type: object
+      properties:
+        word_id:
+          type: integer
+          format: int64
+        concept_id:
+          type: string
+          format: uuid
+        language_code:
+          type: string
+          example: en
+        word_text:
+          type: string
+          example: apple
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+
+    Play:
+      type: object
+      properties:
+        play_id:
+          type: integer
+          format: int64
+        user_id:
+          type: integer
+          format: int64
+        word_id:
+          type: integer
+          format: int64
+        user_answer:
+          type: string
+        is_correct:
+          type: boolean
+        response_time:
+          type: integer
+        earned_score:
+          type: integer
+        played_at:
+          type: string
+          format: date-time
+        session_tag:
+          type: string
+          format: uuid
+
+    AnswerRequest:
+      type: object
+      required:
+        - word_id
+        - user_id
+        - language_code
+        - response_time
+        - user_answer
+        - earned_score
+      properties:
+        word_id:
+          type: integer
+          format: int64
+        user_id:
+          type: integer
+          format: int64
+        language_code:
+          type: string
+          example: vi
+        response_time:
+          type: integer
+        user_answer:
+          type: string
+        earned_score:
+          type: integer
+
+    AnswerResponse:
+      type: object
+      properties:
+        correct_answer:
+          type: string
+        is_correct:
+          type: boolean
+
+    SessionResponse:
+      type: object
+      properties:
+        session_tag:
+          type: string
+          format: uuid

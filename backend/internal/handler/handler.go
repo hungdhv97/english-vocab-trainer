@@ -31,6 +31,10 @@ func (h *Handler) RegisterRoutes(r *mux.Router) {
 	api.HandleFunc("/words/random", h.RandomWords).Methods("GET")
 	api.HandleFunc("/answer", h.Answer).Methods("POST")
 	api.HandleFunc("/session", h.Session).Methods("POST")
+
+    // Docs routes (outside of /api/v1)
+    r.HandleFunc("/openapi.yaml", h.OpenAPISpec).Methods("GET")
+    r.HandleFunc("/docs", h.SwaggerUI).Methods("GET")
 }
 
 // Register handles user registration.
@@ -163,4 +167,39 @@ func (h *Handler) Session(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 	})
 	json.NewEncoder(w).Encode(map[string]string{"session_tag": tag.String()})
+}
+
+// OpenAPISpec serves the OpenAPI YAML spec.
+func (h *Handler) OpenAPISpec(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/yaml")
+    http.ServeFile(w, r, "docs/openapi.yaml")
+}
+
+// SwaggerUI serves a minimal Swagger UI HTML page that loads the local OpenAPI spec.
+func (h *Handler) SwaggerUI(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "text/html; charset=utf-8")
+    html := `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>API Docs</title>
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
+  </head>
+  <body>
+    <div id="swagger-ui"></div>
+    <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+    <script>
+      window.onload = () => {
+        window.ui = SwaggerUIBundle({
+          url: '/openapi.yaml',
+          dom_id: '#swagger-ui',
+          deepLinking: true,
+          presets: [SwaggerUIBundle.presets.apis],
+        });
+      };
+    </script>
+  </body>
+</html>`
+    _, _ = w.Write([]byte(html))
 }
