@@ -1,6 +1,6 @@
 package auth
 
 // Authenticator is the authentication layer.
-	type Authenticator interface {
+type Authenticator interface {
 	// Add methods here
 }
