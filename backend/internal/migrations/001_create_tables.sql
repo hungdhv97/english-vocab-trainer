@@ -13,8 +13,17 @@ CREATE TABLE IF NOT EXISTS words (
   language_code  VARCHAR(10)  NOT NULL,
   word_text      VARCHAR(100) NOT NULL,
   difficulty     VARCHAR(20)  NOT NULL,
-  UNIQUE (concept_id, language_code)
+  is_primary     BOOLEAN      NOT NULL DEFAULT FALSE
 );
+
+-- Bỏ unique cũ (concept_id, language_code) nếu tồn tại
+ALTER TABLE words DROP CONSTRAINT IF EXISTS words_concept_id_language_code_key;
+
+-- Thêm unique hạt mịn hơn để tránh trùng chính tả trong cùng concept/ngôn ngữ
+CREATE UNIQUE INDEX IF NOT EXISTS ux_words_concept_lang_text ON words(concept_id, language_code, word_text);
+
+-- Đảm bảo tối đa 1 bản dịch "chính" cho mỗi concept/ngôn ngữ
+CREATE UNIQUE INDEX IF NOT EXISTS ux_words_primary_per_lang ON words(concept_id, language_code) WHERE is_primary = true;
 
 -- 3. Bảng plays: ghi lại mỗi lượt hỏi–đáp, thêm user_answer, gom session bằng UUID
 CREATE TABLE IF NOT EXISTS plays (

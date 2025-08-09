@@ -20,6 +20,7 @@ type Word struct {
 	LanguageCode string    `json:"language_code"`
 	WordText     string    `json:"word_text"`
 	Difficulty   string    `json:"difficulty"`
+	IsPrimary    bool      `json:"is_primary"`
 }
 
 // Play records a single answer attempt by a user.
