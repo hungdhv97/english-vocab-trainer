@@ -1,8 +1,6 @@
 package service
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"math/rand"
 	"strings"
@@ -11,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/models"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Service provides game operations backed by an in-memory store.
@@ -56,12 +55,18 @@ func (s *Service) RegisterUser(username, password string) (models.User, error) {
 	if _, exists := s.users[username]; exists {
 		return models.User{}, errors.New("username already exists")
 	}
-	hashBytes := sha256.Sum256([]byte(password))
+	if strings.TrimSpace(password) == "" {
+		return models.User{}, errors.New("password cannot be empty")
+	}
+	hashBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return models.User{}, err
+	}
 	s.nextUserID++
 	user := models.User{
 		ID:           s.nextUserID,
 		Username:     username,
-		PasswordHash: hex.EncodeToString(hashBytes[:]),
+		PasswordHash: string(hashBytes),
 		CreatedAt:    time.Now(),
 	}
 	s.users[username] = user
@@ -76,8 +81,7 @@ func (s *Service) Authenticate(username, password string) (models.User, error) {
 	if !ok {
 		return models.User{}, errors.New("user not found")
 	}
-	hashBytes := sha256.Sum256([]byte(password))
-	if user.PasswordHash != hex.EncodeToString(hashBytes[:]) {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
 		return models.User{}, errors.New("invalid credentials")
 	}
 	return user, nil
