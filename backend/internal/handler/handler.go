@@ -32,9 +32,9 @@ func (h *Handler) RegisterRoutes(r *mux.Router) {
 	api.HandleFunc("/answer", h.Answer).Methods("POST")
 	api.HandleFunc("/session", h.Session).Methods("POST")
 
-    // Docs routes (outside of /api/v1)
-    r.HandleFunc("/openapi.yaml", h.OpenAPISpec).Methods("GET")
-    r.HandleFunc("/docs", h.SwaggerUI).Methods("GET")
+	// Docs routes (outside of /api/v1)
+	r.HandleFunc("/openapi.yaml", h.OpenAPISpec).Methods("GET")
+	r.HandleFunc("/docs", h.SwaggerUI).Methods("GET")
 }
 
 // Register handles user registration.
@@ -145,7 +145,12 @@ func (h *Handler) Answer(w http.ResponseWriter, r *http.Request) {
 		ResponseTime: req.ResponseTime,
 		EarnedScore:  req.EarnedScore,
 	}
-	play.SessionTag, _ = uuid.Parse(cookie.Value)
+	if tag, err := uuid.Parse(cookie.Value); err == nil {
+		play.SessionTag = tag
+	} else {
+		http.Error(w, "invalid session_tag", http.StatusBadRequest)
+		return
+	}
 	if _, err := h.svc.RecordPlay(play); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -160,25 +165,31 @@ func (h *Handler) Answer(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Session(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	tag := h.svc.CreateSession()
-	http.SetCookie(w, &http.Cookie{
+	cookie := &http.Cookie{
 		Name:     "session_tag",
 		Value:    tag.String(),
 		Path:     "/",
 		HttpOnly: true,
-	})
+		SameSite: http.SameSiteNoneMode,
+	}
+	// Only set Secure when using HTTPS; many browsers require Secure when SameSite=None
+	if r.TLS != nil {
+		cookie.Secure = true
+	}
+	http.SetCookie(w, cookie)
 	json.NewEncoder(w).Encode(map[string]string{"session_tag": tag.String()})
 }
 
 // OpenAPISpec serves the OpenAPI YAML spec.
 func (h *Handler) OpenAPISpec(w http.ResponseWriter, r *http.Request) {
-    w.Header().Set("Content-Type", "application/yaml")
-    http.ServeFile(w, r, "docs/openapi.yaml")
+	w.Header().Set("Content-Type", "application/yaml")
+	http.ServeFile(w, r, "docs/openapi.yaml")
 }
 
 // SwaggerUI serves a minimal Swagger UI HTML page that loads the local OpenAPI spec.
 func (h *Handler) SwaggerUI(w http.ResponseWriter, r *http.Request) {
-    w.Header().Set("Content-Type", "text/html; charset=utf-8")
-    html := `<!doctype html>
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	html := `<!doctype html>
 <html>
   <head>
     <meta charset="utf-8"/>
@@ -201,5 +212,5 @@ func (h *Handler) SwaggerUI(w http.ResponseWriter, r *http.Request) {
     </script>
   </body>
 </html>`
-    _, _ = w.Write([]byte(html))
+	_, _ = w.Write([]byte(html))
 }
