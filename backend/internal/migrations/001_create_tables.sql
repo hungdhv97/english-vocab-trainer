@@ -16,9 +16,6 @@ CREATE TABLE IF NOT EXISTS words (
   is_primary     BOOLEAN      NOT NULL DEFAULT FALSE
 );
 
--- Bỏ unique cũ (concept_id, language_code) nếu tồn tại
-ALTER TABLE words DROP CONSTRAINT IF EXISTS words_concept_id_language_code_key;
-
 -- Thêm unique hạt mịn hơn để tránh trùng chính tả trong cùng concept/ngôn ngữ
 CREATE UNIQUE INDEX IF NOT EXISTS ux_words_concept_lang_text ON words(concept_id, language_code, word_text);
 
