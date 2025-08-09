@@ -16,7 +16,7 @@ services:
     build:
       context: ./backend
     ports:
-      - "8090:8080"
+      - "8180:8180"
     env_file:
       - .env
     depends_on:
@@ -28,7 +28,7 @@ services:
   postgres:
     image: bitnami/postgresql:latest
     ports:
-      - "54321:5432"
+      - "5432:5432"
     environment:
       POSTGRESQL_USERNAME: user
       POSTGRESQL_PASSWORD: password

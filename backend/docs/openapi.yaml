@@ -3,7 +3,7 @@ info:
   title: English Vocabulary Trainer API
   version: 1.0.0
 servers:
-  - url: http://localhost:8090/api/v1
+  - url: http://localhost:8180/api/v1
 paths:
   /register:
     post:

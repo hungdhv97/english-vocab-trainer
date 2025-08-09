@@ -12,7 +12,7 @@ This folder contains the React + TypeScript client for the English Vocabulary Tr
 
 ## Environment
 
-The frontend reads `VITE_API_BASE_URL` to know where to send API requests. It defaults to `http://localhost:8080/api/v1`. Create a `.env` file at the project root to override this value if needed.
+The frontend reads `VITE_API_BASE_URL` to know where to send API requests. It defaults to `http://localhost:8180/api/v1`. Create a `.env` file at the project root to override this value if needed.
 
 ## Project Structure
 
