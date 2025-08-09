@@ -21,8 +21,8 @@ WORKDIR /root/
 # Copy the built executable from the builder stage
 COPY --from=builder /main .
 
-# Expose port 8080
-EXPOSE 8080
+# Expose port 8180
+EXPOSE 8180
 
 # Run the application
 CMD ["./main"]
