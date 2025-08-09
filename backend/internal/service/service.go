@@ -116,7 +116,7 @@ func seedWordsIfEmpty(ctx context.Context, pool *pgxpool.Pool) error {
 	pairs := []pair{{"apple", "táo", "easy"}, {"banana", "chuối", "easy"}, {"cat", "mèo", "easy"}}
 	for _, p := range pairs {
 		concept := uuid.New()
-		if _, err := pool.Exec(ctx, `INSERT INTO words (concept_id, language_code, word_text, difficulty) VALUES ($1,'en',$2,$3), ($1,'vi',$4,$3)`, concept, p.en, p.diff, p.vi); err != nil {
+		if _, err := pool.Exec(ctx, `INSERT INTO words (concept_id, language_code, word_text, difficulty, is_primary) VALUES ($1,'en',$2,$3,true), ($1,'vi',$4,$3,true)`, concept, p.en, p.diff, p.vi); err != nil {
 			return err
 		}
 	}
@@ -231,6 +231,7 @@ func (s *Service) GetTranslation(wordID int64, language string) (string, error) 
 				FROM words w1
 				JOIN words w2 ON w1.concept_id = w2.concept_id AND LOWER(w2.language_code) = LOWER($2)
 				WHERE w1.word_id = $1
+				ORDER BY w2.is_primary DESC, w2.word_id ASC
 				LIMIT 1`, wordID, language).Scan(&correct)
 	if err != nil {
 		return "", errors.New("translation not found")
