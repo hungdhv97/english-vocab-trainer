@@ -12,33 +12,33 @@ This project is a full-stack web application that helps users build their Englis
 ## Getting Started
 
 1. **Clone the repository:**
-   ```bash
-   git clone <repository-url>
-   cd english-vocab-trainer
-   ```
+  ```bash
+  git clone <repository-url>
+  cd english-vocab-trainer
+  ```
 
 2. **Set up environment variables:**
-   Copy the example environment file and adjust the values for your setup.
-   ```bash
-   cp .env.example .env
-   ```
+  Copy the example environment file and adjust the values for your setup.
+  ```bash
+  cp .env.example .env
+  ```
 
 3. **Build and start the services:**
-   This command starts the backend server along with PostgreSQL and Redis.
-   ```bash
-   docker-compose up --build
-   ```
+  This command starts the backend server along with PostgreSQL and Redis.
+  ```bash
+  docker-compose up --build
+  ```
 
 4. **Run database migrations:**
-   Migration tooling has not been configured yet.
+  Migration tooling has not been configured yet.
 
 5. **Run the frontend development server:**
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-   The application is available at `http://localhost:5173`.
+  ```bash
+  cd frontend
+  npm install
+  npm run dev
+  ```
+  The application is available at `http://localhost:5173`.
 
 ## Testing
 
