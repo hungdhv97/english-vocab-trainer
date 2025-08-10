@@ -80,30 +80,47 @@ func getEnv(key, def string) string {
 }
 
 func runMigrations(ctx context.Context, pool *pgxpool.Pool) error {
-	// Execute multi-statement SQL by splitting on semicolons while preserving statements that may contain newlines
-	sql := migrations.CreateTablesSQL
-	// Quick split; assumes no semicolons inside $$-quoted bodies (none here)
-	parts := strings.Split(sql, ";")
-	for _, p := range parts {
-		stmt := strings.TrimSpace(p)
+	// Test database connection first
+	if err := pool.Ping(ctx); err != nil {
+		return fmt.Errorf("database ping failed: %w", err)
+	}
+	
+	// Split the SQL into individual statements and execute them separately
+	statements := strings.Split(migrations.CreateTablesSQL, ";")
+	executedCount := 0
+	for _, stmt := range statements {
+		stmt = strings.TrimSpace(stmt)
 		if stmt == "" || strings.HasPrefix(stmt, "--") {
 			continue
 		}
-		if !strings.HasSuffix(stmt, ";") {
-			stmt = stmt + ";"
-		}
 		if _, err := pool.Exec(ctx, stmt); err != nil {
-			// If extension creation fails due to permissions, continue for tables
-			if strings.Contains(err.Error(), "permission") && strings.Contains(strings.ToLower(stmt), "create extension") {
-				continue
-			}
-			return err
+			return fmt.Errorf("failed to execute migration: %w", err)
 		}
+		executedCount++
 	}
+	
+	fmt.Println("Database migrations completed successfully")
 	return nil
 }
 
+
+
 func seedWordsIfEmpty(ctx context.Context, pool *pgxpool.Pool) error {
+	// Check if words table exists first
+	var tableExists bool
+	err := pool.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT FROM information_schema.tables 
+			WHERE table_schema = 'public' 
+			AND table_name = 'words'
+		)`).Scan(&tableExists)
+	if err != nil {
+		return fmt.Errorf("failed to check if words table exists: %w", err)
+	}
+	if !tableExists {
+		return fmt.Errorf("words table does not exist, migrations may have failed")
+	}
+
 	var cnt int64
 	if err := pool.QueryRow(ctx, "SELECT COUNT(*) FROM words").Scan(&cnt); err != nil {
 		return err
@@ -111,6 +128,8 @@ func seedWordsIfEmpty(ctx context.Context, pool *pgxpool.Pool) error {
 	if cnt > 0 {
 		return nil
 	}
+	
+	fmt.Println("Seeding database with sample words...")
 	// Insert three pairs: (en, vi, easy)
 	type pair struct{ en, vi, diff string }
 	pairs := []pair{{"apple", "táo", "easy"}, {"banana", "chuối", "easy"}, {"cat", "mèo", "easy"}}
