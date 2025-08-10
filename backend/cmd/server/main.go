@@ -1,42 +1,66 @@
 package main
 
 import (
-	"log"
 	"net/http"
+	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
+	"github.com/spf13/viper"
+	"go.uber.org/zap"
+
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/handler"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/service"
 )
 
 func main() {
+	_ = godotenv.Load()
+
+	viper.SetDefault("PORT", "8180")
+	viper.AutomaticEnv()
+	port := viper.GetString("PORT")
+
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+
 	svc := service.NewService()
 	hdl := handler.NewHandler(svc)
-	r := mux.NewRouter()
-	hdl.RegisterRoutes(r)
 
-	r.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			origin := r.Header.Get("Origin")
-			if origin != "" {
-				w.Header().Set("Access-Control-Allow-Origin", origin)
-				w.Header().Set("Vary", "Origin")
-				w.Header().Set("Access-Control-Allow-Credentials", "true")
-			} else {
-				w.Header().Set("Access-Control-Allow-Origin", "*")
-			}
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-			if r.Method == http.MethodOptions {
-				w.WriteHeader(http.StatusNoContent)
-				return
-			}
-			next.ServeHTTP(w, r)
-		})
+	r := gin.New()
+	r.Use(gin.Recovery())
+
+	r.Use(func(c *gin.Context) {
+		start := time.Now()
+		c.Next()
+		logger.Info("request",
+			zap.String("method", c.Request.Method),
+			zap.String("path", c.Request.URL.Path),
+			zap.Int("status", c.Writer.Status()),
+			zap.Duration("duration", time.Since(start)))
 	})
 
-	log.Println("Starting server on :8180")
-	if err := http.ListenAndServe(":8180", r); err != nil {
-		log.Fatal(err)
+	r.Use(func(c *gin.Context) {
+		origin := c.GetHeader("Origin")
+		if origin != "" {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+			c.Writer.Header().Set("Vary", "Origin")
+			c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		} else {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		}
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+		c.Next()
+	})
+
+	hdl.RegisterRoutes(r)
+
+	logger.Info("Starting server", zap.String("port", port))
+	if err := r.Run(":" + port); err != nil {
+		logger.Fatal("server failed", zap.Error(err))
 	}
 }

@@ -30,7 +30,11 @@ This project is a full-stack web application that helps users build their Englis
   ```
 
 4. **Run database migrations:**
-  Migration tooling has not been configured yet.
+  Install the `golang-migrate` CLI and apply the SQL scripts in the `migrations` directory.
+  ```bash
+  go install github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+  migrate -path migrations -database "postgres://user:password@localhost:5434/vocab?sslmode=disable" up
+  ```
 
 5. **Run the frontend development server:**
   ```bash

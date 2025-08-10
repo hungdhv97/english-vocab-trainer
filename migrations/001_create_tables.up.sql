@@ -1,3 +1,4 @@
+-- Up migration: create initial schema
 -- 1. Bảng users: thông tin người chơi, có thêm password_hash
 CREATE TABLE IF NOT EXISTS users (
   user_id        SERIAL      PRIMARY KEY,
