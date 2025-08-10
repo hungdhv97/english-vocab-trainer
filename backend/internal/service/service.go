@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/hungdhv97/english-vocab-trainer/backend/internal/migrations"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/models"
 	"github.com/jackc/pgx/v5/pgxpool"
 	redis "github.com/redis/go-redis/v9"
@@ -36,17 +35,13 @@ func NewService() *Service {
 	pgDB := getEnv("PGDATABASE", "vocab")
 
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", pgUser, pgPass, pgHost, pgPort, pgDB)
+
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
 		panic(fmt.Errorf("failed to create pg pool: %w", err))
 	}
 	if err := pool.Ping(ctx); err != nil {
 		panic(fmt.Errorf("failed to connect postgres: %w", err))
-	}
-
-	// Run migrations (idempotent)
-	if err := runMigrations(ctx, pool); err != nil {
-		panic(fmt.Errorf("failed to run migrations: %w", err))
 	}
 
 	// Seed minimal words if empty
@@ -79,32 +74,6 @@ func getEnv(key, def string) string {
 	return def
 }
 
-func runMigrations(ctx context.Context, pool *pgxpool.Pool) error {
-	// Test database connection first
-	if err := pool.Ping(ctx); err != nil {
-		return fmt.Errorf("database ping failed: %w", err)
-	}
-	
-	// Split the SQL into individual statements and execute them separately
-	statements := strings.Split(migrations.CreateTablesSQL, ";")
-	executedCount := 0
-	for _, stmt := range statements {
-		stmt = strings.TrimSpace(stmt)
-		if stmt == "" || strings.HasPrefix(stmt, "--") {
-			continue
-		}
-		if _, err := pool.Exec(ctx, stmt); err != nil {
-			return fmt.Errorf("failed to execute migration: %w", err)
-		}
-		executedCount++
-	}
-	
-	fmt.Println("Database migrations completed successfully")
-	return nil
-}
-
-
-
 func seedWordsIfEmpty(ctx context.Context, pool *pgxpool.Pool) error {
 	// Check if words table exists first
 	var tableExists bool
@@ -128,7 +97,7 @@ func seedWordsIfEmpty(ctx context.Context, pool *pgxpool.Pool) error {
 	if cnt > 0 {
 		return nil
 	}
-	
+
 	fmt.Println("Seeding database with sample words...")
 	// Insert three pairs: (en, vi, easy)
 	type pair struct{ en, vi, diff string }
