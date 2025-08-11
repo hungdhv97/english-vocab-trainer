@@ -44,11 +44,6 @@ func NewService() *Service {
 		panic(fmt.Errorf("failed to connect postgres: %w", err))
 	}
 
-	// Seed minimal words if empty
-	if err := seedWordsIfEmpty(ctx, pool); err != nil {
-		panic(fmt.Errorf("failed to seed words: %w", err))
-	}
-
 	// Redis client
 	redisAddr := getEnv("REDIS_ADDR", "redis:6379")
 	redisUser := os.Getenv("REDIS_USERNAME")
@@ -72,43 +67,6 @@ func getEnv(key, def string) string {
 		return v
 	}
 	return def
-}
-
-func seedWordsIfEmpty(ctx context.Context, pool *pgxpool.Pool) error {
-	// Check if words table exists first
-	var tableExists bool
-	err := pool.QueryRow(ctx, `
-		SELECT EXISTS (
-			SELECT FROM information_schema.tables 
-			WHERE table_schema = 'public' 
-			AND table_name = 'words'
-		)`).Scan(&tableExists)
-	if err != nil {
-		return fmt.Errorf("failed to check if words table exists: %w", err)
-	}
-	if !tableExists {
-		return fmt.Errorf("words table does not exist, migrations may have failed")
-	}
-
-	var cnt int64
-	if err := pool.QueryRow(ctx, "SELECT COUNT(*) FROM words").Scan(&cnt); err != nil {
-		return err
-	}
-	if cnt > 0 {
-		return nil
-	}
-
-	fmt.Println("Seeding database with sample words...")
-	// Insert three pairs: (en, vi, easy)
-	type pair struct{ en, vi, diff string }
-	pairs := []pair{{"apple", "táo", "easy"}, {"banana", "chuối", "easy"}, {"cat", "mèo", "easy"}}
-	for _, p := range pairs {
-		concept := uuid.New()
-		if _, err := pool.Exec(ctx, `INSERT INTO words (concept_id, language_code, word_text, difficulty, is_primary) VALUES ($1,'en',$2,$3,true), ($1,'vi',$4,$3,true)`, concept, p.en, p.diff, p.vi); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // RegisterUser registers a new user with hashed password.
