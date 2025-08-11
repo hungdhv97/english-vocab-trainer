@@ -32,7 +32,7 @@ This project is a full-stack web application that helps users build their Englis
 4. **Run database migrations:**
   Install the `golang-migrate` CLI and apply the SQL scripts in the `migrations` directory within `backend`.
   ```bash
-  go install github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+  go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
   cd backend
   migrate -path migrations -database "postgres://user:password@localhost:5434/vocab?sslmode=disable" up
   cd ..
