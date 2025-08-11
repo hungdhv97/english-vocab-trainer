@@ -1,13 +1,17 @@
 package service
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
+	translategooglefree "github.com/bas24/googletranslatefree"
 	"github.com/google/uuid"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/models"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -126,10 +130,60 @@ func (s *Service) GetRandomWords(count int, language, difficulty string) ([]mode
 		}
 		words = append(words, w)
 	}
+
+	if len(words) < count {
+		needed := count - len(words)
+		extra, err := s.loadWordsFromFile(ctx, needed, language, difficulty)
+		if err != nil {
+			return nil, err
+		}
+		words = append(words, extra...)
+	}
+
 	if len(words) == 0 {
 		return nil, errors.New("no words found")
 	}
 	return words, nil
+}
+
+func (s *Service) loadWordsFromFile(ctx context.Context, needed int, language, difficulty string) ([]models.Word, error) {
+	path := filepath.Join("resources", "3000_english_words")
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	var lines []string
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line != "" {
+			lines = append(lines, line)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(len(lines), func(i, j int) { lines[i], lines[j] = lines[j], lines[i] })
+	if needed > len(lines) {
+		needed = len(lines)
+	}
+
+	var out []models.Word
+	for i := 0; i < needed; i++ {
+		text := lines[i]
+		cid := uuid.New()
+		var id int64
+		err := s.db.QueryRow(ctx, `INSERT INTO words (concept_id, language_code, word_text, difficulty, is_primary) VALUES ($1,$2,$3,$4,true) RETURNING word_id`, cid, language, text, difficulty).Scan(&id)
+		if err != nil {
+			return out, err
+		}
+		out = append(out, models.Word{ID: id, ConceptID: cid, LanguageCode: language, WordText: text, Difficulty: difficulty, IsPrimary: true})
+	}
+	return out, nil
 }
 
 // RecordPlay stores a play result.
@@ -170,22 +224,49 @@ func (s *Service) GetTranslation(wordID int64, language string) (string, error) 
 			return val, nil
 		}
 	}
-
 	var correct string
 	err := s.db.QueryRow(ctx, `
-				SELECT w2.word_text
-				FROM words w1
-				JOIN words w2 ON w1.concept_id = w2.concept_id AND LOWER(w2.language_code) = LOWER($2)
-				WHERE w1.word_id = $1
-				ORDER BY w2.is_primary DESC, w2.word_id ASC
-				LIMIT 1`, wordID, language).Scan(&correct)
+                                SELECT w2.word_text
+                                FROM words w1
+                                JOIN words w2 ON w1.concept_id = w2.concept_id AND LOWER(w2.language_code) = LOWER($2)
+                                WHERE w1.word_id = $1
+                                ORDER BY w2.is_primary DESC, w2.word_id ASC
+                                LIMIT 1`, wordID, language).Scan(&correct)
+	if err == nil && correct != "" {
+		if s.cache != nil {
+			_ = s.cache.Set(ctx, cacheKey, correct, 10*time.Minute).Err()
+		}
+		return correct, nil
+	}
+
+	var conceptID uuid.UUID
+	var sourceLang, sourceText, diff string
+	err = s.db.QueryRow(ctx, `SELECT concept_id, language_code, word_text, difficulty FROM words WHERE word_id=$1`, wordID).Scan(&conceptID, &sourceLang, &sourceText, &diff)
 	if err != nil {
-		return "", errors.New("translation not found")
+		return "", errors.New("word not found")
 	}
-	if s.cache != nil && correct != "" {
-		_ = s.cache.Set(ctx, cacheKey, correct, 10*time.Minute).Err()
+
+	translated, err := translategooglefree.Translate(sourceText, sourceLang, language)
+	if err != nil {
+		return "", err
 	}
-	return correct, nil
+
+	var newID int64
+	insErr := s.db.QueryRow(ctx, `INSERT INTO words (concept_id, language_code, word_text, difficulty, is_primary) VALUES ($1,$2,$3,$4,true) RETURNING word_id`, conceptID, strings.ToLower(language), translated, diff).Scan(&newID)
+	if insErr != nil {
+		if strings.Contains(strings.ToLower(insErr.Error()), "duplicate") {
+			err = s.db.QueryRow(ctx, `SELECT word_text FROM words WHERE concept_id=$1 AND LOWER(language_code)=LOWER($2) ORDER BY is_primary DESC, word_id ASC LIMIT 1`, conceptID, language).Scan(&translated)
+			if err != nil {
+				return "", err
+			}
+		} else {
+			return "", insErr
+		}
+	}
+	if s.cache != nil && translated != "" {
+		_ = s.cache.Set(ctx, cacheKey, translated, 10*time.Minute).Err()
+	}
+	return translated, nil
 }
 
 // CreateSession generates a new session tag.
