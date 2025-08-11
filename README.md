@@ -30,13 +30,26 @@ This project is a full-stack web application that helps users build their Englis
   ```
 
 4. **Run database migrations:**
-  Install the `golang-migrate` CLI and apply the SQL scripts in the `migrations` directory within `backend`.
-  ```bash
-  go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
-  cd backend
-  migrate -path migrations -database "postgres://user:password@localhost:5434/vocab?sslmode=disable" up
-  cd ..
-  ```
+   Install the `golang-migrate` CLI and apply the SQL scripts. Migrations are split into `migrations/schema` (DDL) and `migrations/data` (seed data).
+   Because both tracks start at version 1, use separate migration tables.
+   ```bash
+   go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+   cd backend
+   # Apply schema changes first (uses schema_migrations table)
+   migrate -path migrations/schema -database "postgres://user:password@localhost:5434/vocab?sslmode=disable&x-migrations-table=schema_migrations" up
+   # Then apply seed data (uses data_migrations table)
+   migrate -path migrations/data -database "postgres://user:password@localhost:5434/vocab?sslmode=disable&x-migrations-table=data_migrations" up
+   cd ..
+   ```
+
+   To roll back:
+   ```bash
+   cd backend
+   # Roll back data first, then schema
+   migrate -path migrations/data -database "postgres://user:password@localhost:5434/vocab?sslmode=disable&x-migrations-table=data_migrations" down
+   migrate -path migrations/schema -database "postgres://user:password@localhost:5434/vocab?sslmode=disable&x-migrations-table=schema_migrations" down
+   cd ..
+   ```
 
 5. **Run the frontend development server:**
   ```bash
