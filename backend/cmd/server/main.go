@@ -1,29 +1,28 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
+	"github.com/hungdhv97/english-vocab-trainer/backend/internal/config"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/handler"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/service"
 )
 
 func main() {
-	_ = godotenv.Load()
-
-	viper.SetDefault("PORT", "8180")
-	viper.AutomaticEnv()
-	port := viper.GetString("PORT")
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("load config: %v", err)
+	}
 
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
 
-	svc := service.NewService()
+	svc := service.NewService(cfg)
 	hdl := handler.NewHandler(svc)
 
 	r := gin.New()
@@ -59,8 +58,8 @@ func main() {
 
 	hdl.RegisterRoutes(r)
 
-	logger.Info("Starting server", zap.String("port", port))
-	if err := r.Run(":" + port); err != nil {
+	logger.Info("Starting server", zap.String("addr", cfg.HTTP.Addr))
+	if err := r.Run(cfg.HTTP.Addr); err != nil {
 		logger.Fatal("server failed", zap.Error(err))
 	}
 }
