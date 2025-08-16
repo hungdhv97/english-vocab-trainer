@@ -20,6 +20,7 @@ WORKDIR /root/
 
 # Copy the built executable from the builder stage
 COPY --from=builder /main .
+COPY --from=builder /app/configs ./configs
 
 # Expose port 8180
 EXPOSE 8180
