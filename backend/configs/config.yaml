@@ -9,4 +9,4 @@ postgres:
 redis:
   addr: "redis:6379"
   username: ""
-  password: ""
+  password: "password"

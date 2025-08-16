@@ -42,7 +42,7 @@ services:
     ports:
       - "6379:6379"
     environment:
-      ALLOW_EMPTY_PASSWORD: yes
+      REDIS_PASSWORD: password
     volumes:
       - redis_data:/bitnami/redis
 
