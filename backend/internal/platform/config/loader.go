@@ -22,8 +22,8 @@ func Load() (*Config, error) {
 	v.SetDefault("postgres.password", "password")
 	v.SetDefault("postgres.database", "vocab")
 	v.SetDefault("redis.addr", "redis:6379")
-	v.SetDefault("redis.username", "")
-	v.SetDefault("redis.password", "")
+	v.SetDefault("redis.username", "default")
+	v.SetDefault("redis.password", "password")
 
 	// config file
 	v.SetConfigName("config")

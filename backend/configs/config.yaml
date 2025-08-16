@@ -8,5 +8,5 @@ postgres:
   database: "vocab"
 redis:
   addr: "redis:6379"
-  username: ""
+  username: "default"
   password: "password"
