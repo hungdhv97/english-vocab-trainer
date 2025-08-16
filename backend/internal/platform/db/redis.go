@@ -10,12 +10,17 @@ import (
 // NewRedisClient creates a new Redis client.
 func NewRedisClient(cfg *config.Config) (*redis.Client, error) {
 	r := cfg.Redis
-	client := redis.NewClient(&redis.Options{
-		Addr:     r.Addr,
-		Username: r.Username,
-		Password: r.Password,
-		DB:       0,
-	})
+	opts := &redis.Options{
+		Addr: r.Addr,
+		DB:   0,
+	}
+	if r.Username != "" {
+		opts.Username = r.Username
+	}
+	if r.Password != "" {
+		opts.Password = r.Password
+	}
+	client := redis.NewClient(opts)
 	if err := client.Ping(context.Background()).Err(); err != nil {
 		return nil, err
 	}
