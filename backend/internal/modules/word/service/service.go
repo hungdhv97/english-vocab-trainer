@@ -49,8 +49,8 @@ func (s *Service) GetRandomWords(count int, language, difficulty string) ([]mode
 	return words, nil
 }
 
-// GetTranslation finds the translation for a word in another language, with Redis caching.
-func (s *Service) GetTranslation(wordID int64, language string) (string, error) {
+// GetMeaning finds the translation for a word in another language, with Redis caching.
+func (s *Service) GetMeaning(wordID int64, language string) (string, error) {
 	ctx := context.Background()
 	cacheKey := fmt.Sprintf("translation:%d:%s", wordID, strings.ToLower(language))
 	if s.cache != nil {
