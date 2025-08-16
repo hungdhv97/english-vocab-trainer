@@ -10,6 +10,9 @@ frontend/.DS_Store
 backend/bin
 backend/vendor
 backend/coverage
+backend/coverage.out
+backend/server
+backend/server.exe
 backend/.DS_Store
 
 # General
