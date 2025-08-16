@@ -1,13 +1,9 @@
 package service
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
-	"math/rand"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -50,14 +46,6 @@ func (s *Service) GetRandomWords(count int, language, difficulty string) ([]mode
 		words = append(words, w)
 	}
 
-	if len(words) < count {
-		needed := count - len(words)
-		extra, err := s.loadWordsFromFile(ctx, needed, language, difficulty)
-		if err != nil {
-			return nil, err
-		}
-		words = append(words, extra...)
-	}
 	return words, nil
 }
 
@@ -113,44 +101,4 @@ func (s *Service) GetTranslation(wordID int64, language string) (string, error) 
 		_ = s.cache.Set(ctx, cacheKey, translated, 10*time.Minute).Err()
 	}
 	return translated, nil
-}
-
-func (s *Service) loadWordsFromFile(ctx context.Context, needed int, language, difficulty string) ([]model.Word, error) {
-	file := filepath.Join("resources", fmt.Sprintf("%s_%s.txt", language, difficulty))
-	f, err := os.Open(file)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	scanner := bufio.NewScanner(f)
-	var lines []string
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line != "" {
-			lines = append(lines, line)
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-
-	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(lines), func(i, j int) { lines[i], lines[j] = lines[j], lines[i] })
-	if needed > len(lines) {
-		needed = len(lines)
-	}
-
-	var out []model.Word
-	for i := 0; i < needed; i++ {
-		text := lines[i]
-		cid := uuid.New()
-		var id int64
-		err := s.db.QueryRow(ctx, `INSERT INTO words (concept_id, language_code, word_text, difficulty, is_primary) VALUES ($1,$2,$3,$4,true) RETURNING word_id`, cid, language, text, difficulty).Scan(&id)
-		if err != nil {
-			return out, err
-		}
-		out = append(out, model.Word{ID: id, ConceptID: cid, LanguageCode: language, WordText: text, Difficulty: difficulty, IsPrimary: true})
-	}
-	return out, nil
 }
