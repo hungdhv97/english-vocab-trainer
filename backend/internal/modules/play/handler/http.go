@@ -58,7 +58,7 @@ func (h *Handler) Answer(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "missing session_tag"})
 		return
 	}
-	correct, err := h.words.GetTranslation(req.WordID, req.LanguageCode)
+	correct, err := h.words.GetMeaning(req.WordID, req.LanguageCode)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
