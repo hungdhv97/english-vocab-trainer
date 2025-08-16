@@ -41,6 +41,10 @@ func NewRouter(d *deps.Deps) *gin.Engine {
           dom_id: '#swagger-ui',
           deepLinking: true,
           presets: [SwaggerUIBundle.presets.apis],
+          requestInterceptor: (req) => {
+            req.credentials = 'include';
+            return req;
+          },
         });
       };
     </script>

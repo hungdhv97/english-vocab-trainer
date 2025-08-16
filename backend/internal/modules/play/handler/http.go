@@ -97,9 +97,7 @@ func (h *Handler) Session(c *gin.Context) {
 		Path:     "/",
 		HttpOnly: true,
 		SameSite: http.SameSiteNoneMode,
-	}
-	if c.Request.TLS != nil {
-		cookie.Secure = true
+		Secure: true,
 	}
 	http.SetCookie(c.Writer, cookie)
 	c.JSON(http.StatusOK, gin.H{"session_tag": tag.String()})
