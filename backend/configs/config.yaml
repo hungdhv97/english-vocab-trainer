@@ -1,0 +1,12 @@
+http:
+  addr: ":8180"
+postgres:
+  host: "postgres"
+  port: "5432"
+  user: "user"
+  password: "password"
+  database: "vocab"
+redis:
+  addr: "redis:6379"
+  username: ""
+  password: ""

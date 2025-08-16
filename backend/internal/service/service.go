@@ -13,6 +13,7 @@ import (
 
 	translategooglefree "github.com/bas24/googletranslatefree"
 	"github.com/google/uuid"
+	"github.com/hungdhv97/english-vocab-trainer/backend/internal/config"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/models"
 	"github.com/jackc/pgx/v5/pgxpool"
 	redis "github.com/redis/go-redis/v9"
@@ -25,20 +26,12 @@ type Service struct {
 	cache *redis.Client
 }
 
-// NewService creates a new Service, connecting to PostgreSQL and Redis using environment variables.
-// Required envs:
-// - PGHOST, PGPORT, PGUSER, PGPASSWORD, PGDATABASE
-// - REDIS_ADDR (e.g., "redis:6379"), REDIS_PASSWORD (optional), REDIS_USERNAME (optional)
-func NewService() *Service {
+// NewService creates a new Service using configuration values.
+func NewService(cfg *config.Config) *Service {
 	ctx := context.Background()
 
-	pgHost := getEnv("PGHOST", "postgres")
-	pgPort := getEnv("PGPORT", "5432")
-	pgUser := getEnv("PGUSER", "user")
-	pgPass := getEnv("PGPASSWORD", "password")
-	pgDB := getEnv("PGDATABASE", "vocab")
-
-	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", pgUser, pgPass, pgHost, pgPort, pgDB)
+	pg := cfg.Postgres
+	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", pg.User, pg.Password, pg.Host, pg.Port, pg.Database)
 
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
@@ -48,15 +41,11 @@ func NewService() *Service {
 		panic(fmt.Errorf("failed to connect postgres: %w", err))
 	}
 
-	// Redis client
-	redisAddr := getEnv("REDIS_ADDR", "redis:6379")
-	redisUser := os.Getenv("REDIS_USERNAME")
-	redisPass := os.Getenv("REDIS_PASSWORD")
-
+	r := cfg.Redis
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     redisAddr,
-		Username: redisUser,
-		Password: redisPass,
+		Addr:     r.Addr,
+		Username: r.Username,
+		Password: r.Password,
 		DB:       0,
 	})
 	if err := rdb.Ping(ctx).Err(); err != nil {
@@ -64,13 +53,6 @@ func NewService() *Service {
 	}
 
 	return &Service{db: pool, cache: rdb}
-}
-
-func getEnv(key, def string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return def
 }
 
 // RegisterUser registers a new user with hashed password.
