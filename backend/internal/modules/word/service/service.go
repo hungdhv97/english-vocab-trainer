@@ -2,8 +2,10 @@ package service
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -26,27 +28,52 @@ func New(db *pgxpool.Pool, cache *redis.Client) *Service {
 	return &Service{db: db, cache: cache}
 }
 
-// GetRandomWords returns random words matching language and difficulty.
-func (s *Service) GetRandomWords(count int, language, difficulty string) ([]model.Word, error) {
+// GetRandomWords returns random words matching language and difficulty using a
+// stateless cursor so clients can page through results without repetition.
+// The cursor is a base64 encoded string in the form "seed:offset".
+func (s *Service) GetRandomWords(count int, language, difficulty, cursor string) ([]model.Word, string, error) {
 	if count <= 0 {
-		return nil, errors.New("invalid count")
+		return nil, "", errors.New("invalid count")
 	}
+
+	var seed int64
+	var offset int
+	if cursor != "" {
+		if decoded, err := base64.StdEncoding.DecodeString(cursor); err == nil {
+			parts := strings.Split(string(decoded), ":")
+			if len(parts) == 2 {
+				seed, _ = strconv.ParseInt(parts[0], 10, 64)
+				offset, _ = strconv.Atoi(parts[1])
+			}
+		}
+	} else {
+		seed = time.Now().UnixNano()
+		offset = 0
+	}
+
 	ctx := context.Background()
-	rows, err := s.db.Query(ctx, `SELECT word_id, concept_id, language_code, word_text, difficulty FROM words WHERE language_code=$1 AND difficulty=$2 ORDER BY random() LIMIT $3`, language, difficulty, count)
+	seedStr := fmt.Sprintf("%d", seed)
+	rows, err := s.db.Query(ctx, `SELECT word_id, concept_id, language_code, word_text, difficulty FROM words WHERE language_code=$1 AND difficulty=$2 ORDER BY md5(word_id::text || $3) LIMIT $4 OFFSET $5`, language, difficulty, seedStr, count, offset)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer rows.Close()
+
 	var words []model.Word
 	for rows.Next() {
 		var w model.Word
 		if err := rows.Scan(&w.ID, &w.ConceptID, &w.LanguageCode, &w.WordText, &w.Difficulty); err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		words = append(words, w)
 	}
 
-	return words, nil
+	nextCursor := ""
+	if len(words) > 0 {
+		nextCursor = base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%d:%d", seed, offset+len(words))))
+	}
+
+	return words, nextCursor, nil
 }
 
 // GetMeaning finds the translation for a word in another language, with Redis caching.
