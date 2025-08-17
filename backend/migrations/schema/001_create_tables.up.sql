@@ -27,7 +27,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_words_primary_per_lang ON words(concept_id,
 CREATE TABLE IF NOT EXISTS plays (
   play_id       BIGSERIAL     PRIMARY KEY,
   user_id       INT           NOT NULL REFERENCES users(user_id)    ON DELETE CASCADE,
-  word_id       INT           NOT NULL REFERENCES words(word_id),
+  word_id       INT           NOT NULL REFERENCES words(word_id)    ON DELETE CASCADE,
   user_answer   VARCHAR(255)  NOT NULL,
   is_correct    BOOLEAN       NOT NULL,
   response_time INT,
