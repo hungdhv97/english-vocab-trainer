@@ -113,9 +113,9 @@ export default function History({ userId }: Props) {
                           const datum = item.payload as ChartDatum;
                           return (
                             <div className="space-y-1">
-                              <div>{
-                                datum.is_correct ? 'Correct' : 'Incorrect'
-                              }</div>
+                              <div>
+                                {datum.is_correct ? 'Correct' : 'Incorrect'}
+                              </div>
                               {!datum.is_correct && (
                                 <div>Correct word: {datum.word.word_text}</div>
                               )}

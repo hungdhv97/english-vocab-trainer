@@ -6,7 +6,11 @@ interface AnswerInputProps {
   onSubmit: (e: React.FormEvent) => void;
 }
 
-export default function AnswerInput({ value, onChange, onSubmit }: AnswerInputProps) {
+export default function AnswerInput({
+  value,
+  onChange,
+  onSubmit,
+}: AnswerInputProps) {
   return (
     <form onSubmit={onSubmit}>
       <Input
