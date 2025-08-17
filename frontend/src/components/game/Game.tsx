@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,21 +24,39 @@ export default function Game({ userId }: Props) {
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | ''>('');
   const [feedbackAnswer, setFeedbackAnswer] = useState('');
   const [feedbackKey, setFeedbackKey] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+  const [questionStart, setQuestionStart] = useState(0);
+  const timerRef = useRef<number>();
   const navigate = useNavigate();
 
   const target = level && level >= 4 ? 10 : 5;
 
   useEffect(() => {
     if (level) {
+      const start = Date.now();
+      setElapsed(0);
+      timerRef.current = window.setInterval(() => {
+        setElapsed(Date.now() - start);
+      }, 1000);
       const diff = mapLevel(level);
       createSession();
       fetchRandomWords(20, 'en', diff).then((data: Word[]) => {
         setWords(data);
         const index = Math.floor(Math.random() * data.length);
         setCurrent(data[index]);
+        setQuestionStart(Date.now());
       });
     }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, [level]);
+
+  useEffect(() => {
+    if (timerRef.current && score >= target) {
+      clearInterval(timerRef.current);
+    }
+  }, [score, target]);
 
   function mapLevel(l: Difficulty): string {
     if (l <= 2) return 'easy';
@@ -51,6 +69,12 @@ export default function Game({ userId }: Props) {
     return words[index];
   }
 
+  function nextWord() {
+    const w = getRandomWord();
+    setCurrent(w);
+    setQuestionStart(Date.now());
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!level || !current) return;
@@ -59,7 +83,7 @@ export default function Game({ userId }: Props) {
       word_id: current.word_id,
       user_id: userId,
       language_code: 'vi',
-      response_time: 0,
+      response_time: Date.now() - questionStart,
       user_answer: answer,
       earned_score: 1,
     });
@@ -72,7 +96,7 @@ export default function Game({ userId }: Props) {
         setFeedback('');
       } else {
         setFeedback('correct');
-        setCurrent(getRandomWord());
+        nextWord();
       }
     } else {
       setFeedback('incorrect');
@@ -96,7 +120,7 @@ export default function Game({ userId }: Props) {
             return s;
         }
       });
-      setCurrent(getRandomWord());
+      nextWord();
     }
 
     setAnswer('');
@@ -109,6 +133,7 @@ export default function Game({ userId }: Props) {
     setAnswer('');
     setFeedback('');
     setCurrent(null);
+    setElapsed(0);
   }
 
   const finished = score >= target;
@@ -148,6 +173,9 @@ export default function Game({ userId }: Props) {
           <CardTitle>
             Score: {score}/{target}
           </CardTitle>
+          <div className="text-sm text-muted-foreground">
+            Time: {Math.floor(elapsed / 1000)}s
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {finished ? (
