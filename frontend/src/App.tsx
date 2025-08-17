@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import Game from '@/Game';
 import Login from '@/Login';
 import Register from '@/Register';
@@ -8,33 +10,35 @@ import { ThemeProvider } from '@/components/theme-provider';
 
 export default function App() {
   const [userId, setUserId] = useState<number | null>(null);
-  const [view, setView] = useState<'login' | 'register' | 'game' | 'history'>(
-    'login',
-  );
 
   function handleLoggedIn(id: number) {
     setUserId(id);
-    setView('game');
   }
 
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <ModeToggle />
-      {view === 'login' && (
-        <Login onLogin={handleLoggedIn} onSwitch={() => setView('register')} />
-      )}
-      {view === 'register' && (
-        <Register
-          onRegister={handleLoggedIn}
-          onSwitch={() => setView('login')}
-        />
-      )}
-      {view === 'game' && userId !== null && (
-        <Game userId={userId} onShowHistory={() => setView('history')} />
-      )}
-      {view === 'history' && userId !== null && (
-        <History userId={userId} onBack={() => setView('game')} />
-      )}
-    </ThemeProvider>
+    <BrowserRouter>
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <ModeToggle />
+        <Toaster position="top-center" />
+        <Routes>
+          <Route path="/login" element={<Login onLogin={handleLoggedIn} />} />
+          <Route path="/register" element={<Register onRegister={handleLoggedIn} />} />
+          <Route
+            path="/game"
+            element={
+              userId !== null ? <Game userId={userId} /> : <Navigate to="/login" />
+            }
+          />
+          <Route
+            path="/history"
+            element={
+              userId !== null ? <History userId={userId} /> : <Navigate to="/login" />
+            }
+          />
+          <Route path="/" element={<Navigate to="/login" />} />
+          <Route path="*" element={<Navigate to="/login" />} />
+        </Routes>
+      </ThemeProvider>
+    </BrowserRouter>
   );
 }
