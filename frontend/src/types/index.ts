@@ -37,5 +37,10 @@ export interface Level {
   name: string;
   description: string;
   difficulty: string;
-  scoring_config: Record<string, unknown>;
+  scoring_config: {
+    target: number;
+    correct_points: number;
+    wrong_penalty: number;
+    slow_penalty: number;
+  };
 }

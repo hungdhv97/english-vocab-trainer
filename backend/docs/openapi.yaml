@@ -324,3 +324,18 @@ components:
           type: string
         scoring_config:
           type: object
+          properties:
+            target:
+              type: integer
+            correct_points:
+              type: integer
+            wrong_penalty:
+              type: integer
+            slow_penalty:
+              type: integer
+          required:
+            - target
+            - correct_points
+            - wrong_penalty
+            - slow_penalty
+          additionalProperties: false
