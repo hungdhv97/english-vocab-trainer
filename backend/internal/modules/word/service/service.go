@@ -54,20 +54,60 @@ func (s *Service) GetRandomWords(count int, language, difficulty, cursor string)
 	}
 
 	ctx := context.Background()
-	seedStr := fmt.Sprintf("%d", seed)
-	rows, err := s.db.Query(ctx, `SELECT word_id, concept_id, language_code, word_text, difficulty FROM words WHERE language_code=$1 AND difficulty=$2 ORDER BY md5(word_id::text || $3) LIMIT $4 OFFSET $5`, language, difficulty, seedStr, count, offset)
+
+	// Determine total number of words for the given language and difficulty.
+	var n int
+	if err := s.db.QueryRow(ctx, `SELECT COUNT(*) FROM universe_index WHERE language_code=$1 AND difficulty=$2`, language, difficulty).Scan(&n); err != nil {
+		return nil, "", err
+	}
+	if n == 0 {
+		return nil, "", errors.New("no words available")
+	}
+
+	// Generate a permutation based on the seed using r(t) = (a*t + b) mod N
+	// where gcd(a, N) = 1 to ensure a full cycle without repetition.
+	N := n
+	a := int(seed%int64(N-1)) + 1
+	for gcd(a, N) != 1 {
+		a++
+		if a >= N {
+			a = 1
+		}
+	}
+	b := int((seed / int64(N)) % int64(N))
+
+	ranks := make([]int32, 0, count)
+	for i := 0; i < count; i++ {
+		t := offset + i
+		r := (a*t + b) % N
+		ranks = append(ranks, int32(r))
+	}
+
+	// Fetch words matching the calculated ranks.
+	rows, err := s.db.Query(ctx, `SELECT ui.rank, w.word_id, w.concept_id, w.language_code, w.word_text, w.difficulty
+                FROM universe_index ui
+                JOIN words w ON ui.word_id = w.word_id
+                WHERE ui.language_code=$1 AND ui.difficulty=$2 AND ui.rank = ANY($3)`, language, difficulty, ranks)
 	if err != nil {
 		return nil, "", err
 	}
 	defer rows.Close()
 
-	var words []model.Word
+	fetched := make(map[int32]model.Word)
 	for rows.Next() {
+		var rank int32
 		var w model.Word
-		if err := rows.Scan(&w.ID, &w.ConceptID, &w.LanguageCode, &w.WordText, &w.Difficulty); err != nil {
+		if err := rows.Scan(&rank, &w.ID, &w.ConceptID, &w.LanguageCode, &w.WordText, &w.Difficulty); err != nil {
 			return nil, "", err
 		}
-		words = append(words, w)
+		fetched[rank] = w
+	}
+
+	var words []model.Word
+	for _, r := range ranks {
+		if w, ok := fetched[r]; ok {
+			words = append(words, w)
+		}
 	}
 
 	var nextCursor string
@@ -139,4 +179,15 @@ func (s *Service) GetMeaning(wordID int64, language string) (string, error) {
 		_ = s.cache.Set(ctx, cacheKey, translated, 10*time.Minute).Err()
 	}
 	return translated, nil
+}
+
+// gcd computes the greatest common divisor using Euclid's algorithm.
+func gcd(a, b int) int {
+	for b != 0 {
+		a, b = b, a%b
+	}
+	if a < 0 {
+		return -a
+	}
+	return a
 }
