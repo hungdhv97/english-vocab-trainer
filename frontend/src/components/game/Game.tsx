@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-import type { Difficulty, Word } from '@/types';
+import type { Difficulty, Word, WordBatch } from '@/types';
 import LevelSelector from '@/components/game/LevelSelector';
 import WordDisplay from '@/components/game/WordDisplay';
 import AnswerInput from '@/components/game/AnswerInput';
@@ -18,6 +18,7 @@ export default function Game({ userId }: Props) {
   const [level, setLevel] = useState<Difficulty | null>(null);
   const [words, setWords] = useState<Word[]>([]);
   const [current, setCurrent] = useState<Word | null>(null);
+  const [cursor, setCursor] = useState<string | null>(null);
   const [answer, setAnswer] = useState('');
   const [score, setScore] = useState(0);
   const [wrongStreak, setWrongStreak] = useState(1);
@@ -40,11 +41,9 @@ export default function Game({ userId }: Props) {
       }, 10);
       const diff = mapLevel(level);
       createSession();
-      fetchRandomWords(20, 'en', diff).then((data: Word[]) => {
-        setWords(data);
-        const index = Math.floor(Math.random() * data.length);
-        setCurrent(data[index]);
-        setQuestionStart(Date.now());
+      fetchRandomWords(20, 'en', diff).then((data: WordBatch) => {
+        setWords(data.words);
+        setCursor(data.next_cursor);
       });
     }
     return () => {
@@ -64,16 +63,26 @@ export default function Game({ userId }: Props) {
     return 'hard';
   }
 
-  function getRandomWord() {
-    const index = Math.floor(Math.random() * words.length);
-    return words[index];
+  function nextWord() {
+    setWords((prev) => prev.slice(1));
   }
 
-  function nextWord() {
-    const w = getRandomWord();
-    setCurrent(w);
-    setQuestionStart(Date.now());
-  }
+  useEffect(() => {
+    if (words.length > 0) {
+      setCurrent(words[0]);
+      setQuestionStart(Date.now());
+    }
+  }, [words]);
+
+  useEffect(() => {
+    if (level && cursor && words.length < 5) {
+      const diff = mapLevel(level);
+      fetchRandomWords(20, 'en', diff, cursor).then((data: WordBatch) => {
+        setWords((prev) => [...prev, ...data.words]);
+        setCursor(data.next_cursor);
+      });
+    }
+  }, [words, cursor, level]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

@@ -8,6 +8,11 @@ export interface Word {
   difficulty: string;
 }
 
+export interface WordBatch {
+  words: Word[];
+  next_cursor: string;
+}
+
 export interface Play {
   play_id: number;
   user_id: number;

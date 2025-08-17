@@ -19,20 +19,28 @@ func New(s *service.Service) *Handler {
 	return &Handler{svc: s}
 }
 
-// RandomWords returns random words based on query parameters.
+// RandomWords returns random words based on query parameters. It also supports
+// a stateless cursor to avoid returning duplicate words across requests.
 func (h *Handler) RandomWords(c *gin.Context) {
 	countStr := c.Query("count")
 	language := c.Query("language")
 	difficulty := c.Query("difficulty")
+	cursor := c.Query("cursor")
+
 	count, err := strconv.Atoi(countStr)
 	if err != nil || count <= 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid count"})
 		return
 	}
-	words, err := h.svc.GetRandomWords(count, language, difficulty)
+
+	words, nextCursor, err := h.svc.GetRandomWords(count, language, difficulty, cursor)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, words)
+
+	c.JSON(http.StatusOK, gin.H{
+		"words":       words,
+		"next_cursor": nextCursor,
+	})
 }

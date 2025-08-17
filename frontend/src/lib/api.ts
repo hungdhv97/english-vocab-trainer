@@ -1,3 +1,5 @@
+import type { WordBatch } from '@/types';
+
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || 'http://localhost:8180/api/v1';
 
@@ -41,11 +43,14 @@ export async function fetchRandomWords(
   count: number,
   language: string,
   difficulty: string,
-) {
-  const res = await fetch(
-    `${API_BASE_URL}/words/random?count=${count}&language=${language}&difficulty=${difficulty}`,
-    { credentials: 'include' },
-  );
+  cursor?: string,
+): Promise<WordBatch> {
+  const url = new URL(`${API_BASE_URL}/words/random`);
+  url.searchParams.set('count', String(count));
+  url.searchParams.set('language', language);
+  url.searchParams.set('difficulty', difficulty);
+  if (cursor) url.searchParams.set('cursor', cursor);
+  const res = await fetch(url.toString(), { credentials: 'include' });
   if (!res.ok) throw new Error('words failed');
   return res.json();
 }
