@@ -2,7 +2,6 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { fetchHistory } from '@/lib/api';
-import { cn } from '@/lib/utils';
 import type { HistoryPlay } from '@/types';
 
 interface ChartDatum extends HistoryPlay {
@@ -39,27 +38,34 @@ export default function History({ userId }: Props) {
       .catch(() => {});
   }, [userId]);
 
-  const plays = useMemo(() => (selected ? sessions[selected] || [] : []), [selected, sessions]);
+  const plays = useMemo(
+    () => (selected ? sessions[selected] || [] : []),
+    [selected, sessions],
+  );
   const chartData = useMemo<ChartDatum[]>(() => {
     let total = 0;
-    return plays
+    const sorted = plays
       .slice()
       .sort(
-        (a, b) => new Date(a.played_at).getTime() - new Date(b.played_at).getTime(),
-      )
-      .map((p) => {
-        total += p.earned_score;
-        return {
-          time: new Date(p.played_at).toLocaleTimeString(),
-          cumulative: total,
-          ...p,
-        };
-      });
+        (a, b) =>
+          new Date(a.played_at).getTime() - new Date(b.played_at).getTime(),
+      );
+    const start = sorted.length ? new Date(sorted[0].played_at).getTime() : 0;
+    return sorted.map((p) => {
+      total += p.earned_score;
+      return {
+        time: ((new Date(p.played_at).getTime() - start) / 1000).toFixed(2),
+        cumulative: total,
+        ...p,
+      };
+    });
   }, [plays]);
 
   return (
     <div className="p-4 space-y-4">
-      <Button onClick={() => (selected ? setSelected(null) : navigate('/game'))}>
+      <Button
+        onClick={() => (selected ? setSelected(null) : navigate('/game'))}
+      >
         Back
       </Button>
       {!selected ? (
@@ -89,10 +95,15 @@ export default function History({ userId }: Props) {
                     if (active && payload && payload.length) {
                       const d = payload[0].payload as ChartDatum;
                       return (
-                        <div className="bg-background p-2 border rounded text-sm">
-                          <div>Word: {d.word.word_text}</div>
-                          <div>Answer: {d.user_answer}</div>
-                          <div>Time: {d.time}</div>
+                        <div
+                          className={`p-2 border rounded text-sm ${d.is_correct ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'}`}
+                        >
+                          <div>{d.is_correct ? 'Correct' : 'Incorrect'}</div>
+                          {!d.is_correct && (
+                            <div>Correct word: {d.word.word_text}</div>
+                          )}
+                          <div>Your answer: {d.user_answer}</div>
+                          <div>Time: {d.time}s</div>
                           <div>Score: {d.cumulative}</div>
                         </div>
                       );
@@ -100,28 +111,23 @@ export default function History({ userId }: Props) {
                     return null;
                   }}
                 />
-                <Line type="monotone" dataKey="cumulative" stroke="#8884d8" />
+                <Line
+                  type="monotone"
+                  dataKey="cumulative"
+                  stroke="#8884d8"
+                  dot={({ cx, cy, payload }) => (
+                    <circle
+                      cx={cx}
+                      cy={cy}
+                      r={3}
+                      stroke="none"
+                      fill={payload.is_correct ? '#16a34a' : '#dc2626'}
+                    />
+                  )}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <ul className="space-y-2">
-            {plays.map((p) => (
-              <li
-                key={p.play_id}
-                className={cn(
-                  'border p-2 rounded',
-                  p.is_correct
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
-                    : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100',
-                )}
-              >
-                <div>Word: {p.word.word_text}</div>
-                <div>Your answer: {p.user_answer}</div>
-                <div>Time: {new Date(p.played_at).toLocaleTimeString()}</div>
-                <div>Score: {p.earned_score}</div>
-              </li>
-            ))}
-          </ul>
         </div>
       )}
     </div>
