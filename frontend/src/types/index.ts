@@ -16,6 +16,7 @@ export interface Play {
   is_correct: boolean;
   earned_score: number;
   played_at: string;
+  session_tag: string;
 }
 
 export interface User {
