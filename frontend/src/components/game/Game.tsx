@@ -26,7 +26,7 @@ export default function Game({ userId }: Props) {
   const [feedbackKey, setFeedbackKey] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [questionStart, setQuestionStart] = useState(0);
-  const timerRef = useRef<number>();
+  const timerRef = useRef<number | null>(null);
   const navigate = useNavigate();
 
   const target = level && level >= 4 ? 10 : 5;
@@ -37,7 +37,7 @@ export default function Game({ userId }: Props) {
       setElapsed(0);
       timerRef.current = window.setInterval(() => {
         setElapsed(Date.now() - start);
-      }, 1000);
+      }, 10);
       const diff = mapLevel(level);
       createSession();
       fetchRandomWords(20, 'en', diff).then((data: Word[]) => {
@@ -174,7 +174,7 @@ export default function Game({ userId }: Props) {
             Score: {score}/{target}
           </CardTitle>
           <div className="text-sm text-muted-foreground">
-            Time: {Math.floor(elapsed / 1000)}s
+            Time: {(elapsed / 1000).toFixed(2)}s
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
