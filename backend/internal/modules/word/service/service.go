@@ -2,14 +2,13 @@ package service
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
 	translategooglefree "github.com/bas24/googletranslatefree"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	redis "github.com/redis/go-redis/v9"
@@ -19,36 +18,39 @@ import (
 
 // Service provides word-related operations.
 type Service struct {
-	db    *pgxpool.Pool
-	cache *redis.Client
+	db        *pgxpool.Pool
+	cache     *redis.Client
+	jwtSecret []byte
 }
 
 // New creates a new word service.
-func New(db *pgxpool.Pool, cache *redis.Client) *Service {
-	return &Service{db: db, cache: cache}
+func New(db *pgxpool.Pool, cache *redis.Client, secret string) *Service {
+	return &Service{db: db, cache: cache, jwtSecret: []byte(secret)}
 }
 
 // GetRandomWords returns random words matching language and difficulty using a
 // stateless cursor so clients can page through results without repetition.
-// The cursor is a base64 encoded string in the form "seed:offset".
+// The cursor is a JWT containing "seed" and "offset".
 func (s *Service) GetRandomWords(count int, language, difficulty, cursor string) ([]model.Word, string, error) {
 	if count <= 0 {
 		return nil, "", errors.New("invalid count")
 	}
 
-	var seed int64
-	var offset int
+	seed := time.Now().UnixNano()
+	offset := 0
 	if cursor != "" {
-		if decoded, err := base64.StdEncoding.DecodeString(cursor); err == nil {
-			parts := strings.Split(string(decoded), ":")
-			if len(parts) == 2 {
-				seed, _ = strconv.ParseInt(parts[0], 10, 64)
-				offset, _ = strconv.Atoi(parts[1])
-			}
+		var claims struct {
+			Seed   int64 `json:"seed"`
+			Offset int   `json:"offset"`
+			jwt.RegisteredClaims
 		}
-	} else {
-		seed = time.Now().UnixNano()
-		offset = 0
+		token, err := jwt.ParseWithClaims(cursor, &claims, func(t *jwt.Token) (interface{}, error) {
+			return s.jwtSecret, nil
+		})
+		if err == nil && token.Valid {
+			seed = claims.Seed
+			offset = claims.Offset
+		}
 	}
 
 	ctx := context.Background()
@@ -68,9 +70,18 @@ func (s *Service) GetRandomWords(count int, language, difficulty, cursor string)
 		words = append(words, w)
 	}
 
-	nextCursor := ""
+	var nextCursor string
 	if len(words) > 0 {
-		nextCursor = base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%d:%d", seed, offset+len(words))))
+		claims := jwt.MapClaims{
+			"seed":   seed,
+			"offset": offset + len(words),
+		}
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		signed, err := token.SignedString(s.jwtSecret)
+		if err != nil {
+			return nil, "", err
+		}
+		nextCursor = signed
 	}
 
 	return words, nextCursor, nil
