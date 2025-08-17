@@ -1,5 +1,3 @@
-export type Difficulty = 1 | 2 | 3 | 4 | 5 | 6;
-
 export interface Word {
   word_id: number;
   concept_id: string;
@@ -19,8 +17,7 @@ export interface Play {
   word_id: number;
   user_answer: string;
   is_correct: boolean;
-  response_time?: number;
-  earned_score: number;
+  score: number;
   played_at: string;
   session_tag: string;
 }
@@ -32,4 +29,13 @@ export interface HistoryPlay extends Omit<Play, 'word_id'> {
 export interface User {
   user_id: number;
   username: string;
+}
+
+export interface Level {
+  level_id: number;
+  code: string;
+  name: string;
+  description: string;
+  difficulty: string;
+  scoring_config: Record<string, unknown>;
 }

@@ -1,5 +1,14 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+INSERT INTO levels (code, name, description, difficulty, scoring_config)
+VALUES
+  ('1', 'Level 1', 'Correct answer +1 point. Incorrect answer does not deduct points.', 'easy', '{"target":5}'),
+  ('2', 'Level 2', 'Correct answer +1 point. Incorrect answer -1 point.', 'easy', '{"target":5}'),
+  ('3', 'Level 3', 'Correct answer +1 point. Incorrect answer -2 points.', 'medium', '{"target":5}'),
+  ('4', 'Level 4', 'Correct answer +1 point. Incorrect answer resets score to 0.', 'medium', '{"target":10}'),
+  ('5', 'Level 5', 'Correct answer +1 point. Incorrect answer deducts points equal to the current wrong streak.', 'hard', '{"target":10}'),
+  ('6', 'Level 6', 'Correct answer +1 point. Incorrect answer deducts points equal to the square of the current wrong streak.', 'hard', '{"target":10}');
+
 DO $$
 DECLARE
   cnt BIGINT;

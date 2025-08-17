@@ -3,34 +3,36 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-import type { Difficulty, Word, WordBatch } from '@/types';
+import type { Level, Word, WordBatch } from '@/types';
 import LevelSelector from '@/components/game/LevelSelector';
 import WordDisplay from '@/components/game/WordDisplay';
 import AnswerInput from '@/components/game/AnswerInput';
 import Feedback from '@/components/game/Feedback';
-import { fetchRandomWords, submitAnswer, createSession } from '@/lib/api';
+import { fetchRandomWords, submitAnswer, createSession, fetchLevels } from '@/lib/api';
 
 interface Props {
   userId: number;
 }
 
 export default function Game({ userId }: Props) {
-  const [level, setLevel] = useState<Difficulty | null>(null);
+  const [levels, setLevels] = useState<Level[]>([]);
+  const [level, setLevel] = useState<Level | null>(null);
   const [words, setWords] = useState<Word[]>([]);
   const [current, setCurrent] = useState<Word | null>(null);
   const [cursor, setCursor] = useState<string | null>(null);
   const [answer, setAnswer] = useState('');
   const [score, setScore] = useState(0);
-  const [wrongStreak, setWrongStreak] = useState(1);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | ''>('');
   const [feedbackAnswer, setFeedbackAnswer] = useState('');
   const [feedbackKey, setFeedbackKey] = useState(0);
   const [elapsed, setElapsed] = useState(0);
-  const [questionStart, setQuestionStart] = useState(0);
   const timerRef = useRef<number | null>(null);
   const navigate = useNavigate();
+  const [target, setTarget] = useState(0);
 
-  const target = level && level >= 4 ? 10 : 5;
+  useEffect(() => {
+    fetchLevels().then(setLevels).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (level) {
@@ -39,9 +41,10 @@ export default function Game({ userId }: Props) {
       timerRef.current = window.setInterval(() => {
         setElapsed(Date.now() - start);
       }, 10);
-      const diff = mapLevel(level);
-      createSession();
-      fetchRandomWords(20, 'en', diff).then((data: WordBatch) => {
+      const config = level.scoring_config as any;
+      setTarget((config && (config.target as number)) || 0);
+      createSession(userId, level.level_id);
+      fetchRandomWords(20, 'en', level.difficulty).then((data: WordBatch) => {
         setWords(data.words);
         setCursor(data.next_cursor);
       });
@@ -49,19 +52,13 @@ export default function Game({ userId }: Props) {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [level]);
+  }, [level, userId]);
 
   useEffect(() => {
     if (timerRef.current && score >= target) {
       clearInterval(timerRef.current);
     }
   }, [score, target]);
-
-  function mapLevel(l: Difficulty): string {
-    if (l <= 2) return 'easy';
-    if (l <= 4) return 'medium';
-    return 'hard';
-  }
 
   function nextWord() {
     setWords((prev) => prev.slice(1));
@@ -70,14 +67,12 @@ export default function Game({ userId }: Props) {
   useEffect(() => {
     if (words.length > 0) {
       setCurrent(words[0]);
-      setQuestionStart(Date.now());
     }
   }, [words]);
 
   useEffect(() => {
     if (level && cursor && words.length < 5) {
-      const diff = mapLevel(level);
-      fetchRandomWords(20, 'en', diff, cursor).then((data: WordBatch) => {
+      fetchRandomWords(20, 'en', level.difficulty, cursor).then((data: WordBatch) => {
         setWords((prev) => [...prev, ...data.words]);
         setCursor(data.next_cursor);
       });
@@ -92,15 +87,12 @@ export default function Game({ userId }: Props) {
       word_id: current.word_id,
       user_id: userId,
       language_code: 'vi',
-      response_time: Date.now() - questionStart,
       user_answer: answer,
-      earned_score: 1,
     });
+    setScore(res.total_score);
 
     if (res.is_correct) {
-      const newScore = score + 1;
-      setScore(newScore);
-      if (newScore >= target) {
+      if (res.total_score >= target) {
         setCurrent(null);
         setFeedback('');
       } else {
@@ -110,25 +102,6 @@ export default function Game({ userId }: Props) {
     } else {
       setFeedback('incorrect');
       setFeedbackAnswer(res.correct_answer);
-      setWrongStreak((s) => s + 1);
-      setScore((s) => {
-        switch (level) {
-          case 1:
-            return s;
-          case 2:
-            return s - 1;
-          case 3:
-            return s - 2;
-          case 4:
-            return 0;
-          case 5:
-            return s - wrongStreak;
-          case 6:
-            return s - wrongStreak * wrongStreak;
-          default:
-            return s;
-        }
-      });
       nextWord();
     }
 
@@ -138,6 +111,7 @@ export default function Game({ userId }: Props) {
 
   function handleReset() {
     setLevel(null);
+    setTarget(0);
     setScore(0);
     setAnswer('');
     setFeedback('');
@@ -148,7 +122,7 @@ export default function Game({ userId }: Props) {
   const finished = score >= target;
 
   if (!level) {
-    return <LevelSelector onSelectLevel={setLevel} />;
+    return <LevelSelector levels={levels} onSelectLevel={setLevel} />;
   }
 
   if (!current && !finished) {

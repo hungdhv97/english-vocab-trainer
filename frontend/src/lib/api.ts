@@ -1,4 +1,4 @@
-import type { WordBatch, HistoryPlay } from '@/types';
+import type { WordBatch, HistoryPlay, Level } from '@/types';
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || 'http://localhost:8180/api/v1';
@@ -59,9 +59,7 @@ export async function submitAnswer(data: {
   word_id: number;
   user_id: number;
   language_code: string;
-  response_time: number;
   user_answer: string;
-  earned_score: number;
 }) {
   const res = await fetch(`${API_BASE_URL}/answer`, {
     method: 'POST',
@@ -73,11 +71,19 @@ export async function submitAnswer(data: {
   return res.json();
 }
 
-export async function createSession() {
+export async function createSession(user_id: number, level_id: number) {
   const res = await fetch(`${API_BASE_URL}/session`, {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
+    body: JSON.stringify({ user_id, level_id }),
   });
   if (!res.ok) throw new Error('session failed');
+  return res.json();
+}
+
+export async function fetchLevels(): Promise<Level[]> {
+  const res = await fetch(`${API_BASE_URL}/levels`, { credentials: 'include' });
+  if (!res.ok) throw new Error('levels failed');
   return res.json();
 }

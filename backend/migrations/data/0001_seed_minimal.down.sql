@@ -1,5 +1,7 @@
 DROP EXTENSION IF EXISTS pgcrypto;
 
+DELETE FROM levels WHERE code IN ('1','2','3','4','5','6');
+
 DELETE FROM words
 WHERE language_code = 'en'
   AND word_text IN (
