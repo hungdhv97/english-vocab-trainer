@@ -62,6 +62,20 @@ paths:
       summary: Create a new session tag
       description: Sets an HttpOnly cookie named `session_tag` and returns its value.
       tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id, level_id]
+              properties:
+                user_id:
+                  type: integer
+                  format: int64
+                level_id:
+                  type: integer
+                  format: int64
       responses:
         '200':
           description: Session tag created
@@ -74,6 +88,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SessionResponse'
+
+  /levels:
+    get:
+      summary: List available levels
+      tags: [levels]
+      responses:
+        '200':
+          description: List of levels
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Level'
 
   /words/random:
     get:
@@ -210,9 +238,7 @@ components:
           type: string
         is_correct:
           type: boolean
-        response_time:
-          type: integer
-        earned_score:
+        score:
           type: integer
         played_at:
           type: string
@@ -234,9 +260,7 @@ components:
           type: string
         is_correct:
           type: boolean
-        response_time:
-          type: integer
-        earned_score:
+        score:
           type: integer
         played_at:
           type: string
@@ -253,9 +277,7 @@ components:
         - word_id
         - user_id
         - language_code
-        - response_time
         - user_answer
-        - earned_score
       properties:
         word_id:
           type: integer
@@ -266,12 +288,8 @@ components:
         language_code:
           type: string
           example: vi
-        response_time:
-          type: integer
         user_answer:
           type: string
-        earned_score:
-          type: integer
 
     AnswerResponse:
       type: object
@@ -280,6 +298,8 @@ components:
           type: string
         is_correct:
           type: boolean
+        total_score:
+          type: integer
 
     SessionResponse:
       type: object
@@ -287,3 +307,35 @@ components:
         session_tag:
           type: string
           format: uuid
+
+    Level:
+      type: object
+      properties:
+        level_id:
+          type: integer
+          format: int64
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        difficulty:
+          type: string
+        scoring_config:
+          type: object
+          properties:
+            target:
+              type: integer
+            correct_points:
+              type: integer
+            wrong_penalty:
+              type: integer
+            slow_penalty:
+              type: integer
+          required:
+            - target
+            - correct_points
+            - wrong_penalty
+            - slow_penalty
+          additionalProperties: false

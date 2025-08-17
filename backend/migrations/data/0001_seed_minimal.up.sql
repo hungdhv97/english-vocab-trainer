@@ -1,5 +1,14 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+INSERT INTO levels (code, name, description, difficulty, scoring_config)
+VALUES
+  ('1', 'Level 1', 'Correct answer +1 point. No penalties for wrong or slow answers.', 'easy', '{"target":5,"correct_points":1,"wrong_penalty":0,"slow_penalty":0}'),
+  ('2', 'Level 2', 'Correct answer +2 points. Incorrect or slow answer -1 point.', 'easy', '{"target":5,"correct_points":2,"wrong_penalty":1,"slow_penalty":1}'),
+  ('3', 'Level 3', 'Correct answer +3 points. Incorrect or slow answer -2 points.', 'medium', '{"target":5,"correct_points":3,"wrong_penalty":2,"slow_penalty":2}'),
+  ('4', 'Level 4', 'Correct answer +4 points. Incorrect or slow answer -3 points.', 'medium', '{"target":10,"correct_points":4,"wrong_penalty":3,"slow_penalty":3}'),
+  ('5', 'Level 5', 'Correct answer +5 points. Incorrect or slow answer -4 points.', 'hard', '{"target":10,"correct_points":5,"wrong_penalty":4,"slow_penalty":4}'),
+  ('6', 'Level 6', 'Correct answer +6 points. Incorrect or slow answer -5 points.', 'hard', '{"target":10,"correct_points":6,"wrong_penalty":5,"slow_penalty":5}');
+
 DO $$
 DECLARE
   cnt BIGINT;

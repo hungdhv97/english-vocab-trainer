@@ -4,9 +4,10 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/play"
-	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/user"
-	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/word"
+        "github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/level"
+        "github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/play"
+        "github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/user"
+        "github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/word"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/platform/deps"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/platform/middleware"
 )
@@ -17,9 +18,10 @@ func NewRouter(d *deps.Deps) *gin.Engine {
 	r.Use(middleware.Recovery(), middleware.Logger(d.Log), middleware.RequestID(), middleware.CORS(), middleware.Gzip())
 
 	api := r.Group("/api/v1")
-	user.RegisterRoutes(api, d)
-	word.RegisterRoutes(api, d)
-	play.RegisterRoutes(api, d)
+        user.RegisterRoutes(api, d)
+        word.RegisterRoutes(api, d)
+        level.RegisterRoutes(api, d)
+        play.RegisterRoutes(api, d)
 
 	r.GET("/openapi.yaml", func(c *gin.Context) { c.File("docs/openapi.yaml") })
 	r.GET("/docs", func(c *gin.Context) {

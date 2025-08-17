@@ -50,7 +50,7 @@ export default function History({ userId }: Props) {
       );
     const start = sorted.length ? new Date(sorted[0].played_at).getTime() : 0;
     return sorted.map((p) => {
-      total += p.earned_score;
+      total += p.score;
       return {
         time: ((new Date(p.played_at).getTime() - start) / 1000).toFixed(2),
         cumulative: total,
