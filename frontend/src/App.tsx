@@ -22,17 +22,28 @@ export default function App() {
         <Toaster position="top-center" />
         <Routes>
           <Route path="/login" element={<Login onLogin={handleLoggedIn} />} />
-          <Route path="/register" element={<Register onRegister={handleLoggedIn} />} />
+          <Route
+            path="/register"
+            element={<Register onRegister={handleLoggedIn} />}
+          />
           <Route
             path="/game"
             element={
-              userId !== null ? <Game userId={userId} /> : <Navigate to="/login" />
+              userId !== null ? (
+                <Game userId={userId} />
+              ) : (
+                <Navigate to="/login" />
+              )
             }
           />
           <Route
             path="/history"
             element={
-              userId !== null ? <History userId={userId} /> : <Navigate to="/login" />
+              userId !== null ? (
+                <History userId={userId} />
+              ) : (
+                <Navigate to="/login" />
+              )
             }
           />
           <Route path="/" element={<Navigate to="/login" />} />

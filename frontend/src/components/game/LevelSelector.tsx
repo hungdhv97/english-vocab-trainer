@@ -13,7 +13,10 @@ interface LevelSelectorProps {
   onSelectLevel: (level: Level) => void;
 }
 
-export default function LevelSelector({ levels, onSelectLevel }: LevelSelectorProps) {
+export default function LevelSelector({
+  levels,
+  onSelectLevel,
+}: LevelSelectorProps) {
   return (
     <div className="flex items-center justify-center h-screen">
       <Card className="w-full max-w-md text-center h-80 flex flex-col justify-center">
@@ -25,9 +28,7 @@ export default function LevelSelector({ levels, onSelectLevel }: LevelSelectorPr
             {levels.map((lvl) => (
               <Tooltip key={lvl.level_id}>
                 <TooltipTrigger asChild>
-                  <Button onClick={() => onSelectLevel(lvl)}>
-                    {lvl.name}
-                  </Button>
+                  <Button onClick={() => onSelectLevel(lvl)}>{lvl.name}</Button>
                 </TooltipTrigger>
                 <TooltipContent>{lvl.description}</TooltipContent>
               </Tooltip>

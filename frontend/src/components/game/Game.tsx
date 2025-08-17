@@ -8,7 +8,12 @@ import LevelSelector from '@/components/game/LevelSelector';
 import WordDisplay from '@/components/game/WordDisplay';
 import AnswerInput from '@/components/game/AnswerInput';
 import Feedback from '@/components/game/Feedback';
-import { fetchRandomWords, submitAnswer, createSession, fetchLevels } from '@/lib/api';
+import {
+  fetchRandomWords,
+  submitAnswer,
+  createSession,
+  fetchLevels,
+} from '@/lib/api';
 
 interface Props {
   userId: number;
@@ -31,7 +36,9 @@ export default function Game({ userId }: Props) {
   const [target, setTarget] = useState(0);
 
   useEffect(() => {
-    fetchLevels().then(setLevels).catch(() => {});
+    fetchLevels()
+      .then(setLevels)
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -41,8 +48,8 @@ export default function Game({ userId }: Props) {
       timerRef.current = window.setInterval(() => {
         setElapsed(Date.now() - start);
       }, 10);
-      const config = level.scoring_config as any;
-      setTarget((config && (config.target as number)) || 0);
+      const config = level.scoring_config;
+      setTarget(config.target || 0);
       createSession(userId, level.level_id);
       fetchRandomWords(20, 'en', level.difficulty).then((data: WordBatch) => {
         setWords(data.words);
@@ -72,10 +79,12 @@ export default function Game({ userId }: Props) {
 
   useEffect(() => {
     if (level && cursor && words.length < 5) {
-      fetchRandomWords(20, 'en', level.difficulty, cursor).then((data: WordBatch) => {
-        setWords((prev) => [...prev, ...data.words]);
-        setCursor(data.next_cursor);
-      });
+      fetchRandomWords(20, 'en', level.difficulty, cursor).then(
+        (data: WordBatch) => {
+          setWords((prev) => [...prev, ...data.words]);
+          setCursor(data.next_cursor);
+        },
+      );
     }
   }, [words, cursor, level]);
 
