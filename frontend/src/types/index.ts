@@ -19,9 +19,14 @@ export interface Play {
   word_id: number;
   user_answer: string;
   is_correct: boolean;
+  response_time?: number;
   earned_score: number;
   played_at: string;
   session_tag: string;
+}
+
+export interface HistoryPlay extends Omit<Play, 'word_id'> {
+  word: Word;
 }
 
 export interface User {

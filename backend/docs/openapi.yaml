@@ -129,7 +129,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Play'
+                  $ref: '#/components/schemas/HistoryEntry'
         '400':
           description: Invalid user id
 
@@ -220,6 +220,32 @@ components:
         session_tag:
           type: string
           format: uuid
+
+    HistoryEntry:
+      type: object
+      properties:
+        play_id:
+          type: integer
+          format: int64
+        user_id:
+          type: integer
+          format: int64
+        user_answer:
+          type: string
+        is_correct:
+          type: boolean
+        response_time:
+          type: integer
+        earned_score:
+          type: integer
+        played_at:
+          type: string
+          format: date-time
+        session_tag:
+          type: string
+          format: uuid
+        word:
+          $ref: '#/components/schemas/Word'
 
     AnswerRequest:
       type: object
