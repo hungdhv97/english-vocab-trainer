@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import Game from '@/Game';
-import Login from '@/Login';
-import Register from '@/Register';
-import History from '@/History';
+import Game from '@/components/game/Game';
+import Login from '@/components/auth/Login';
+import Register from '@/components/auth/Register';
+import History from '@/components/history/History';
 import { ModeToggle } from '@/components/mode-toggle';
 import { ThemeProvider } from '@/components/theme-provider';
 
