@@ -24,6 +24,7 @@ func Load() (*Config, error) {
 	v.SetDefault("redis.addr", "redis:6379")
 	v.SetDefault("redis.username", "default")
 	v.SetDefault("redis.password", "password")
+	v.SetDefault("cursor.secret", "changeme")
 
 	// config file
 	v.SetConfigName("config")

@@ -1,2 +1,4 @@
 http:
   addr: ":80"
+cursor:
+  secret: "changeme"

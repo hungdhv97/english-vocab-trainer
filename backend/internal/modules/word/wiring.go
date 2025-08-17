@@ -10,7 +10,7 @@ import (
 
 // RegisterRoutes wires word handlers to the router.
 func RegisterRoutes(r *gin.RouterGroup, d *deps.Deps) {
-	svc := service.New(d.PG, d.RDB)
+	svc := service.New(d.PG, d.RDB, d.Cfg.Cursor.Secret)
 	h := handler.New(svc)
 	r.GET("/words/random", h.RandomWords)
 }
