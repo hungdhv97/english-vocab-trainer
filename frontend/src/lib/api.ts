@@ -1,4 +1,4 @@
-import type { WordBatch } from '@/types';
+import type { WordBatch, HistoryPlay } from '@/types';
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || 'http://localhost:8180/api/v1';
@@ -31,7 +31,7 @@ export async function login(username: string, password: string) {
   return res.json();
 }
 
-export async function fetchHistory(userId: number) {
+export async function fetchHistory(userId: number): Promise<HistoryPlay[]> {
   const res = await fetch(`${API_BASE_URL}/history/${userId}`, {
     credentials: 'include',
   });

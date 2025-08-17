@@ -30,20 +30,20 @@ func (s *Service) RecordPlay(p model.Play) (model.Play, error) {
 }
 
 // GetHistory returns all plays for a user.
-func (s *Service) GetHistory(userID int64) ([]model.Play, error) {
+func (s *Service) GetHistory(userID int64) ([]model.HistoryEntry, error) {
 	ctx := context.Background()
-	rows, err := s.db.Query(ctx, `SELECT play_id, user_id, word_id, user_answer, is_correct, response_time, earned_score, played_at, session_tag FROM plays WHERE user_id=$1 ORDER BY played_at DESC`, userID)
+	rows, err := s.db.Query(ctx, `SELECT p.play_id, p.user_id, p.user_answer, p.is_correct, p.response_time, p.earned_score, p.played_at, p.session_tag, w.word_id, w.concept_id, w.language_code, w.word_text, w.difficulty, w.is_primary FROM plays p JOIN words w ON p.word_id = w.word_id WHERE p.user_id=$1 ORDER BY p.played_at DESC`, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var out []model.Play
+	var out []model.HistoryEntry
 	for rows.Next() {
-		var p model.Play
-		if err := rows.Scan(&p.ID, &p.UserID, &p.WordID, &p.UserAnswer, &p.IsCorrect, &p.ResponseTime, &p.EarnedScore, &p.PlayedAt, &p.SessionTag); err != nil {
+		var h model.HistoryEntry
+		if err := rows.Scan(&h.ID, &h.UserID, &h.UserAnswer, &h.IsCorrect, &h.ResponseTime, &h.EarnedScore, &h.PlayedAt, &h.SessionTag, &h.Word.ID, &h.Word.ConceptID, &h.Word.LanguageCode, &h.Word.WordText, &h.Word.Difficulty, &h.Word.IsPrimary); err != nil {
 			return nil, err
 		}
-		out = append(out, p)
+		out = append(out, h)
 	}
 	return out, nil
 }
