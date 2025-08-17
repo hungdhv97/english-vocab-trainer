@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -11,10 +12,9 @@ import { fetchRandomWords, submitAnswer, createSession } from '@/lib/api';
 
 interface Props {
   userId: number;
-  onShowHistory: () => void;
 }
 
-export default function Game({ userId, onShowHistory }: Props) {
+export default function Game({ userId }: Props) {
   const [level, setLevel] = useState<Difficulty | null>(null);
   const [words, setWords] = useState<Word[]>([]);
   const [current, setCurrent] = useState<Word | null>(null);
@@ -24,6 +24,7 @@ export default function Game({ userId, onShowHistory }: Props) {
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | ''>('');
   const [feedbackAnswer, setFeedbackAnswer] = useState('');
   const [feedbackKey, setFeedbackKey] = useState(0);
+  const navigate = useNavigate();
 
   const target = level && level >= 4 ? 10 : 5;
 
@@ -136,7 +137,7 @@ export default function Game({ userId, onShowHistory }: Props) {
           <ArrowLeft />
         </Button>
         <Button
-          onClick={onShowHistory}
+          onClick={() => navigate('/history')}
           variant="ghost"
           size="sm"
           className="absolute top-[10px] right-[10px]"
