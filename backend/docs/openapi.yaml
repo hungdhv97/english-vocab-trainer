@@ -126,15 +126,27 @@ paths:
           schema:
             type: string
             enum: [easy, medium, hard]
+        - in: query
+          name: cursor
+          required: false
+          description: Stateless cursor to avoid duplicate words in subsequent requests
+          schema:
+            type: string
       responses:
         '200':
-          description: List of random words
+          description: Random words and pagination cursor
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Word'
+                type: object
+                properties:
+                  words:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Word'
+                  next_cursor:
+                    type: string
+                    nullable: true
         '400':
           description: Invalid parameters
 
@@ -223,6 +235,8 @@ components:
         difficulty:
           type: string
           enum: [easy, medium, hard]
+        is_primary:
+          type: boolean
 
     Play:
       type: object
