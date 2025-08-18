@@ -108,7 +108,7 @@ func (s *Service) RecordPlay(p model.Play) (model.Play, int, error) {
 // GetHistory returns all plays for a user.
 func (s *Service) GetHistory(userID int64) ([]model.HistoryEntry, error) {
 	ctx := context.Background()
-	rows, err := s.db.Query(ctx, `SELECT p.play_id, p.user_id, p.user_answer, p.is_correct, p.score, p.target, p.played_at, p.session_tag, w.word_id, w.concept_id, w.language_code, w.word_text, w.difficulty, w.is_primary FROM plays p JOIN words w ON p.word_id = w.word_id WHERE p.user_id=$1 ORDER BY p.played_at DESC`, userID)
+	rows, err := s.db.Query(ctx, `SELECT p.play_id, p.user_id, p.user_answer, p.is_correct, p.score, p.target, p.played_at, p.session_tag, g.started_at, w.word_id, w.concept_id, w.language_code, w.word_text, w.difficulty, w.is_primary FROM plays p JOIN words w ON p.word_id = w.word_id JOIN game_sessions g ON p.session_tag = g.session_tag WHERE p.user_id=$1 ORDER BY p.played_at DESC`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func (s *Service) GetHistory(userID int64) ([]model.HistoryEntry, error) {
 	var out []model.HistoryEntry
 	for rows.Next() {
 		var h model.HistoryEntry
-		if err := rows.Scan(&h.ID, &h.UserID, &h.UserAnswer, &h.IsCorrect, &h.Score, &h.Target, &h.PlayedAt, &h.SessionTag, &h.Word.ID, &h.Word.ConceptID, &h.Word.LanguageCode, &h.Word.WordText, &h.Word.Difficulty, &h.Word.IsPrimary); err != nil {
+		if err := rows.Scan(&h.ID, &h.UserID, &h.UserAnswer, &h.IsCorrect, &h.Score, &h.Target, &h.PlayedAt, &h.Session.Tag, &h.Session.StartedAt, &h.Word.ID, &h.Word.ConceptID, &h.Word.LanguageCode, &h.Word.WordText, &h.Word.Difficulty, &h.Word.IsPrimary); err != nil {
 			return nil, err
 		}
 		out = append(out, h)

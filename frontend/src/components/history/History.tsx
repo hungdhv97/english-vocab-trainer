@@ -8,7 +8,7 @@ interface ChartDatum extends HistoryPlay {
   time: string;
   cumulative: number;
 }
-import { LineChart, Line, XAxis, YAxis } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import {
   ChartContainer,
   ChartTooltip,
@@ -29,7 +29,7 @@ export default function History({ userId }: Props) {
       .then((data: HistoryPlay[]) => {
         const grouped: Record<string, HistoryPlay[]> = {};
         for (const p of data) {
-          (grouped[p.session_tag] ||= []).push(p);
+          (grouped[p.session.session_tag] ||= []).push(p);
         }
         setSessions(grouped);
       })
@@ -48,7 +48,9 @@ export default function History({ userId }: Props) {
         (a, b) =>
           new Date(a.played_at).getTime() - new Date(b.played_at).getTime(),
       );
-    const start = sorted.length ? new Date(sorted[0].played_at).getTime() : 0;
+    const start = plays.length
+      ? new Date(plays[0].session.started_at ?? plays[0].played_at).getTime()
+      : 0;
     return sorted.map((p) => {
       total += p.score;
       return {
@@ -81,17 +83,18 @@ export default function History({ userId }: Props) {
               className="border p-2 rounded cursor-pointer hover:bg-accent"
               onClick={() => setSelected(tag)}
             >
-              Session {new Date(sPlays[0].played_at).toLocaleString()}
+              Session {new Date(sPlays[0].session.started_at).toLocaleString()}
             </li>
           ))}
         </ul>
       ) : (
         <div className="space-y-4">
           <h3 className="font-semibold">
-            Session {new Date(plays[0].played_at).toLocaleString()}
+            Session {new Date(plays[0].session.started_at).toLocaleString()}
           </h3>
           <ChartContainer config={chartConfig} className="w-full h-64">
             <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="time" />
               <YAxis />
               <ChartTooltip

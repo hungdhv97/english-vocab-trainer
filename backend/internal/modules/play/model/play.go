@@ -20,6 +20,12 @@ type Play struct {
 	SessionTag uuid.UUID `json:"session_tag"`
 }
 
+// SessionInfo holds metadata about a game session.
+type SessionInfo struct {
+	Tag       uuid.UUID `json:"session_tag"`
+	StartedAt time.Time `json:"started_at"`
+}
+
 // HistoryEntry represents a play joined with its word details for history views.
 type HistoryEntry struct {
 	ID         int64          `json:"play_id"`
@@ -30,5 +36,5 @@ type HistoryEntry struct {
 	Score      int            `json:"score"`
 	Target     int            `json:"target"`
 	PlayedAt   time.Time      `json:"played_at"`
-	SessionTag uuid.UUID      `json:"session_tag"`
+	Session    SessionInfo    `json:"session"`
 }
