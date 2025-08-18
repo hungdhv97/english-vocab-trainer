@@ -39,6 +39,12 @@ func (h *Handler) History(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	lang := c.DefaultQuery("language", "vi")
+	for i := range plays {
+		if ans, err := h.words.GetMeaning(plays[i].Word.ID, lang); err == nil {
+			plays[i].CorrectAnswer = ans
+		}
+	}
 	c.JSON(http.StatusOK, plays)
 }
 

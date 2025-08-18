@@ -148,7 +148,7 @@ export default function History({ userId }: Props) {
                               </div>
                               <div>Question: {datum.word?.word_text}</div>
                               {!datum.is_correct && (
-                                <div>Correct word: {datum.word?.word_text}</div>
+                                <div>Correct word: {datum.correct_answer}</div>
                               )}
                               <div>Your answer: {datum.user_answer}</div>
                               <div>Time: {datum.interval}s</div>
