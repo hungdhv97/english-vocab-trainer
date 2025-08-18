@@ -23,8 +23,14 @@ export interface Play {
   session_tag: string;
 }
 
-export interface HistoryPlay extends Omit<Play, 'word_id'> {
+export interface SessionInfo {
+  session_tag: string;
+  started_at: string;
+}
+
+export interface HistoryPlay extends Omit<Play, 'word_id' | 'session_tag'> {
   word: Word;
+  session: SessionInfo;
 }
 
 export interface User {
