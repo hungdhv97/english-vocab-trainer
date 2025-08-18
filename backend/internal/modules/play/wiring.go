@@ -17,4 +17,5 @@ func RegisterRoutes(r *gin.RouterGroup, d *deps.Deps) {
 	r.GET("/history/:userID", h.History)
 	r.POST("/answer", h.Answer)
 	r.POST("/session", h.Session)
+	r.POST("/finish", h.Finish)
 }
