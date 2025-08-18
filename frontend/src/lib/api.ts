@@ -82,6 +82,15 @@ export async function createSession(user_id: number, level_id: number) {
   return res.json();
 }
 
+export async function finishSession() {
+  const res = await fetch(`${API_BASE_URL}/finish`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+  if (!res.ok) throw new Error('finish failed');
+  return res.json();
+}
+
 export async function fetchLevels(): Promise<Level[]> {
   const res = await fetch(`${API_BASE_URL}/levels`, { credentials: 'include' });
   if (!res.ok) throw new Error('levels failed');

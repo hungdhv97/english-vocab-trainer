@@ -92,3 +92,10 @@ func (s *Service) CreateSession(userID, levelID int64) (uuid.UUID, error) {
 	}
 	return tag, nil
 }
+
+// FinishSession marks a game session as finished.
+func (s *Service) FinishSession(tag uuid.UUID) error {
+	ctx := context.Background()
+	_, err := s.db.Exec(ctx, `UPDATE game_sessions SET finished_at = NOW() WHERE session_tag=$1`, tag)
+	return err
+}

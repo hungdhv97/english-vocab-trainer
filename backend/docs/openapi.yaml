@@ -196,6 +196,27 @@ paths:
         '400':
           description: Invalid request (missing session_tag or bad input)
 
+  /finish:
+    post:
+      summary: Mark current session as finished
+      description: Requires the `session_tag` cookie set by POST /session.
+      tags: [game]
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Session marked as finished
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: finished
+        '400':
+          description: Missing or invalid session_tag
+
 components:
   securitySchemes:
     cookieAuth:

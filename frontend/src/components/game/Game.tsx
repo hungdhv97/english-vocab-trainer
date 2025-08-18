@@ -13,6 +13,7 @@ import {
   submitAnswer,
   createSession,
   fetchLevels,
+  finishSession,
 } from '@/lib/api';
 
 interface Props {
@@ -129,6 +130,12 @@ export default function Game({ userId }: Props) {
   }
 
   const finished = score >= target;
+
+  useEffect(() => {
+    if (finished) {
+      finishSession().catch(() => {});
+    }
+  }, [finished]);
 
   if (!level) {
     return <LevelSelector levels={levels} onSelectLevel={setLevel} />;
