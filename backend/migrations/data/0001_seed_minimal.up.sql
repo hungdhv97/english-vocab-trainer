@@ -2,12 +2,48 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 INSERT INTO levels (code, name, description, difficulty, scoring_config)
 VALUES
-  ('1', 'Level 1', 'Correct answer +1 point. No penalties for wrong or slow answers.', 'easy', '{"target":5,"correct_points":1,"wrong_penalty":0,"slow_penalty":0}'),
-  ('2', 'Level 2', 'Correct answer +2 points. Incorrect or slow answer -1 point.', 'easy', '{"target":5,"correct_points":2,"wrong_penalty":1,"slow_penalty":1}'),
-  ('3', 'Level 3', 'Correct answer +3 points. Incorrect or slow answer -2 points.', 'medium', '{"target":5,"correct_points":3,"wrong_penalty":2,"slow_penalty":2}'),
-  ('4', 'Level 4', 'Correct answer +4 points. Incorrect or slow answer -3 points.', 'medium', '{"target":10,"correct_points":4,"wrong_penalty":3,"slow_penalty":3}'),
-  ('5', 'Level 5', 'Correct answer +5 points. Incorrect or slow answer -4 points.', 'hard', '{"target":10,"correct_points":5,"wrong_penalty":4,"slow_penalty":4}'),
-  ('6', 'Level 6', 'Correct answer +6 points. Incorrect or slow answer -5 points.', 'hard', '{"target":10,"correct_points":6,"wrong_penalty":5,"slow_penalty":5}');
+  (
+    '1',
+    'Level 1',
+    'Correct answer +10 points. Wrong answer -5 points. Target unchanged when wrong.',
+    'easy',
+    '{"target":5,"target_rules":{"correct_bonus":1,"wrong_penalty":0,"mode":"number"},"score_rules":{"correct_points":10,"wrong_penalty":-5}}'
+  ),
+  (
+    '2',
+    'Level 2',
+    'Correct answer +20 points. Wrong answer -25 points. Target -1 when wrong.',
+    'easy',
+    '{"target":5,"target_rules":{"correct_bonus":1,"wrong_penalty":-1,"mode":"number"},"score_rules":{"correct_points":20,"wrong_penalty":-25}}'
+  ),
+  (
+    '3',
+    'Level 3',
+    'Correct answer +50 points. Wrong answer -125 points. Target -2 when wrong.',
+    'medium',
+    '{"target":5,"target_rules":{"correct_bonus":1,"wrong_penalty":2,"mode":"number"},"score_rules":{"correct_points":50,"wrong_penalty":-125}}'
+  ),
+  (
+    '4',
+    'Level 4',
+    'Correct answer +100 points. Wrong answer -110 points. Target penalty grows arithmetically when wrong.',
+    'medium',
+    '{"target":10,"target_rules":{"correct_bonus":1,"wrong_penalty":"arithmetic","mode":"formula"},"score_rules":{"correct_points":100,"wrong_penalty":-110}}'
+  ),
+  (
+    '5',
+    'Level 5',
+    'Correct answer +200 points. Wrong answer -220 points. Target penalty grows geometrically when wrong.',
+    'hard',
+    '{"target":10,"target_rules":{"correct_bonus":1,"wrong_penalty":"geometric","mode":"formula"},"score_rules":{"correct_points":200,"wrong_penalty":-220}}'
+  ),
+  (
+    '6',
+    'Level 6',
+    'Correct answer +500 points. Wrong answer -550 points. Target resets when wrong.',
+    'hard',
+    '{"target":10,"target_rules":{"correct_bonus":1,"wrong_penalty":"reset","mode":"formula"},"score_rules":{"correct_points":500,"wrong_penalty":-550}}'
+  );
 
 DO $$
 DECLARE

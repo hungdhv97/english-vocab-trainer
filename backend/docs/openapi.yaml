@@ -343,15 +343,36 @@ components:
           properties:
             target:
               type: integer
-            correct_points:
-              type: integer
-            wrong_penalty:
-              type: integer
-            slow_penalty:
-              type: integer
+            target_rules:
+              type: object
+              properties:
+                correct_bonus:
+                  type: integer
+                wrong_penalty:
+                  oneOf:
+                    - type: integer
+                    - type: string
+                mode:
+                  type: string
+                  enum: [number, formula]
+              required:
+                - correct_bonus
+                - wrong_penalty
+                - mode
+              additionalProperties: false
+            score_rules:
+              type: object
+              properties:
+                correct_points:
+                  type: integer
+                wrong_penalty:
+                  type: integer
+              required:
+                - correct_points
+                - wrong_penalty
+              additionalProperties: false
           required:
             - target
-            - correct_points
-            - wrong_penalty
-            - slow_penalty
+            - target_rules
+            - score_rules
           additionalProperties: false
