@@ -199,6 +199,8 @@ components:
           format: int64
         username:
           type: string
+        is_active:
+          type: boolean
         created_at:
           type: string
           format: date-time
