@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -34,8 +33,8 @@ export default function Game({ userId }: Props) {
   const [feedbackKey, setFeedbackKey] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const timerRef = useRef<number | null>(null);
-  const navigate = useNavigate();
   const [target, setTarget] = useState(0);
+  const [gameCompleted, setGameCompleted] = useState(false);
 
   useEffect(() => {
     fetchLevels()
@@ -110,6 +109,7 @@ export default function Game({ userId }: Props) {
       if (newTargetScore >= target) {
         setCurrent(null);
         setFeedback('');
+        setGameCompleted(true);
       } else {
         setFeedback('correct');
         nextWord();
@@ -133,21 +133,20 @@ export default function Game({ userId }: Props) {
     setFeedback('');
     setCurrent(null);
     setElapsed(0);
+    setGameCompleted(false);
   }
 
-  const finished = targetScore >= target;
-
   useEffect(() => {
-    if (finished) {
+    if (gameCompleted) {
       finishSession().catch(() => {});
     }
-  }, [finished]);
+  }, [gameCompleted]);
 
   if (!level) {
     return <LevelSelector levels={levels} onSelectLevel={setLevel} />;
   }
 
-  if (!current && !finished) {
+  if (!current && !gameCompleted) {
     return (
       <div className="flex items-center justify-center h-screen">
         <p>Loading...</p>
@@ -176,7 +175,7 @@ export default function Game({ userId }: Props) {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {finished ? (
+          {gameCompleted ? (
             <p>Finished!</p>
           ) : (
             <>
