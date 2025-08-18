@@ -34,6 +34,10 @@ func (d *DeepLTranslator) Translate(text, sourceLang, targetLang string) (string
 		return "", errors.New("text cannot be empty")
 	}
 
+	if d.client == nil {
+		return "", errors.New("DeepL client is not initialized")
+	}
+
 	// Convert language codes to DeepL format if needed
 	sourceLangCode := convertToDeepLLangCode(sourceLang)
 	targetLangCode := convertToDeepLLangCode(targetLang)

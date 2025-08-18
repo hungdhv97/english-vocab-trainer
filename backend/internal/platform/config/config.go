@@ -38,7 +38,7 @@ type CursorConfig struct {
 
 // DeepLConfig holds DeepL API settings.
 type DeepLConfig struct {
-	APIKey string `mapstructure:"api_key"`
+	APIKey string `mapstructure:"apikey"`
 }
 
 // JobsConfig holds cron job settings.

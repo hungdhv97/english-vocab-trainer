@@ -25,6 +25,7 @@ func Load() (*Config, error) {
 	v.SetDefault("redis.username", "default")
 	v.SetDefault("redis.password", "password")
 	v.SetDefault("cursor.secret", "changeme")
+	v.SetDefault("deepl.apikey", "")
 
 	// jobs defaults
 	v.SetDefault("jobs.translate_missing.enabled", true)

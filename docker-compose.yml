@@ -20,8 +20,10 @@ services:
     env_file:
       - .env
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - ./backend:/app
 
@@ -36,6 +38,12 @@ services:
     volumes:
       - postgres_data:/bitnami/postgresql
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d vocab -h localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   redis:
     image: bitnami/redis:latest
@@ -45,6 +53,12 @@ services:
       REDIS_PASSWORD: password
     volumes:
       - redis_data:/bitnami/redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 volumes:
   postgres_data:
