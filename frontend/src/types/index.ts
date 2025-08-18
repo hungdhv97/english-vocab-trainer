@@ -18,6 +18,7 @@ export interface Play {
   user_answer: string;
   is_correct: boolean;
   score: number;
+  target: number;
   played_at: string;
   session_tag: string;
 }

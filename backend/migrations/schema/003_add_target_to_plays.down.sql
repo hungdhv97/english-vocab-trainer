@@ -1,0 +1,1 @@
+ALTER TABLE plays DROP COLUMN IF EXISTS target;

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"math"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -20,7 +21,7 @@ func New(db *pgxpool.Pool) *Service {
 	return &Service{db: db}
 }
 
-// RecordPlay stores a play result and updates session score.
+// RecordPlay stores a play result and updates session target and score totals.
 func (s *Service) RecordPlay(p model.Play) (model.Play, int, error) {
 	ctx := context.Background()
 	tx, err := s.db.Begin(ctx)
@@ -35,6 +36,11 @@ func (s *Service) RecordPlay(p model.Play) (model.Play, int, error) {
 	}
 
 	var cfg struct {
+		TargetRules struct {
+			CorrectBonus int         `json:"correct_bonus"`
+			WrongPenalty interface{} `json:"wrong_penalty"`
+			Mode         string      `json:"mode"`
+		} `json:"target_rules"`
 		ScoreRules struct {
 			CorrectPoints int `json:"correct_points"`
 			WrongPenalty  int `json:"wrong_penalty"`
@@ -44,18 +50,53 @@ func (s *Service) RecordPlay(p model.Play) (model.Play, int, error) {
 		return model.Play{}, 0, err
 	}
 
+	// compute score delta
 	if p.IsCorrect {
 		p.Score = cfg.ScoreRules.CorrectPoints
 	} else {
 		p.Score = cfg.ScoreRules.WrongPenalty
 	}
 
-	err = tx.QueryRow(ctx, `INSERT INTO plays (user_id, word_id, session_tag, user_answer, is_correct, score) VALUES ($1,$2,$3,$4,$5,$6) RETURNING play_id, played_at`, p.UserID, p.WordID, p.SessionTag, p.UserAnswer, p.IsCorrect, p.Score).Scan(&p.ID, &p.PlayedAt)
+	// fetch current target and wrong counts for target calculation
+	var currentTarget, wrongCount int
+	if err := tx.QueryRow(ctx, `SELECT total_score FROM game_sessions WHERE session_tag=$1`, p.SessionTag).Scan(&currentTarget); err != nil {
+		return model.Play{}, 0, err
+	}
+	if err := tx.QueryRow(ctx, `SELECT COUNT(*) FROM plays WHERE session_tag=$1 AND is_correct=false`, p.SessionTag).Scan(&wrongCount); err != nil {
+		return model.Play{}, 0, err
+	}
+
+	if p.IsCorrect {
+		p.Target = cfg.TargetRules.CorrectBonus
+	} else {
+		switch cfg.TargetRules.Mode {
+		case "number":
+			switch v := cfg.TargetRules.WrongPenalty.(type) {
+			case float64:
+				p.Target = int(v)
+			case int:
+				p.Target = v
+			}
+		case "formula":
+			if s, ok := cfg.TargetRules.WrongPenalty.(string); ok {
+				switch s {
+				case "arithmetic":
+					p.Target = -(wrongCount + 1)
+				case "geometric":
+					p.Target = -int(math.Pow(2, float64(wrongCount)))
+				case "reset":
+					p.Target = -currentTarget
+				}
+			}
+		}
+	}
+
+	err = tx.QueryRow(ctx, `INSERT INTO plays (user_id, word_id, session_tag, user_answer, is_correct, score, target) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING play_id, played_at`, p.UserID, p.WordID, p.SessionTag, p.UserAnswer, p.IsCorrect, p.Score, p.Target).Scan(&p.ID, &p.PlayedAt)
 	if err != nil {
 		return model.Play{}, 0, err
 	}
 	var total int
-	if err := tx.QueryRow(ctx, `UPDATE game_sessions SET total_score = total_score + $1 WHERE session_tag=$2 RETURNING total_score`, p.Score, p.SessionTag).Scan(&total); err != nil {
+	if err := tx.QueryRow(ctx, `UPDATE game_sessions SET total_score = total_score + $1 WHERE session_tag=$2 RETURNING total_score`, p.Target, p.SessionTag).Scan(&total); err != nil {
 		return model.Play{}, 0, err
 	}
 	if err := tx.Commit(ctx); err != nil {
@@ -67,7 +108,7 @@ func (s *Service) RecordPlay(p model.Play) (model.Play, int, error) {
 // GetHistory returns all plays for a user.
 func (s *Service) GetHistory(userID int64) ([]model.HistoryEntry, error) {
 	ctx := context.Background()
-	rows, err := s.db.Query(ctx, `SELECT p.play_id, p.user_id, p.user_answer, p.is_correct, p.score, p.played_at, p.session_tag, w.word_id, w.concept_id, w.language_code, w.word_text, w.difficulty, w.is_primary FROM plays p JOIN words w ON p.word_id = w.word_id WHERE p.user_id=$1 ORDER BY p.played_at DESC`, userID)
+	rows, err := s.db.Query(ctx, `SELECT p.play_id, p.user_id, p.user_answer, p.is_correct, p.score, p.target, p.played_at, p.session_tag, w.word_id, w.concept_id, w.language_code, w.word_text, w.difficulty, w.is_primary FROM plays p JOIN words w ON p.word_id = w.word_id WHERE p.user_id=$1 ORDER BY p.played_at DESC`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +116,7 @@ func (s *Service) GetHistory(userID int64) ([]model.HistoryEntry, error) {
 	var out []model.HistoryEntry
 	for rows.Next() {
 		var h model.HistoryEntry
-		if err := rows.Scan(&h.ID, &h.UserID, &h.UserAnswer, &h.IsCorrect, &h.Score, &h.PlayedAt, &h.SessionTag, &h.Word.ID, &h.Word.ConceptID, &h.Word.LanguageCode, &h.Word.WordText, &h.Word.Difficulty, &h.Word.IsPrimary); err != nil {
+		if err := rows.Scan(&h.ID, &h.UserID, &h.UserAnswer, &h.IsCorrect, &h.Score, &h.Target, &h.PlayedAt, &h.SessionTag, &h.Word.ID, &h.Word.ConceptID, &h.Word.LanguageCode, &h.Word.WordText, &h.Word.Difficulty, &h.Word.IsPrimary); err != nil {
 			return nil, err
 		}
 		out = append(out, h)
