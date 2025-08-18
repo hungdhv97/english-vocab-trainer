@@ -115,7 +115,8 @@ export default function History({ userId }: Props) {
                 const started = sess
                   ? new Date(sess.started_at).toLocaleString()
                   : '';
-                const status = sess?.finished_at
+                const isCompleted = !!sess?.finished_at;
+                const status = isCompleted && sess.finished_at
                   ? `Finished at ${new Date(sess.finished_at).toLocaleString()}`
                   : 'In progress';
                 const isSelected = selected === tag;
@@ -124,18 +125,44 @@ export default function History({ userId }: Props) {
                   <div
                     key={tag}
                     className={[
-                      'border p-3 rounded-lg cursor-pointer transition-all duration-200',
+                      'border p-3 rounded-lg cursor-pointer transition-all duration-200 relative',
                       isSelected
-                        ? 'bg-accent border-primary shadow-sm'
-                        : 'hover:bg-accent hover:shadow-sm',
+                        ? isCompleted
+                          ? 'bg-green-50 border-green-500 shadow-sm dark:bg-green-950 dark:border-green-400'
+                          : 'bg-amber-50 border-amber-500 shadow-sm dark:bg-amber-950 dark:border-amber-400'
+                        : isCompleted
+                          ? 'border-green-200 hover:bg-green-50 hover:border-green-300 hover:shadow-sm dark:border-green-800 dark:hover:bg-green-950'
+                          : 'border-amber-200 hover:bg-amber-50 hover:border-amber-300 hover:shadow-sm dark:border-amber-800 dark:hover:bg-amber-950',
                     ].join(' ')}
                     onClick={() => setSelected(tag)}
                   >
-                    <div className="font-medium text-sm">Session {started}</div>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={[
+                          'w-3 h-3 rounded-full',
+                          isCompleted
+                            ? 'bg-green-500 dark:bg-green-400'
+                            : 'bg-amber-500 dark:bg-amber-400',
+                        ].join(' ')}
+                      />
+                      <div className="font-medium text-sm">Session {started}</div>
+                    </div>
                     <div className="text-xs text-muted-foreground mt-1">
                       Level {sess?.level_id} • Score {sess?.total_score}
                     </div>
-                    <div className="text-xs text-muted-foreground">
+                    <div
+                      className={[
+                        'text-xs mt-1 flex items-center gap-1',
+                        isCompleted
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-amber-600 dark:text-amber-400',
+                      ].join(' ')}
+                    >
+                      {isCompleted ? (
+                        <span className="text-xs">✓</span>
+                      ) : (
+                        <span className="text-xs animate-pulse">●</span>
+                      )}
                       {status}
                     </div>
                   </div>
