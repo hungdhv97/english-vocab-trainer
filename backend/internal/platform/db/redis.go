@@ -11,10 +11,10 @@ import (
 func NewRedisClient(cfg *config.Config) (*redis.Client, error) {
 	r := cfg.Redis
 	client := redis.NewClient(&redis.Options{
-		Addr: r.Addr,
+		Addr:     r.Addr,
 		Username: r.Username,
 		Password: r.Password,
-		DB:   0,
+		DB:       0,
 	})
 	if err := client.Ping(context.Background()).Err(); err != nil {
 		return nil, err
