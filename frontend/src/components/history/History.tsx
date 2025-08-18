@@ -7,7 +7,9 @@ import {
   SidebarProvider,
   Sidebar,
   SidebarContent,
-  SidebarInset, SidebarHeader, SidebarTrigger,
+  SidebarInset,
+  SidebarHeader,
+  SidebarTrigger,
 } from '@/components/ui/sidebar';
 
 interface ChartDatum extends Partial<HistoryPlay> {
@@ -116,9 +118,10 @@ export default function History({ userId }: Props) {
                   ? new Date(sess.started_at).toLocaleString()
                   : '';
                 const isCompleted = !!sess?.finished_at;
-                const status = isCompleted && sess.finished_at
-                  ? `Finished at ${new Date(sess.finished_at).toLocaleString()}`
-                  : 'In progress';
+                const status =
+                  isCompleted && sess.finished_at
+                    ? `Finished at ${new Date(sess.finished_at).toLocaleString()}`
+                    : 'In progress';
                 const isSelected = selected === tag;
 
                 return (
@@ -145,7 +148,9 @@ export default function History({ userId }: Props) {
                             : 'bg-amber-500 dark:bg-amber-400',
                         ].join(' ')}
                       />
-                      <div className="font-medium text-sm">Session {started}</div>
+                      <div className="font-medium text-sm">
+                        Session {started}
+                      </div>
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
                       Level {sess?.level_id} • Score {sess?.total_score}
@@ -181,10 +186,12 @@ export default function History({ userId }: Props) {
             <div className="space-y-6">
               <div className="border-b pb-4">
                 <h3 className="text-xl font-semibold">
-                  Session {new Date(plays[0].session.started_at).toLocaleString()}
+                  Session{' '}
+                  {new Date(plays[0].session.started_at).toLocaleString()}
                 </h3>
                 <div className="text-sm text-muted-foreground mt-2">
-                  Level {plays[0].session.level_id} • Total score {plays[0].session.total_score} •{' '}
+                  Level {plays[0].session.level_id} • Total score{' '}
+                  {plays[0].session.total_score} •{' '}
                   {plays[0].session.finished_at
                     ? `Finished at ${new Date(plays[0].session.finished_at).toLocaleString()}`
                     : 'In progress'}
@@ -219,10 +226,14 @@ export default function History({ userId }: Props) {
                               }
                               return (
                                 <div className="space-y-1">
-                                  <div>{datum.is_correct ? 'Correct' : 'Incorrect'}</div>
+                                  <div>
+                                    {datum.is_correct ? 'Correct' : 'Incorrect'}
+                                  </div>
                                   <div>Question: {datum.word?.word_text}</div>
                                   {!datum.is_correct && (
-                                    <div>Correct word: {datum.correct_answer}</div>
+                                    <div>
+                                      Correct word: {datum.correct_answer}
+                                    </div>
                                   )}
                                   <div>Your answer: {datum.user_answer}</div>
                                   <div>Time: {datum.interval}s</div>
@@ -263,7 +274,9 @@ export default function History({ userId }: Props) {
             <div className="flex-1 flex items-center justify-center text-muted-foreground">
               <div className="text-center">
                 <div className="text-lg mb-2">No Session Selected</div>
-                <div className="text-sm">Choose a session from the sidebar to view details</div>
+                <div className="text-sm">
+                  Choose a session from the sidebar to view details
+                </div>
               </div>
             </div>
           )}

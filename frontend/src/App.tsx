@@ -66,9 +66,11 @@ export default function App() {
           <Route
             path="/"
             element={
-              userId !== null ?
-                <Navigate to="/dashboard" /> :
+              userId !== null ? (
+                <Navigate to="/dashboard" />
+              ) : (
                 <Navigate to="/login" />
+              )
             }
           />
           <Route path="*" element={<Navigate to="/login" />} />
