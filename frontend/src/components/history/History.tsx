@@ -3,6 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { fetchHistory } from '@/lib/api';
 import type { HistoryPlay } from '@/types';
+import {
+  SidebarProvider,
+  Sidebar,
+  SidebarContent,
+  SidebarInset, SidebarHeader, SidebarTrigger,
+} from '@/components/ui/sidebar';
 
 interface ChartDatum extends Partial<HistoryPlay> {
   time: string;
@@ -91,56 +97,73 @@ export default function History({ userId }: Props) {
   } as const;
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <Button onClick={() => navigate('/game')}>Back</Button>
-      </div>
+    <SidebarProvider defaultOpen={true}>
+      <div className="flex min-h-screen w-full">
+        <Sidebar collapsible="icon">
+          <SidebarHeader className="border-b">
+            <div className="flex items-center justify-between p-4">
+              <h2 className="text-lg font-semibold">Game Sessions</h2>
+              <Button onClick={() => navigate('/game')} size="sm">
+                Back
+              </Button>
+            </div>
+          </SidebarHeader>
+          <SidebarContent className="p-2">
+            <div className="space-y-2">
+              {Object.entries(sessions).map(([tag, sPlays]) => {
+                const sess = sPlays[0]?.session;
+                const started = sess
+                  ? new Date(sess.started_at).toLocaleString()
+                  : '';
+                const status = sess?.finished_at
+                  ? `Finished at ${new Date(sess.finished_at).toLocaleString()}`
+                  : 'In progress';
+                const isSelected = selected === tag;
 
-      <div className="flex gap-4">
-        <aside className="w-72 shrink-0 border rounded p-2 h-[70vh] overflow-y-auto">
-          <ul className="space-y-2">
-            {Object.entries(sessions).map(([tag, sPlays]) => {
-              const sess = sPlays[0]?.session;
-              const started = sess
-                ? new Date(sess.started_at).toLocaleString()
-                : '';
-              const status = sess?.finished_at
-                ? `Finished at ${new Date(sess.finished_at).toLocaleString()}`
-                : 'In progress';
-              const isSelected = selected === tag;
-
-              return (
-                <li
-                  key={tag}
-                  className={[
-                    'border p-2 rounded cursor-pointer transition-colors',
-                    isSelected ? 'bg-accent' : 'hover:bg-accent',
-                  ].join(' ')}
-                  onClick={() => setSelected(tag)}
-                >
-                  <div className="font-medium">Session {started}</div>
-                  <div className="text-sm text-muted-foreground">
-                    Level {sess?.level_id} • Total score {sess?.total_score} • {status}
+                return (
+                  <div
+                    key={tag}
+                    className={[
+                      'border p-3 rounded-lg cursor-pointer transition-all duration-200',
+                      isSelected
+                        ? 'bg-accent border-primary shadow-sm'
+                        : 'hover:bg-accent hover:shadow-sm',
+                    ].join(' ')}
+                    onClick={() => setSelected(tag)}
+                  >
+                    <div className="font-medium text-sm">Session {started}</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Level {sess?.level_id} • Score {sess?.total_score}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {status}
+                    </div>
                   </div>
-                </li>
-              );
-            })}
-          </ul>
-        </aside>
+                );
+              })}
+            </div>
+          </SidebarContent>
+        </Sidebar>
 
-        <section className="flex-1 min-w-0">
+        <SidebarInset className="p-6">
+          <div className="flex items-center gap-2 mb-4 md:hidden">
+            <SidebarTrigger />
+            <h2 className="text-lg font-semibold">Game History</h2>
+          </div>
           {selected && plays.length ? (
-            <div className="space-y-4">
-              <h3 className="font-semibold">
-                Session {new Date(plays[0].session.started_at).toLocaleString()}
-              </h3>
-              <div className="text-sm text-muted-foreground">
-                Level {plays[0].session.level_id} • Total score {plays[0].session.total_score} •{' '}
-                {plays[0].session.finished_at
-                  ? `Finished at ${new Date(plays[0].session.finished_at).toLocaleString()}`
-                  : 'In progress'}
+            <div className="space-y-6">
+              <div className="border-b pb-4">
+                <h3 className="text-xl font-semibold">
+                  Session {new Date(plays[0].session.started_at).toLocaleString()}
+                </h3>
+                <div className="text-sm text-muted-foreground mt-2">
+                  Level {plays[0].session.level_id} • Total score {plays[0].session.total_score} •{' '}
+                  {plays[0].session.finished_at
+                    ? `Finished at ${new Date(plays[0].session.finished_at).toLocaleString()}`
+                    : 'In progress'}
+                </div>
               </div>
-              <ChartContainer config={chartConfig} className="w-full h-64">
+              <ChartContainer config={chartConfig} className="w-full h-80">
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="time" />
@@ -210,12 +233,15 @@ export default function History({ userId }: Props) {
               </ChartContainer>
             </div>
           ) : (
-            <div className="h-[70vh] flex items-center justify-center text-muted-foreground border rounded">
-              Select a session to view details
+            <div className="flex-1 flex items-center justify-center text-muted-foreground">
+              <div className="text-center">
+                <div className="text-lg mb-2">No Session Selected</div>
+                <div className="text-sm">Choose a session from the sidebar to view details</div>
+              </div>
             </div>
           )}
-        </section>
+        </SidebarInset>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
