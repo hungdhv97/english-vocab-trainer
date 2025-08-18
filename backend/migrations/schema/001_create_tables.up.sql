@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS plays (
   user_answer   VARCHAR(255)  NOT NULL,
   is_correct    BOOLEAN       NOT NULL,
   score         INT           NOT NULL,
+  target        INT           NOT NULL DEFAULT 0,
   played_at     TIMESTAMP     NOT NULL DEFAULT NOW()
 );
 
