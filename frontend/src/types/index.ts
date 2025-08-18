@@ -21,6 +21,7 @@ export interface Play {
   target: number;
   played_at: string;
   session_tag: string;
+  correct_answer: string;
 }
 
 export interface SessionInfo {
