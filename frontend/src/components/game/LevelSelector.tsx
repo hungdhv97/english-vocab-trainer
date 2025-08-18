@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -6,6 +7,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { ArrowLeft } from 'lucide-react';
 import type { Level } from '@/types';
 
 interface LevelSelectorProps {
@@ -17,9 +19,19 @@ export default function LevelSelector({
   levels,
   onSelectLevel,
 }: LevelSelectorProps) {
+  const navigate = useNavigate();
+
   return (
     <div className="flex items-center justify-center h-screen">
-      <Card className="w-full max-w-md text-center h-80 flex flex-col justify-center">
+      <Card className="w-full max-w-md text-center h-80 flex flex-col justify-center relative">
+        <Button
+          onClick={() => navigate('/dashboard')}
+          variant="ghost"
+          size="icon"
+          className="absolute top-[10px] left-[10px]"
+        >
+          <ArrowLeft />
+        </Button>
         <CardHeader>
           <CardTitle className="text-2xl">Select level</CardTitle>
         </CardHeader>

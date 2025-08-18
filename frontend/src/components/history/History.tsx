@@ -103,7 +103,7 @@ export default function History({ userId }: Props) {
           <SidebarHeader className="border-b">
             <div className="flex items-center justify-between p-4">
               <h2 className="text-lg font-semibold">Game Sessions</h2>
-              <Button onClick={() => navigate('/game')} size="sm">
+              <Button onClick={() => navigate('/dashboard')} size="sm">
                 Back
               </Button>
             </div>

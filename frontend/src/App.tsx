@@ -5,6 +5,7 @@ import Game from '@/components/game/Game';
 import Login from '@/components/auth/Login';
 import Register from '@/components/auth/Register';
 import History from '@/components/history/History';
+import Dashboard from '@/components/Dashboard';
 import { ModeToggle } from '@/components/mode-toggle';
 import { ThemeProvider } from '@/components/theme-provider';
 
@@ -15,16 +16,32 @@ export default function App() {
     setUserId(id);
   }
 
+  function handleLogout() {
+    setUserId(null);
+  }
+
   return (
     <BrowserRouter>
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        <ModeToggle />
+        <div className="fixed top-4 right-4 z-[9999]">
+          <ModeToggle />
+        </div>
         <Toaster position="top-center" />
         <Routes>
           <Route path="/login" element={<Login onLogin={handleLoggedIn} />} />
           <Route
             path="/register"
             element={<Register onRegister={handleLoggedIn} />}
+          />
+          <Route
+            path="/dashboard"
+            element={
+              userId !== null ? (
+                <Dashboard onLogout={handleLogout} />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
           />
           <Route
             path="/game"
@@ -46,7 +63,14 @@ export default function App() {
               )
             }
           />
-          <Route path="/" element={<Navigate to="/login" />} />
+          <Route
+            path="/"
+            element={
+              userId !== null ?
+                <Navigate to="/dashboard" /> :
+                <Navigate to="/login" />
+            }
+          />
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
       </ThemeProvider>

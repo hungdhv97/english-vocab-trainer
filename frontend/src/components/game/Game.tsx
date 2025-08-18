@@ -166,14 +166,6 @@ export default function Game({ userId }: Props) {
         >
           <ArrowLeft />
         </Button>
-        <Button
-          onClick={() => navigate('/history')}
-          variant="ghost"
-          size="sm"
-          className="absolute top-[10px] right-[10px]"
-        >
-          History
-        </Button>
         <CardHeader>
           <CardTitle>Score: {score}</CardTitle>
           <div className="text-sm">
