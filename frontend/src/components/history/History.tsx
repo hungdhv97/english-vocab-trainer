@@ -92,118 +92,130 @@ export default function History({ userId }: Props) {
 
   return (
     <div className="p-4 space-y-4">
-      <Button
-        onClick={() => (selected ? setSelected(null) : navigate('/game'))}
-      >
-        Back
-      </Button>
-      {!selected ? (
-        <ul className="space-y-2">
-          {Object.entries(sessions).map(([tag, sPlays]) => {
-            const sess = sPlays[0]?.session;
-            const started = sess ? new Date(sess.started_at).toLocaleString() : '';
-            const status = sess?.finished_at
-              ? `Finished at ${new Date(sess.finished_at).toLocaleString()}`
-              : 'In progress';
-            return (
-              <li
-                key={tag}
-                className="border p-2 rounded cursor-pointer hover:bg-accent"
-                onClick={() => setSelected(tag)}
-              >
-                <div className="font-medium">
-                  Session {started}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Level {sess?.level_id} • Total score {sess?.total_score} • {status}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      ) : (
-        <div className="space-y-4">
-          <h3 className="font-semibold">
-            Session {new Date(plays[0].session.started_at).toLocaleString()}
-          </h3>
-          <div className="text-sm text-muted-foreground">
-            Level {plays[0].session.level_id} • Total score {plays[0].session.total_score} •{' '}
-            {plays[0].session.finished_at
-              ? `Finished at ${new Date(plays[0].session.finished_at).toLocaleString()}`
-              : 'In progress'}
-          </div>
-          <ChartContainer config={chartConfig} className="w-full h-64">
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="time" />
-              <YAxis />
-              <ChartTooltip
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    const d = payload[0].payload as ChartDatum;
-                    return (
-                      <ChartTooltipContent
-                        active={active}
-                        payload={payload}
-                        hideLabel
-                        hideIndicator
-                        className={
-                          d.isStart
-                            ? undefined
-                            : d.is_correct
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
-                              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
-                        }
-                        formatter={(_value, _name, item) => {
-                          const datum = item.payload as ChartDatum;
-                          if (datum.isStart) {
-                            return <div>Session start</div>;
-                          }
-                          return (
-                            <div className="space-y-1">
-                              <div>
-                                {datum.is_correct ? 'Correct' : 'Incorrect'}
-                              </div>
-                              <div>Question: {datum.word?.word_text}</div>
-                              {!datum.is_correct && (
-                                <div>Correct word: {datum.correct_answer}</div>
-                              )}
-                              <div>Your answer: {datum.user_answer}</div>
-                              <div>Time: {datum.interval}s</div>
-                              <div>Score: {datum.delta}</div>
-                            </div>
-                          );
-                        }}
-                      />
-                    );
-                  }
-                  return null;
-                }}
-              />
-              <Line
-                type="monotone"
-                dataKey="cumulative"
-                stroke="var(--color-cumulative)"
-                dot={({ cx, cy, payload }) => (
-                  <circle
-                    cx={cx}
-                    cy={cy}
-                    r={3}
-                    stroke="none"
-                    fill={
-                      payload.isStart
-                        ? '#000'
-                        : payload.is_correct
-                          ? '#16a34a'
-                          : '#dc2626'
-                    }
+      <div className="flex items-center justify-between">
+        <Button onClick={() => navigate('/game')}>Back</Button>
+      </div>
+
+      <div className="flex gap-4">
+        <aside className="w-72 shrink-0 border rounded p-2 h-[70vh] overflow-y-auto">
+          <ul className="space-y-2">
+            {Object.entries(sessions).map(([tag, sPlays]) => {
+              const sess = sPlays[0]?.session;
+              const started = sess
+                ? new Date(sess.started_at).toLocaleString()
+                : '';
+              const status = sess?.finished_at
+                ? `Finished at ${new Date(sess.finished_at).toLocaleString()}`
+                : 'In progress';
+              const isSelected = selected === tag;
+
+              return (
+                <li
+                  key={tag}
+                  className={[
+                    'border p-2 rounded cursor-pointer transition-colors',
+                    isSelected ? 'bg-accent' : 'hover:bg-accent',
+                  ].join(' ')}
+                  onClick={() => setSelected(tag)}
+                >
+                  <div className="font-medium">Session {started}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Level {sess?.level_id} • Total score {sess?.total_score} • {status}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </aside>
+
+        <section className="flex-1 min-w-0">
+          {selected && plays.length ? (
+            <div className="space-y-4">
+              <h3 className="font-semibold">
+                Session {new Date(plays[0].session.started_at).toLocaleString()}
+              </h3>
+              <div className="text-sm text-muted-foreground">
+                Level {plays[0].session.level_id} • Total score {plays[0].session.total_score} •{' '}
+                {plays[0].session.finished_at
+                  ? `Finished at ${new Date(plays[0].session.finished_at).toLocaleString()}`
+                  : 'In progress'}
+              </div>
+              <ChartContainer config={chartConfig} className="w-full h-64">
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="time" />
+                  <YAxis />
+                  <ChartTooltip
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const d = payload[0].payload as ChartDatum;
+                        return (
+                          <ChartTooltipContent
+                            active={active}
+                            payload={payload}
+                            hideLabel
+                            hideIndicator
+                            className={
+                              d.isStart
+                                ? undefined
+                                : d.is_correct
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
+                                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
+                            }
+                            formatter={(_value, _name, item) => {
+                              const datum = item.payload as ChartDatum;
+                              if (datum.isStart) {
+                                return <div>Session start</div>;
+                              }
+                              return (
+                                <div className="space-y-1">
+                                  <div>{datum.is_correct ? 'Correct' : 'Incorrect'}</div>
+                                  <div>Question: {datum.word?.word_text}</div>
+                                  {!datum.is_correct && (
+                                    <div>Correct word: {datum.correct_answer}</div>
+                                  )}
+                                  <div>Your answer: {datum.user_answer}</div>
+                                  <div>Time: {datum.interval}s</div>
+                                  <div>Score: {datum.delta}</div>
+                                </div>
+                              );
+                            }}
+                          />
+                        );
+                      }
+                      return null;
+                    }}
                   />
-                )}
-              />
-            </LineChart>
-          </ChartContainer>
-        </div>
-      )}
+                  <Line
+                    type="monotone"
+                    dataKey="cumulative"
+                    stroke="var(--color-cumulative)"
+                    dot={({ cx, cy, payload }) => (
+                      <circle
+                        cx={cx}
+                        cy={cy}
+                        r={3}
+                        stroke="none"
+                        fill={
+                          payload.isStart
+                            ? '#000'
+                            : payload.is_correct
+                              ? '#16a34a'
+                              : '#dc2626'
+                        }
+                      />
+                    )}
+                  />
+                </LineChart>
+              </ChartContainer>
+            </div>
+          ) : (
+            <div className="h-[70vh] flex items-center justify-center text-muted-foreground border rounded">
+              Select a session to view details
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }
