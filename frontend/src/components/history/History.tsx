@@ -4,9 +4,12 @@ import { Button } from '@/components/ui/button';
 import { fetchHistory } from '@/lib/api';
 import type { HistoryPlay } from '@/types';
 
-interface ChartDatum extends HistoryPlay {
+interface ChartDatum extends Partial<HistoryPlay> {
   time: string;
   cumulative: number;
+  interval: string;
+  delta: number;
+  isStart?: boolean;
 }
 import { LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import {
@@ -48,23 +51,42 @@ export default function History({ userId }: Props) {
         (a, b) =>
           new Date(a.played_at).getTime() - new Date(b.played_at).getTime(),
       );
-    const start = plays.length
-      ? new Date(plays[0].session.started_at ?? plays[0].played_at).getTime()
-      : 0;
-    return sorted.map((p) => {
+    if (!sorted.length) {
+      return [];
+    }
+    const start = new Date(
+      sorted[0].session.started_at ?? sorted[0].played_at,
+    ).getTime();
+    const data: ChartDatum[] = [
+      {
+        time: '0',
+        cumulative: 0,
+        interval: '0',
+        delta: 0,
+        isStart: true,
+      },
+    ];
+    let prev = start;
+    for (const p of sorted) {
+      const current = new Date(p.played_at).getTime();
+      const interval = ((current - prev) / 1000).toFixed(2);
+      prev = current;
       total += p.score;
-      return {
-        time: ((new Date(p.played_at).getTime() - start) / 1000).toFixed(2),
-        cumulative: total,
+      data.push({
         ...p,
-      };
-    });
+        time: ((current - start) / 1000).toFixed(2),
+        cumulative: total,
+        interval,
+        delta: p.score,
+      });
+    }
+    return data;
   }, [plays]);
 
   const chartConfig = {
     cumulative: {
       label: 'Score',
-      color: 'hsl(var(--chart-1))',
+      color: 'var(--chart-1)',
     },
   } as const;
 
@@ -108,23 +130,29 @@ export default function History({ userId }: Props) {
                         hideLabel
                         hideIndicator
                         className={
-                          d.is_correct
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
-                            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
+                          d.isStart
+                            ? undefined
+                            : d.is_correct
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
+                              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
                         }
                         formatter={(_value, _name, item) => {
                           const datum = item.payload as ChartDatum;
+                          if (datum.isStart) {
+                            return <div>Session start</div>;
+                          }
                           return (
                             <div className="space-y-1">
                               <div>
                                 {datum.is_correct ? 'Correct' : 'Incorrect'}
                               </div>
+                              <div>Question: {datum.word?.word_text}</div>
                               {!datum.is_correct && (
-                                <div>Correct word: {datum.word.word_text}</div>
+                                <div>Correct word: {datum.word?.word_text}</div>
                               )}
                               <div>Your answer: {datum.user_answer}</div>
-                              <div>Time: {datum.time}s</div>
-                              <div>Score: {datum.cumulative}</div>
+                              <div>Time: {datum.interval}s</div>
+                              <div>Score: {datum.delta}</div>
                             </div>
                           );
                         }}
@@ -144,7 +172,13 @@ export default function History({ userId }: Props) {
                     cy={cy}
                     r={3}
                     stroke="none"
-                    fill={payload.is_correct ? '#16a34a' : '#dc2626'}
+                    fill={
+                      payload.isStart
+                        ? '#000'
+                        : payload.is_correct
+                          ? '#16a34a'
+                          : '#dc2626'
+                    }
                   />
                 )}
               />
