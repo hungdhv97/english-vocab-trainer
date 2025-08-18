@@ -39,8 +39,14 @@ export interface Level {
   difficulty: string;
   scoring_config: {
     target: number;
-    correct_points: number;
-    wrong_penalty: number;
-    slow_penalty: number;
+    target_rules: {
+      correct_bonus: number;
+      wrong_penalty: number | string;
+      mode: 'number' | 'formula';
+    };
+    score_rules: {
+      correct_points: number;
+      wrong_penalty: number;
+    };
   };
 }
