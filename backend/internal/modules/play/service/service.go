@@ -51,13 +51,6 @@ func (s *Service) RecordPlay(p model.Play) (model.Play, int, error) {
 		return model.Play{}, 0, err
 	}
 
-	// compute score delta
-	if p.IsCorrect {
-		p.Score = cfg.ScoreRules.CorrectPoints
-	} else {
-		p.Score = cfg.ScoreRules.WrongPenalty
-	}
-
 	// fetch current target progress and wrong counts for target calculation
 	var currentTarget, wrongCount int
 	if err := tx.QueryRow(ctx, `SELECT COALESCE(SUM(target),0) FROM plays WHERE session_tag=$1`, p.SessionTag).Scan(&currentTarget); err != nil {
@@ -67,6 +60,7 @@ func (s *Service) RecordPlay(p model.Play) (model.Play, int, error) {
 		return model.Play{}, 0, err
 	}
 
+	// compute the target delta first
 	if p.IsCorrect {
 		p.Target = cfg.TargetRules.CorrectBonus
 	} else {
@@ -89,6 +83,22 @@ func (s *Service) RecordPlay(p model.Play) (model.Play, int, error) {
 					p.Target = -currentTarget
 				}
 			}
+		}
+	}
+
+	// compute score delta based on mode
+	if p.IsCorrect {
+		p.Score = cfg.ScoreRules.CorrectPoints
+	} else {
+		switch cfg.TargetRules.Mode {
+		case "number":
+			p.Score = cfg.ScoreRules.WrongPenalty
+		case "formula":
+			// For formula mode, multiply the wrong penalty by the absolute value of target reduction
+			targetReduction := int(math.Abs(float64(p.Target)))
+			p.Score = cfg.ScoreRules.WrongPenalty * targetReduction
+		default:
+			p.Score = cfg.ScoreRules.WrongPenalty
 		}
 	}
 
