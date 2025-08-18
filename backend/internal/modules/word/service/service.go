@@ -7,25 +7,26 @@ import (
 	"strings"
 	"time"
 
-	translategooglefree "github.com/bas24/googletranslatefree"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	redis "github.com/redis/go-redis/v9"
 
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/word/model"
+	"github.com/hungdhv97/english-vocab-trainer/backend/internal/platform/translator"
 )
 
 // Service provides word-related operations.
 type Service struct {
-	db        *pgxpool.Pool
-	cache     *redis.Client
-	jwtSecret []byte
+	db         *pgxpool.Pool
+	cache      *redis.Client
+	jwtSecret  []byte
+	translator *translator.DeepLTranslator
 }
 
 // New creates a new word service.
-func New(db *pgxpool.Pool, cache *redis.Client, secret string) *Service {
-	return &Service{db: db, cache: cache, jwtSecret: []byte(secret)}
+func New(db *pgxpool.Pool, cache *redis.Client, secret string, translator *translator.DeepLTranslator) *Service {
+	return &Service{db: db, cache: cache, jwtSecret: []byte(secret), translator: translator}
 }
 
 // GetRandomWords returns random words matching language and difficulty using a
@@ -158,7 +159,7 @@ func (s *Service) GetMeaning(wordID int64, language string) (string, error) {
 		return "", errors.New("word not found")
 	}
 
-	translated, err := translategooglefree.Translate(sourceText, sourceLang, language)
+	translated, err := s.translator.Translate(sourceText, sourceLang, language)
 	if err != nil {
 		return "", err
 	}

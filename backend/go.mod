@@ -3,7 +3,7 @@ module github.com/hungdhv97/english-vocab-trainer/backend
 go 1.24
 
 require (
-	github.com/bas24/googletranslatefree v0.0.0-20231117033553-f5859fe54d30
+	github.com/cluttrdev/deepl-go v0.5.0
 	github.com/gin-contrib/gzip v0.0.6
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-playground/validator/v10 v10.22.0
