@@ -102,11 +102,12 @@ export default function Game({ userId }: Props) {
       language_code: 'vi',
       user_answer: answer,
     });
+    const newTargetScore = targetScore + res.target;
     setScore((s) => s + res.score);
-    setTargetScore(res.total_score);
+    setTargetScore(newTargetScore);
 
     if (res.is_correct) {
-      if (res.total_score >= target) {
+      if (newTargetScore >= target) {
         setCurrent(null);
         setFeedback('');
       } else {

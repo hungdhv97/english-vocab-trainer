@@ -57,9 +57,9 @@ func (s *Service) RecordPlay(p model.Play) (model.Play, int, error) {
 		p.Score = cfg.ScoreRules.WrongPenalty
 	}
 
-	// fetch current target and wrong counts for target calculation
+	// fetch current target progress and wrong counts for target calculation
 	var currentTarget, wrongCount int
-	if err := tx.QueryRow(ctx, `SELECT total_score FROM game_sessions WHERE session_tag=$1`, p.SessionTag).Scan(&currentTarget); err != nil {
+	if err := tx.QueryRow(ctx, `SELECT COALESCE(SUM(target),0) FROM plays WHERE session_tag=$1`, p.SessionTag).Scan(&currentTarget); err != nil {
 		return model.Play{}, 0, err
 	}
 	if err := tx.QueryRow(ctx, `SELECT COUNT(*) FROM plays WHERE session_tag=$1 AND is_correct=false`, p.SessionTag).Scan(&wrongCount); err != nil {
@@ -96,7 +96,7 @@ func (s *Service) RecordPlay(p model.Play) (model.Play, int, error) {
 		return model.Play{}, 0, err
 	}
 	var total int
-	if err := tx.QueryRow(ctx, `UPDATE game_sessions SET total_score = total_score + $1 WHERE session_tag=$2 RETURNING total_score`, p.Target, p.SessionTag).Scan(&total); err != nil {
+	if err := tx.QueryRow(ctx, `UPDATE game_sessions SET total_score = total_score + $1 WHERE session_tag=$2 RETURNING total_score`, p.Score, p.SessionTag).Scan(&total); err != nil {
 		return model.Play{}, 0, err
 	}
 	if err := tx.Commit(ctx); err != nil {
