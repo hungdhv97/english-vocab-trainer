@@ -27,6 +27,9 @@ export interface Play {
 export interface SessionInfo {
   session_tag: string;
   started_at: string;
+  level_id: number;
+  total_score: number;
+  finished_at: string | null;
 }
 
 export interface HistoryPlay extends Omit<Play, 'word_id' | 'session_tag'> {

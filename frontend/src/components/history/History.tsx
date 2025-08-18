@@ -99,21 +99,39 @@ export default function History({ userId }: Props) {
       </Button>
       {!selected ? (
         <ul className="space-y-2">
-          {Object.entries(sessions).map(([tag, sPlays]) => (
-            <li
-              key={tag}
-              className="border p-2 rounded cursor-pointer hover:bg-accent"
-              onClick={() => setSelected(tag)}
-            >
-              Session {new Date(sPlays[0].session.started_at).toLocaleString()}
-            </li>
-          ))}
+          {Object.entries(sessions).map(([tag, sPlays]) => {
+            const sess = sPlays[0]?.session;
+            const started = sess ? new Date(sess.started_at).toLocaleString() : '';
+            const status = sess?.finished_at
+              ? `Finished at ${new Date(sess.finished_at).toLocaleString()}`
+              : 'In progress';
+            return (
+              <li
+                key={tag}
+                className="border p-2 rounded cursor-pointer hover:bg-accent"
+                onClick={() => setSelected(tag)}
+              >
+                <div className="font-medium">
+                  Session {started}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Level {sess?.level_id} • Total score {sess?.total_score} • {status}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <div className="space-y-4">
           <h3 className="font-semibold">
             Session {new Date(plays[0].session.started_at).toLocaleString()}
           </h3>
+          <div className="text-sm text-muted-foreground">
+            Level {plays[0].session.level_id} • Total score {plays[0].session.total_score} •{' '}
+            {plays[0].session.finished_at
+              ? `Finished at ${new Date(plays[0].session.finished_at).toLocaleString()}`
+              : 'In progress'}
+          </div>
           <ChartContainer config={chartConfig} className="w-full h-64">
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />

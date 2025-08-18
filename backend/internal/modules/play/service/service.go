@@ -6,6 +6,7 @@ import (
 	"math"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/play/model"
@@ -108,7 +109,16 @@ func (s *Service) RecordPlay(p model.Play) (model.Play, int, error) {
 // GetHistory returns all plays for a user.
 func (s *Service) GetHistory(userID int64) ([]model.HistoryEntry, error) {
 	ctx := context.Background()
-	rows, err := s.db.Query(ctx, `SELECT p.play_id, p.user_id, p.user_answer, p.is_correct, p.score, p.target, p.played_at, p.session_tag, g.started_at, w.word_id, w.concept_id, w.language_code, w.word_text, w.difficulty, w.is_primary FROM plays p JOIN words w ON p.word_id = w.word_id JOIN game_sessions g ON p.session_tag = g.session_tag WHERE p.user_id=$1 ORDER BY p.played_at DESC`, userID)
+	rows, err := s.db.Query(ctx, `SELECT
+  p.play_id, p.user_id, p.user_answer, p.is_correct, p.score, p.target, p.played_at,
+  p.session_tag,
+  g.started_at, g.level_id, g.total_score, g.finished_at,
+  w.word_id, w.concept_id, w.language_code, w.word_text, w.difficulty, w.is_primary
+FROM plays p
+JOIN words w ON p.word_id = w.word_id
+JOIN game_sessions g ON p.session_tag = g.session_tag
+WHERE p.user_id=$1
+ORDER BY p.played_at DESC`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -116,8 +126,20 @@ func (s *Service) GetHistory(userID int64) ([]model.HistoryEntry, error) {
 	var out []model.HistoryEntry
 	for rows.Next() {
 		var h model.HistoryEntry
-		if err := rows.Scan(&h.ID, &h.UserID, &h.UserAnswer, &h.IsCorrect, &h.Score, &h.Target, &h.PlayedAt, &h.Session.Tag, &h.Session.StartedAt, &h.Word.ID, &h.Word.ConceptID, &h.Word.LanguageCode, &h.Word.WordText, &h.Word.Difficulty, &h.Word.IsPrimary); err != nil {
+		var finished pgtype.Timestamptz
+		if err := rows.Scan(
+			&h.ID, &h.UserID, &h.UserAnswer, &h.IsCorrect, &h.Score, &h.Target, &h.PlayedAt,
+			&h.Session.Tag,
+			&h.Session.StartedAt, &h.Session.LevelID, &h.Session.TotalScore, &finished,
+			&h.Word.ID, &h.Word.ConceptID, &h.Word.LanguageCode, &h.Word.WordText, &h.Word.Difficulty, &h.Word.IsPrimary,
+		); err != nil {
 			return nil, err
+		}
+		if finished.Valid {
+			t := finished.Time
+			h.Session.FinishedAt = &t
+		} else {
+			h.Session.FinishedAt = nil
 		}
 		out = append(out, h)
 	}
