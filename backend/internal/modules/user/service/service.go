@@ -35,7 +35,7 @@ func (s *Service) Register(username, password string) (model.User, error) {
 	}
 	ctx := context.Background()
 	var user model.User
-	err = s.db.QueryRow(ctx, `INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING user_id, username, password_hash, created_at`, username, string(hashBytes)).Scan(&user.ID, &user.Username, &user.PasswordHash, &user.CreatedAt)
+	err = s.db.QueryRow(ctx, `INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING user_id, username, password_hash, is_active, created_at`, username, string(hashBytes)).Scan(&user.ID, &user.Username, &user.PasswordHash, &user.IsActive, &user.CreatedAt)
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "duplicate") || strings.Contains(err.Error(), "unique") {
 			return model.User{}, errors.New("username already exists")
@@ -49,12 +49,15 @@ func (s *Service) Register(username, password string) (model.User, error) {
 func (s *Service) Authenticate(username, password string) (model.User, error) {
 	ctx := context.Background()
 	var user model.User
-	err := s.db.QueryRow(ctx, `SELECT user_id, username, password_hash, created_at FROM users WHERE username=$1`, username).Scan(&user.ID, &user.Username, &user.PasswordHash, &user.CreatedAt)
+	err := s.db.QueryRow(ctx, `SELECT user_id, username, password_hash, is_active, created_at FROM users WHERE username=$1`, username).Scan(&user.ID, &user.Username, &user.PasswordHash, &user.IsActive, &user.CreatedAt)
 	if err != nil {
 		return model.User{}, errors.New("user not found")
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
 		return model.User{}, errors.New("invalid credentials")
+	}
+	if !user.IsActive {
+		return model.User{}, errors.New("account is inactive")
 	}
 	return user, nil
 }
