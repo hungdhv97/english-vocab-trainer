@@ -30,7 +30,11 @@ export default function LevelSelector({
                 <TooltipTrigger asChild>
                   <Button onClick={() => onSelectLevel(lvl)}>{lvl.name}</Button>
                 </TooltipTrigger>
-                <TooltipContent>{lvl.description}</TooltipContent>
+                <TooltipContent
+                  side={['4', '5', '6'].includes(lvl.code) ? 'bottom' : 'top'}
+                >
+                  {lvl.description}
+                </TooltipContent>
               </Tooltip>
             ))}
           </TooltipProvider>

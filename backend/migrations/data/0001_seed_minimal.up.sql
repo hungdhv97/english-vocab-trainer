@@ -5,42 +5,42 @@ VALUES
   (
     '1',
     'Level 1',
-    'Correct answer +10 points. Wrong answer -5 points. Target unchanged when wrong.',
+    E'Correct answer +10 points.\nWrong answer -5 points.\nTarget unchanged when wrong.',
     'easy',
     '{"target":5,"target_rules":{"correct_bonus":1,"wrong_penalty":0,"mode":"number"},"score_rules":{"correct_points":10,"wrong_penalty":-5}}'
   ),
   (
     '2',
     'Level 2',
-    'Correct answer +20 points. Wrong answer -25 points. Target -1 when wrong.',
+    E'Correct answer +20 points.\nWrong answer -25 points.\nTarget -1 when wrong.',
     'easy',
     '{"target":5,"target_rules":{"correct_bonus":1,"wrong_penalty":-1,"mode":"number"},"score_rules":{"correct_points":20,"wrong_penalty":-25}}'
   ),
   (
     '3',
     'Level 3',
-    'Correct answer +50 points. Wrong answer -125 points. Target -2 when wrong.',
+    E'Correct answer +50 points.\nWrong answer -125 points.\nTarget -2 when wrong.',
     'medium',
     '{"target":5,"target_rules":{"correct_bonus":1,"wrong_penalty":2,"mode":"number"},"score_rules":{"correct_points":50,"wrong_penalty":-125}}'
   ),
   (
     '4',
     'Level 4',
-    'Correct answer +100 points. Wrong answer -110 points. Target penalty grows arithmetically when wrong.',
+    E'Correct answer +100 points.\nWrong answer -110 points.\nTarget penalty grows arithmetically when wrong.',
     'medium',
     '{"target":10,"target_rules":{"correct_bonus":1,"wrong_penalty":"arithmetic","mode":"formula"},"score_rules":{"correct_points":100,"wrong_penalty":-110}}'
   ),
   (
     '5',
     'Level 5',
-    'Correct answer +200 points. Wrong answer -220 points. Target penalty grows geometrically when wrong.',
+    E'Correct answer +200 points.\nWrong answer -220 points.\nTarget penalty grows geometrically when wrong.',
     'hard',
     '{"target":10,"target_rules":{"correct_bonus":1,"wrong_penalty":"geometric","mode":"formula"},"score_rules":{"correct_points":200,"wrong_penalty":-220}}'
   ),
   (
     '6',
     'Level 6',
-    'Correct answer +500 points. Wrong answer -550 points. Target resets when wrong.',
+    E'Correct answer +500 points.\nWrong answer -550 points.\nTarget resets when wrong.',
     'hard',
     '{"target":10,"target_rules":{"correct_bonus":1,"wrong_penalty":"reset","mode":"formula"},"score_rules":{"correct_points":500,"wrong_penalty":-550}}'
   );
