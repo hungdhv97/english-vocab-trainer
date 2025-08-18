@@ -3,7 +3,6 @@ package jobs
 import (
 	"context"
 	"log"
-	_ "strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"

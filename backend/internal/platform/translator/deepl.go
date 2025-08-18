@@ -1,7 +1,6 @@
 package translator
 
 import (
-	_ "context"
 	"errors"
 
 	"github.com/cluttrdev/deepl-go/deepl"
