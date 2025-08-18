@@ -27,6 +27,7 @@ export default function Game({ userId }: Props) {
   const [current, setCurrent] = useState<Word | null>(null);
   const [cursor, setCursor] = useState<string | null>(null);
   const [answer, setAnswer] = useState('');
+  const [targetScore, setTargetScore] = useState(0);
   const [score, setScore] = useState(0);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | ''>('');
   const [feedbackAnswer, setFeedbackAnswer] = useState('');
@@ -51,6 +52,8 @@ export default function Game({ userId }: Props) {
       }, 10);
       const config = level.scoring_config;
       setTarget(config.target || 0);
+      setTargetScore(0);
+      setScore(0);
       createSession(userId, level.level_id);
       fetchRandomWords(20, 'en', level.difficulty).then((data: WordBatch) => {
         setWords(data.words);
@@ -63,10 +66,10 @@ export default function Game({ userId }: Props) {
   }, [level, userId]);
 
   useEffect(() => {
-    if (timerRef.current && score >= target) {
+    if (timerRef.current && targetScore >= target) {
       clearInterval(timerRef.current);
     }
-  }, [score, target]);
+  }, [targetScore, target]);
 
   function nextWord() {
     setWords((prev) => prev.slice(1));
@@ -99,7 +102,8 @@ export default function Game({ userId }: Props) {
       language_code: 'vi',
       user_answer: answer,
     });
-    setScore(res.total_score);
+    setScore((s) => s + res.score);
+    setTargetScore(res.total_score);
 
     if (res.is_correct) {
       if (res.total_score >= target) {
@@ -122,6 +126,7 @@ export default function Game({ userId }: Props) {
   function handleReset() {
     setLevel(null);
     setTarget(0);
+    setTargetScore(0);
     setScore(0);
     setAnswer('');
     setFeedback('');
@@ -129,7 +134,7 @@ export default function Game({ userId }: Props) {
     setElapsed(0);
   }
 
-  const finished = score >= target;
+  const finished = targetScore >= target;
 
   useEffect(() => {
     if (finished) {
@@ -169,9 +174,10 @@ export default function Game({ userId }: Props) {
           History
         </Button>
         <CardHeader>
-          <CardTitle>
-            Score: {score}/{target}
-          </CardTitle>
+          <CardTitle>Score: {score}</CardTitle>
+          <div className="text-sm">
+            Progress: {targetScore}/{target}
+          </div>
           <div className="text-sm text-muted-foreground">
             Time: {(elapsed / 1000).toFixed(2)}s
           </div>

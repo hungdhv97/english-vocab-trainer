@@ -76,7 +76,7 @@ func (h *Handler) Answer(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid session_tag"})
 		return
 	}
-	_, total, err := h.svc.RecordPlay(play)
+	pRec, total, err := h.svc.RecordPlay(play)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -84,6 +84,8 @@ func (h *Handler) Answer(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"correct_answer": correct,
 		"is_correct":     isCorrect,
+		"score":          pRec.Score,
+		"target":         pRec.Target,
 		"total_score":    total,
 	})
 }
