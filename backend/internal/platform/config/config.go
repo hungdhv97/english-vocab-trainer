@@ -7,6 +7,7 @@ type Config struct {
 	Redis    RedisConfig    `mapstructure:"redis"`
 	Cursor   CursorConfig   `mapstructure:"cursor"`
 	DeepL    DeepLConfig    `mapstructure:"deepl"`
+	Jobs     JobsConfig     `mapstructure:"jobs"`
 }
 
 // HTTPConfig holds HTTP server related configuration.
@@ -38,4 +39,23 @@ type CursorConfig struct {
 // DeepLConfig holds DeepL API settings.
 type DeepLConfig struct {
 	APIKey string `mapstructure:"api_key"`
+}
+
+// JobsConfig holds cron job settings.
+type JobsConfig struct {
+	TranslateMissing TranslateMissingJobConfig `mapstructure:"translate_missing"`
+	UniverseIndex    UniverseIndexJobConfig    `mapstructure:"universe_index"`
+}
+
+// TranslateMissingJobConfig holds configuration for the translate missing job.
+type TranslateMissingJobConfig struct {
+	Schedule  string `mapstructure:"schedule"`
+	Enabled   bool   `mapstructure:"enabled"`
+	BatchSize int    `mapstructure:"batch_size"`
+}
+
+// UniverseIndexJobConfig holds configuration for the universe index rebuild job.
+type UniverseIndexJobConfig struct {
+	Schedule string `mapstructure:"schedule"`
+	Enabled  bool   `mapstructure:"enabled"`
 }

@@ -26,6 +26,11 @@ func Load() (*Config, error) {
 	v.SetDefault("redis.password", "password")
 	v.SetDefault("cursor.secret", "changeme")
 
+	// jobs defaults
+	v.SetDefault("jobs.translate_missing.enabled", true)
+	v.SetDefault("jobs.translate_missing.schedule", "0 * * * *") // Every hour
+	v.SetDefault("jobs.translate_missing.batch_size", 100)
+
 	// config file
 	v.SetConfigName("config")
 	v.SetConfigType("yaml")

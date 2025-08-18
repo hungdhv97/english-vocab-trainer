@@ -9,9 +9,9 @@ import (
 )
 
 // registerUniverseIndex schedules rebuilding the universe_index table
-// at 02:00 every day if the number of words has changed.
-func registerUniverseIndex(c *cron.Cron, db *pgxpool.Pool) {
-	c.AddFunc("0 2 * * *", func() { rebuildUniverseIndex(db) })
+// based on the provided schedule if the number of words has changed.
+func registerUniverseIndex(c *cron.Cron, db *pgxpool.Pool, schedule string) {
+	c.AddFunc(schedule, func() { rebuildUniverseIndex(db) })
 }
 
 func rebuildUniverseIndex(db *pgxpool.Pool) {

@@ -12,3 +12,11 @@ redis:
   password: "password"
 cursor:
   secret: "changeme"
+jobs:
+  universe_index:
+    enabled: true
+    schedule: "0 2 * * *"  # 2:00 AM daily
+  translate_missing:
+    enabled: true
+    schedule: "0 * * * *"  # Every hour
+    batch_size: 100

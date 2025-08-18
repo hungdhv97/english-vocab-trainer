@@ -11,7 +11,7 @@ import (
 
 // RegisterRoutes wires play handlers to the router.
 func RegisterRoutes(r *gin.RouterGroup, d *deps.Deps) {
-	wsvc := wordsvc.New(d.PG, d.RDB, d.Cfg.Cursor.Secret)
+	wsvc := wordsvc.New(d.PG, d.RDB, d.Cfg.Cursor.Secret, d.Translator)
 	svc := playsvc.New(d.PG)
 	h := handler.New(svc, wsvc)
 	r.GET("/history/:userID", h.History)

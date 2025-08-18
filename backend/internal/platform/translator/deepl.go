@@ -38,7 +38,7 @@ func (d *DeepLTranslator) Translate(text, sourceLang, targetLang string) (string
 	sourceLangCode := convertToDeepLLangCode(sourceLang)
 	targetLangCode := convertToDeepLLangCode(targetLang)
 
-	// Create source language option if provided
+	// Create a source language option if provided
 	var opts []deepl.TranslateOption
 	if sourceLangCode != "" && sourceLangCode != "auto" {
 		opts = append(opts, deepl.WithSourceLang(sourceLangCode))
