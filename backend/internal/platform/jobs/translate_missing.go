@@ -3,6 +3,7 @@ package jobs
 import (
 	"context"
 	"log"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -69,6 +70,9 @@ func translateMissingVietnamese(db *pgxpool.Pool, deepLTranslator *translator.De
 			log.Printf("Error translating word '%s': %v", wordText, err)
 			continue
 		}
+
+		// Convert to lowercase before inserting
+		vietnameseText = strings.ToLower(vietnameseText)
 
 		// Insert the Vietnamese translation
 		_, insertErr := db.Exec(ctx, `
