@@ -3,6 +3,7 @@ package jobs
 import (
 	"context"
 	"log"
+	"regexp"
 	"strings"
 
 	"github.com/google/uuid"
@@ -11,6 +12,19 @@ import (
 
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/platform/translator"
 )
+
+// cleanSpecialCharacters removes special characters from Vietnamese text
+func cleanSpecialCharacters(text string) string {
+	// Remove common punctuation marks like ?, !, ., etc.
+	re := regexp.MustCompile(`[?!.,;:()"\-\[\]{}…""''‚„«»‹›]`)
+	cleaned := re.ReplaceAllString(text, "")
+
+	// Remove extra whitespace that might be left after removing punctuation
+	cleaned = strings.TrimSpace(cleaned)
+	cleaned = regexp.MustCompile(`\s+`).ReplaceAllString(cleaned, " ")
+
+	return cleaned
+}
 
 // registerTranslateMissing schedules a job to translate English words that don't have Vietnamese translations
 func registerTranslateMissing(c *cron.Cron, db *pgxpool.Pool, deepLTranslator *translator.DeepLTranslator, schedule string, batchSize int) {
@@ -70,6 +84,9 @@ func translateMissingVietnamese(db *pgxpool.Pool, deepLTranslator *translator.De
 			log.Printf("Error translating word '%s': %v", wordText, err)
 			continue
 		}
+
+		// Clean special characters from Vietnamese text
+		vietnameseText = cleanSpecialCharacters(vietnameseText)
 
 		// Convert to lowercase before inserting
 		vietnameseText = strings.ToLower(vietnameseText)

@@ -18,12 +18,11 @@ export default function Dashboard({ onLogout }: Props) {
           variant="ghost"
           size="icon"
           className="absolute top-4 right-4"
-          title="Đăng xuất"
         >
           <LogOut className="h-4 w-4" />
         </Button>
         <CardHeader>
-          <CardTitle className="text-2xl">Chọn hoạt động</CardTitle>
+          <CardTitle className="text-2xl">Choose Activity</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <Button
@@ -32,7 +31,7 @@ export default function Dashboard({ onLogout }: Props) {
             size="lg"
           >
             <Play className="h-5 w-5" />
-            Chơi game
+            Play Game
           </Button>
           <Button
             onClick={() => navigate('/history')}
@@ -41,7 +40,7 @@ export default function Dashboard({ onLogout }: Props) {
             size="lg"
           >
             <History className="h-5 w-5" />
-            Xem lịch sử
+            View History
           </Button>
         </CardContent>
       </Card>
