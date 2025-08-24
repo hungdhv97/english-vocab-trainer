@@ -1,0 +1,101 @@
+# Prometheus Configuration for English Vocabulary Trainer
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'english-vocab-trainer'
+    environment: 'production'
+
+# Alertmanager configuration (optional)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - alertmanager:9093
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+# rule_files:
+#   - "alert_rules.yml"
+
+# A scrape configuration containing exactly one endpoint to scrape
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+
+  # Backend application metrics
+  - job_name: 'backend'
+    static_configs:
+      - targets: ['backend:9100']  # Assuming metrics endpoint on port 9100
+    scrape_interval: 15s
+    metrics_path: '/metrics'
+    scrape_timeout: 10s
+    honor_labels: true
+    params:
+      format: ['prometheus']
+
+  # PostgreSQL metrics (using postgres_exporter if configured)
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:9187']  # postgres_exporter default port
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+    scrape_timeout: 10s
+
+  # Redis metrics (using redis_exporter if configured)
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:9121']  # redis_exporter default port
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+    scrape_timeout: 10s
+
+  # Nginx metrics (using nginx-prometheus-exporter if configured)
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:9113']  # nginx-prometheus-exporter default port
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+    scrape_timeout: 10s
+
+  # Node exporter for system metrics (if added)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+    scrape_timeout: 10s
+
+  # Application health checks
+  - job_name: 'health-checks'
+    static_configs:
+      - targets:
+          - 'backend:8180'
+          - 'frontend:80'
+    scrape_interval: 30s
+    metrics_path: '/health'
+    scrape_timeout: 5s
+    scheme: 'http'
+
+# Remote write configuration (for long-term storage, optional)
+# remote_write:
+#   - url: "http://your-remote-storage:9201/write"
+#     queue_config:
+#       max_shards: 200
+#       max_samples_per_send: 1000
+#       batch_send_deadline: 5s
+#       min_shards: 1
+#       max_shards_per_queue: 100
+#       capacity: 2500
+
+# Storage configuration
+storage:
+  tsdb:
+    retention.time: 30d
+    retention.size: 10GB
+    wal-compression: true

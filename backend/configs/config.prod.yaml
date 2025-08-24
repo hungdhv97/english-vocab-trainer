@@ -1,7 +1,62 @@
+env: "production"
+
 http:
   addr: ":80"
+
+postgres:
+  host: "postgres"
+  port: "5432"
+  user: "vocab_prod_user"
+  password: "CHANGE_ME_STRONG_PASSWORD_123!@#"
+  database: "vocab_prod"
+
+redis:
+  addr: "redis:6379"
+  username: "default"
+  password: "CHANGE_ME_REDIS_PASSWORD_789&*("
+  pool_size: 10
+  min_idle_conns: 5
+
 cursor:
   secret: "changeme"
+
+deepl:
+  apikey: "82aa2c21-9d7b-49c6-9149-7382172e07cd:fx"
+
+jwt:
+  secret: "CHANGE_ME_SUPER_SECRET_JWT_KEY_FOR_PRODUCTION_MINIMUM_64_CHARS_LONG"
+
+cors:
+  allowed_origins:
+    - "https://your-domain.com"
+    - "https://www.your-domain.com"
+
+rate_limit:
+  requests_per_minute: 100
+
+security:
+  bcrypt_cost: 12
+  session_timeout: "24h"
+  cookie_secure: true
+  cookie_http_only: true
+  cookie_same_site: "strict"
+
+database:
+  max_open_conns: 25
+  max_idle_conns: 25
+  conn_max_lifetime: "300s"
+
+monitoring:
+  enable_metrics: true
+  metrics_port: 9100
+
+health:
+  timeout: "30s"
+  interval: "1m"
+
+log:
+  level: "info"
+
 jobs:
   universe_index:
     enabled: true

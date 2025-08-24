@@ -8,7 +8,6 @@ This folder contains the React + TypeScript client for the English Vocabulary Tr
 - `npm run build` – create a production build
 - `npm run lint` – run ESLint on the codebase
 - `npm run typecheck` – check TypeScript types
-- `npm test` – run frontend tests
 
 ## Environment
 

@@ -1,0 +1,113 @@
+version: '3.8'
+
+services:
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8180/api/v1
+      - CHOKIDAR_USEPOLLING=true  # Better file watching on Windows
+      - NODE_ENV=development
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules  # Prevent overwriting node_modules
+      - frontend_cache:/app/.vite  # Cache Vite build files
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    depends_on:
+      - backend
+    networks:
+      - dev-network
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8180:8180"
+      - "2345:2345"  # Delve debugger port
+    env_file:
+      - config/dev/.env
+    environment:
+      - GO_ENV=development
+      - DEBUG=true
+      - CGO_ENABLED=0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - go_cache:/go/pkg/mod  # Go modules cache
+    networks:
+      - dev-network
+    restart: unless-stopped
+    # Enable debugging
+    security_opt:
+      - "apparmor:unconfined"
+    cap_add:
+      - SYS_PTRACE
+
+  postgres:
+    image: bitnami/postgresql:latest
+    ports:
+      - "5434:5432"
+    env_file:
+      - config/dev/.env
+    environment:
+      POSTGRESQL_USERNAME: ${APP_POSTGRES_USER}
+      POSTGRESQL_PASSWORD: ${APP_POSTGRES_PASSWORD}
+      POSTGRESQL_DATABASE: ${APP_POSTGRES_DATABASE}
+      # Development optimizations
+      POSTGRESQL_SHARED_PRELOAD_LIBRARIES: pg_stat_statements
+    volumes:
+      - postgres_data:/bitnami/postgresql
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${APP_POSTGRES_USER} -d ${APP_POSTGRES_DATABASE} -h localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - dev-network
+
+  redis:
+    image: bitnami/redis:latest
+    ports:
+      - "6379:6379"
+    env_file:
+      - config/dev/.env
+    environment:
+      REDIS_PASSWORD: ${APP_REDIS_PASSWORD}
+      # Development optimizations
+      REDIS_DISABLE_COMMANDS: ""  # Enable all commands for development
+    volumes:
+      - redis_data:/bitnami/redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - dev-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  go_cache:
+    driver: local
+  frontend_cache:
+    driver: local
+
+networks:
+  dev-network:
+    driver: bridge
+    name: vocab-trainer-dev

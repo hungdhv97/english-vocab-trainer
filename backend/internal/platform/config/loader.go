@@ -15,6 +15,7 @@ func Load() (*Config, error) {
 	v := viper.New()
 
 	// defaults
+	v.SetDefault("env", "development")
 	v.SetDefault("http.addr", ":8180")
 	v.SetDefault("postgres.host", "postgres")
 	v.SetDefault("postgres.port", "5432")
@@ -24,8 +25,42 @@ func Load() (*Config, error) {
 	v.SetDefault("redis.addr", "redis:6379")
 	v.SetDefault("redis.username", "default")
 	v.SetDefault("redis.password", "password")
+	v.SetDefault("redis.pool_size", 10)
+	v.SetDefault("redis.min_idle_conns", 5)
 	v.SetDefault("cursor.secret", "changeme")
 	v.SetDefault("deepl.apikey", "")
+
+	// JWT defaults
+	v.SetDefault("jwt.secret", "changeme-jwt-secret")
+
+	// CORS defaults
+	v.SetDefault("cors.allowed_origins", []string{"http://localhost:3000", "http://localhost:5173"})
+
+	// Rate limiting defaults
+	v.SetDefault("rate_limit.requests_per_minute", 60)
+
+	// Security defaults
+	v.SetDefault("security.bcrypt_cost", 10)
+	v.SetDefault("security.session_timeout", "24h")
+	v.SetDefault("security.cookie_secure", false)
+	v.SetDefault("security.cookie_http_only", true)
+	v.SetDefault("security.cookie_same_site", "lax")
+
+	// Database performance defaults
+	v.SetDefault("database.max_open_conns", 25)
+	v.SetDefault("database.max_idle_conns", 25)
+	v.SetDefault("database.conn_max_lifetime", "300s")
+
+	// Monitoring defaults
+	v.SetDefault("monitoring.enable_metrics", false)
+	v.SetDefault("monitoring.metrics_port", 9100)
+
+	// Health check defaults
+	v.SetDefault("health.timeout", "30s")
+	v.SetDefault("health.interval", "1m")
+
+	// Logging defaults
+	v.SetDefault("log.level", "info")
 
 	// jobs defaults
 	v.SetDefault("jobs.translate_missing.enabled", true)

@@ -16,7 +16,6 @@ backend/server.exe
 backend/.DS_Store
 
 # General
-.env
 *.log
 build/
 .idea

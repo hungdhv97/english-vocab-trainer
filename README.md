@@ -2,94 +2,187 @@
 
 This project is a full-stack web application that helps users build their English vocabulary. It uses a spaced repetition system based on the SM-2 algorithm so learners can review a configurable number of new words each day.
 
-## Tech Stack
+## 🚀 Tech Stack
 
-- **Frontend:** React (Vite), TypeScript, Tailwind CSS, shadcn/ui, React Router, TanStack Query (React Query)
-- **Backend:** Go (Golang), PostgreSQL, Redis, JWT for authentication
-- **Infrastructure:** Docker, Docker Compose
-- **CI/CD:** GitHub Actions
+- **Frontend:** React 19, TypeScript, Vite, Tailwind CSS, Radix UI
+- **Backend:** Go 1.24, Gin framework, PostgreSQL, Redis
+- **Development:** Hot reload, debugging support
 
-## Getting Started
+## 🎯 Quick Start
 
-1. **Clone the repository:**
-  ```bash
-  git clone <repository-url>
-  cd english-vocab-trainer
-  ```
-
-2. **Set up environment variables:**
-  Copy the example environment file and adjust the values for your setup.
-  ```bash
-  cp .env.example .env
-  ```
-
-3. **Build and start the services:**
-  This command starts the backend server along with PostgreSQL and Redis.
-  ```bash
-  docker-compose up --build
-  ```
-
-4. **Run database migrations:**
-   Install the `golang-migrate` CLI and apply the SQL scripts. Migrations are split into `migrations/schema` (DDL) and `migrations/data` (seed data).
-   Because both tracks start at version 1, use separate migration tables.
-   ```bash
-   go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
-   cd backend
-   # Apply schema changes first (uses schema_migrations table)
-   migrate -path migrations/schema -database "postgres://user:password@localhost:5434/vocab?sslmode=disable&x-migrations-table=schema_migrations" up
-   # Then apply seed data (uses data_migrations table)
-   migrate -path migrations/data -database "postgres://user:password@localhost:5434/vocab?sslmode=disable&x-migrations-table=data_migrations" up
-   cd ..
-   ```
-
-   To roll back:
-   ```bash
-   cd backend
-   # Roll back data first, then schema
-   migrate -path migrations/data -database "postgres://user:password@localhost:5434/vocab?sslmode=disable&x-migrations-table=data_migrations" down
-   migrate -path migrations/schema -database "postgres://user:password@localhost:5434/vocab?sslmode=disable&x-migrations-table=schema_migrations" down
-   cd ..
-   ```
-
-5. **Run the frontend development server:**
-  ```bash
-  cd frontend
-  npm install
-  npm run dev
-  ```
-  The application is available at `http://localhost:5173`.
-
-## Testing
-
-Run these commands from the project root to verify the code base:
-
-- **Backend tests:**
-  ```bash
-  cd backend && go test -v -race ./...
-  ```
-- **Frontend lint:**
-  ```bash
-  cd frontend && npm run lint
-  ```
-- **Frontend type check:**
-  ```bash
-  cd frontend && npm run typecheck
-  ```
-- **Frontend tests:**
-  ```bash
-  cd frontend && npm test
-  ```
-
-## Development with Gemini CLI
-
-This project can be developed with the assistance of the Gemini CLI.
-
-Example prompt:
+### Manual Setup
 ```bash
-gemini -p "Add a new page at /history that shows the user's review log. It should fetch data from the /api/v1/history endpoint."
+# Clone the repository
+git clone <repository-url>
+cd english-vocab-trainer
+
+# Copy and configure environment for development
+cp config/dev/.env .env
+# Edit .env with your DeepL API key and other settings
+
+# Or for production
+cp config/prod/.env .env
+# Edit .env with your production settings
+
+# Start with Docker Compose for development
+docker compose -f docker-compose.dev.yml up -d
+
+# Or start with Docker Compose for production
+docker compose -f docker-compose.prod.yml up -d
+
+# Or start manually
+# Frontend: cd frontend && npm install && npm run dev
+# Backend: cd backend && go run ./cmd/api
 ```
-This guides Gemini to:
-1. Create the `frontend/src/pages/History.tsx` page component.
-2. Add the `/history` route in `frontend/src/App.tsx`.
-3. Implement the corresponding `GET /api/v1/history` handler in the Go backend.
-4. Define the service and database logic to retrieve the history.
+
+## 🛠️ Development Environment
+
+### Project Structure
+
+The project is organized into the following directories:
+
+- `frontend/` - React TypeScript frontend application
+- `backend/` - Go backend API
+- `config/` - Environment configuration files
+  - `config/dev/` - Development environment settings
+  - `config/prod/` - Production environment settings
+
+### Environment Configuration
+
+**Development Environment (`config/dev/.env`):**
+- Debug logging and SQL query logging enabled
+- Development-specific database and Redis settings
+- DeepL API integration for translations
+- Docker Compose: `docker-compose.dev.yml`
+
+**Production Environment (`config/prod/.env`):**
+- Optimized for production performance
+- Security-focused configuration
+- Production database and Redis settings
+- Docker Compose: `docker-compose.prod.yml` with Nginx, monitoring (Prometheus, Grafana)
+
+## 🎮 Development Commands
+
+### Frontend Development
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Run linting
+npm run lint
+
+# Format code
+npm run format
+```
+
+### Backend Development
+```bash
+cd backend
+
+# Install Go dependencies
+go mod download
+
+# Start development server
+go run ./cmd/api
+
+# Format code
+go fmt ./...
+
+# Build for production
+go build -o bin/api ./cmd/api
+```
+
+## 🐛 Debugging
+
+### Backend Debugging (Go)
+
+**Development Mode:**
+- Set `GO_ENV=development` in your environment
+- Enable debug logging with `DEBUG=true`
+- SQL query logging available when enabled
+
+**Manual Debugging:**
+```bash
+cd backend
+go run ./cmd/api
+```
+
+### Frontend Debugging
+
+**React DevTools:**
+- React Developer Tools browser extension
+- Components and Profiler tabs available
+
+**Vite Hot Reload:**
+- Instant updates on file changes
+- Error overlay for compile-time issues
+- Source maps for debugging
+
+## 🔧 Configuration
+
+### Environment Variables
+
+Copy the appropriate environment file from the config directory:
+
+**For Development:**
+```bash
+cp config/dev/.env .env
+```
+
+**For Production:**
+```bash
+cp config/prod/.env .env
+```
+
+Required environment variables:
+- `APP_DEEPL_APIKEY` - Your DeepL API key for translations
+- `APP_JWT_SECRET` - JWT secret for authentication
+- `APP_POSTGRES_*` - Database connection settings
+- `APP_REDIS_*` - Redis connection settings
+
+### Database Setup
+
+The application requires PostgreSQL and Redis to be running. Configure the connection settings in your environment file.
+
+**Database Migration:**
+The backend includes database migration files in `backend/migrations/schema/`. Run migrations manually or set up your database schema as needed.
+
+## 🚀 Production Deployment
+
+### Using Docker Compose (Recommended)
+
+1. Copy production configuration: `cp config/prod/.env .env`
+2. Update environment variables with production values
+3. Start production services: `docker compose -f docker-compose.prod.yml up -d`
+4. Set up SSL certificates in `./nginx/ssl/` directory
+5. Configure your domain and DNS settings
+
+### Manual Deployment
+
+1. Copy production configuration: `cp config/prod/.env .env`
+2. Update environment variables with production values
+3. Build the frontend: `cd frontend && npm run build`
+4. Build the backend: `cd backend && go build -o bin/api ./cmd/api`
+5. Set up your production database and Redis instances
+6. Deploy using your preferred method
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes and test locally
+4. Commit your changes: `git commit -m 'Add amazing feature'`
+5. Push to the branch: `git push origin feature/amazing-feature`
+6. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
