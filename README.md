@@ -152,8 +152,75 @@ Required environment variables:
 
 The application requires PostgreSQL and Redis to be running. Configure the connection settings in your environment file.
 
-**Database Migration:**
-The backend includes database migration files in `backend/migrations/schema/`. Run migrations manually or set up your database schema as needed.
+**Database Migrations:**
+
+The backend includes database migration files organized in:
+- `backend/migrations/schema/` - Database schema migrations (tables, indexes)
+- `backend/migrations/data/` - Data seed migrations
+
+**Installing Migration Tool:**
+```bash
+# Install golang-migrate CLI tool
+# On macOS with Homebrew
+brew install golang-migrate
+
+# On Linux/Windows with Go
+go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+
+# Or download binary from: https://github.com/golang-migrate/migrate/releases
+```
+
+**Running Migrations:**
+
+Schema and data migrations are tracked separately using different migration tables:
+- Schema migrations use: `schema_migrations` table
+- Data migrations use: `data_migrations` table
+
+```bash
+cd backend
+
+# Apply all up migrations (schema + data with separate tracking)
+migrate -path migrations/schema -database "postgres://dev_user:dev_password_123@localhost:5434/vocab_dev?sslmode=disable&x-migrations-table=schema_migrations" up
+migrate -path migrations/data -database "postgres://dev_user:dev_password_123@localhost:5434/vocab_dev?sslmode=disable&x-migrations-table=data_migrations" up
+
+# Apply specific number of migrations
+migrate -path migrations/schema -database "postgres://dev_user:dev_password_123@localhost:5434/vocab_dev?sslmode=disable&x-migrations-table=schema_migrations" up 2
+
+# Rollback migrations
+migrate -path migrations/schema -database "postgres://dev_user:dev_password_123@localhost:5434/vocab_dev?sslmode=disable&x-migrations-table=schema_migrations" down 1
+migrate -path migrations/data -database "postgres://dev_user:dev_password_123@localhost:5434/vocab_dev?sslmode=disable&x-migrations-table=data_migrations" down 1
+
+# Check migration status (separate tracking)
+migrate -path migrations/schema -database "postgres://dev_user:dev_password_123@localhost:5434/vocab_dev?sslmode=disable&x-migrations-table=schema_migrations" version
+migrate -path migrations/data -database "postgres://dev_user:dev_password_123@localhost:5434/vocab_dev?sslmode=disable&x-migrations-table=data_migrations" version
+
+# For production, replace with your production database URL:
+# migrate -path migrations/schema -database "postgres://prod_user:prod_pass@prod_host:5432/prod_db?sslmode=require&x-migrations-table=schema_migrations" up
+# migrate -path migrations/data -database "postgres://prod_user:prod_pass@prod_host:5432/prod_db?sslmode=require&x-migrations-table=data_migrations" up
+```
+
+**Migration Commands with Environment Variables:**
+```bash
+cd backend
+
+# Set database URLs with separate tracking tables as environment variables
+export SCHEMA_DB_URL="postgres://dev_user:dev_password_123@localhost:5434/vocab_dev?sslmode=disable&x-migrations-table=schema_migrations"
+export DATA_DB_URL="postgres://dev_user:dev_password_123@localhost:5434/vocab_dev?sslmode=disable&x-migrations-table=data_migrations"
+
+# Apply migrations with separate tracking
+migrate -path migrations/schema -database $SCHEMA_DB_URL up
+migrate -path migrations/data -database $DATA_DB_URL up
+
+# Check status with separate tracking
+migrate -path migrations/schema -database $SCHEMA_DB_URL version
+migrate -path migrations/data -database $DATA_DB_URL version
+
+# On Windows (PowerShell)
+$env:SCHEMA_DB_URL="postgres://dev_user:dev_password_123@localhost:5434/vocab_dev?sslmode=disable&x-migrations-table=schema_migrations"
+$env:DATA_DB_URL="postgres://dev_user:dev_password_123@localhost:5434/vocab_dev?sslmode=disable&x-migrations-table=data_migrations"
+migrate -path migrations/schema -database $env:SCHEMA_DB_URL up
+migrate -path migrations/data -database $env:DATA_DB_URL up
+```
 
 ## 🚀 Production Deployment
 
