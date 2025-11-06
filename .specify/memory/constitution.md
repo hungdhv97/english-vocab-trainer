@@ -1,87 +1,50 @@
-<!--
-Sync Impact Report
-- Version change: N/A → 1.0.0
-- Modified principles: Established five concrete principles; added explicit "No Automated Testing" rule
-- Added sections: Technology & Operational Constraints; Development Workflow & UX Standards
-- Removed sections: None (template placeholders replaced with concrete content)
-- Templates requiring updates:
-  - .specify/templates/plan-template.md ✅ updated
-  - .specify/templates/spec-template.md ✅ updated
-  - .specify/templates/tasks-template.md ✅ updated
-- Follow-up TODOs:
-  - TODO(RATIFICATION_DATE): Original adoption date unknown; set once known
--->
-
-# English Vocabulary Trainer Constitution
+# [PROJECT_NAME] Constitution
+<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
 
 ## Core Principles
 
-### Clean Code
-Code must be readable, maintainable, and consistent. Practices include:
-- Use clear naming, small functions, and single-responsibility modules.
-- Eliminate dead code and duplication; prefer straightforward solutions over cleverness.
-- Enforce formatting and linting in CI/CD pipelines.
-Rationale: Clean code reduces defects, accelerates onboarding, and lowers maintenance costs.
+### [PRINCIPLE_1_NAME]
+<!-- Example: I. Library-First -->
+[PRINCIPLE_1_DESCRIPTION]
+<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
 
-### Simple & Responsive UX
-User experience must be simple, fast, and accessible.
-- Prioritize clear flows, minimal steps, and fast perceived performance.
-- Ensure responsive design across devices; target <200ms p95 for primary interactions.
-- Follow accessibility best practices (semantic HTML, keyboard navigation, ARIA where needed).
-Rationale: Simplicity and responsiveness increase engagement and learning outcomes.
+### [PRINCIPLE_2_NAME]
+<!-- Example: II. CLI Interface -->
+[PRINCIPLE_2_DESCRIPTION]
+<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
 
-### Minimal Dependencies
-Favor the standard library and a small, stable set of libraries.
-- Add a dependency only when it yields clear, sustained value and low risk.
-- Pin versions and remove unused packages promptly.
-- Avoid transitive bloat; prefer direct implementations when reasonable.
-Rationale: Fewer dependencies reduce attack surface, build issues, and update burden.
+### [PRINCIPLE_3_NAME]
+<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
+[PRINCIPLE_3_DESCRIPTION]
+<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
 
-### Clear Architecture Boundaries
-Keep boundaries explicit between frontend, backend, data, and infrastructure.
-- Backend exposes stable HTTP APIs; frontend consumes them via typed clients.
-- Separate domain logic from transport, persistence, and UI concerns.
-- Define clear ownership and layering to prevent cross-boundary leakage.
-Rationale: Clear boundaries improve evolvability, testing-in-production strategies, and clarity.
+### [PRINCIPLE_4_NAME]
+<!-- Example: IV. Integration Testing -->
+[PRINCIPLE_4_DESCRIPTION]
+<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
 
-### No Automated Testing (Non-Negotiable)
-Automated tests of any kind are not permitted.
-- Unit, integration, end-to-end, and contract tests are forbidden.
-- Test directories or pipelines MUST NOT be created or executed.
-- Quality is ensured via code review, live verification, feature flags, and monitoring.
-Rationale: By mandate, this project prioritizes velocity and operational monitoring over tests.
+### [PRINCIPLE_5_NAME]
+<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
+[PRINCIPLE_5_DESCRIPTION]
+<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
 
-## Technology & Operational Constraints
+## [SECTION_2_NAME]
+<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
 
-- Backend: Go (Golang).
-- Frontend: ViteJS (React + TypeScript as currently used).
-- Database: PostgreSQL.
-- Caching/queues: Redis.
-- Containerization: Docker (Compose for local; compatible with production orchestration).
-- Monitoring/Observability: Prometheus (metrics) and Grafana (dashboards).
-- CI/CD: GitHub Actions for builds, linting/formatting, container builds, and deployments.
-- Security: Manage secrets via environment variables or vault-backed runners; no secrets in code.
-- Logging: Structured logs with request correlation; ship to standard streams for collection.
+[SECTION_2_CONTENT]
+<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
 
-## Development Workflow & UX Standards
+## [SECTION_3_NAME]
+<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
 
-- Code review required for all changes; reviewers check principle adherence.
-- No test-related files, jobs, or badges are allowed in any branch or workflow.
-- Feature flags recommended for risky changes; verify behavior live in controlled environments.
-- UX changes must prefer simplicity: fewer controls, clear copy, fast feedback.
-- CI/CD gates: build, format, lint, type-check, containerize, scan images; no test stages.
+[SECTION_3_CONTENT]
+<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
 
 ## Governance
+<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-- Supremacy: This constitution supersedes all other project guidance. The "No Automated Testing"
-  rule overrides any conflicting templates, scripts, or prior practices.
-- Amendments: Changes require a PR titled "Constitution: Amendment" including rationale, migration
-  plan (if any), and updated version below. Approval by maintainers is required.
-- Versioning Policy: Semantic versioning
-  - MAJOR: Backward-incompatible governance or principle removals/redefinitions.
-  - MINOR: New principle/section or materially expanded guidance.
-  - PATCH: Clarifications and non-semantic refinements.
-- Compliance Reviews: On each PR, reviewers validate conformance to principles and constraints.
-  CI/CD must block on violations (e.g., presence of test folders, jobs, or frameworks).
+[GOVERNANCE_RULES]
+<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
 
-**Version**: 1.0.0 | **Ratified**: TODO(RATIFICATION_DATE): Original adoption date unknown | **Last Amended**: 2025-11-06
+**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
+<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
