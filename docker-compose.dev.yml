@@ -1,6 +1,6 @@
 services:
   frontend:
-    image: node:20-alpine
+    image: node:24-alpine
     working_dir: /app
     ports:
       - "5173:5173"
@@ -20,7 +20,7 @@ services:
       - dev-network
 
   backend:
-    image: golang:1.24-alpine
+    image: golang:1.25-alpine
     working_dir: /app
     ports:
       - "8180:8180"
