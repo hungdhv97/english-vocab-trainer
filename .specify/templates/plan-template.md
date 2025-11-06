@@ -31,7 +31,13 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- [ ] **Clean Code**: Does this feature maintain readable, self-documenting code with clear naming and single responsibility?
+- [ ] **Simple and Responsive UX**: Does the UI prioritize performance (<2s load, <100ms interaction), mobile-responsiveness, and accessibility (WCAG 2.1 AA)?
+- [ ] **Minimal Dependencies**: Are all new dependencies justified by significant value? Have we verified the need and audit status?
+- [ ] **Clear Architecture Boundaries**: Does the design respect layer separation (Models → Services → Handlers) with no circular dependencies?
+- [ ] **No Testing Required**: Confirmed - no unit, integration, or e2e tests will be created for this feature (manual verification only)
+- [ ] **Technology Stack Compliance**: Does this feature use only approved technologies (Go, Gin, PostgreSQL, Redis, React, Vite, TypeScript, Tailwind)?
+- [ ] **Architecture Structure**: Does the implementation follow the prescribed backend (`internal/modules/`) or frontend (`src/components/`) structure?
 
 ## Project Structure
 
