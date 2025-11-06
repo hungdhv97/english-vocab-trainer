@@ -1,50 +1,91 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# English Vocab Trainer Constitution
+
+<!--
+Sync Impact Report
+- Version change: none → 1.0.0
+- Modified principles: N/A (newly defined)
+- Added sections: Core Principles; Technology Stack & Operational Constraints; Development Workflow & Review; Governance
+- Removed sections: Template placeholders
+- Templates requiring updates:
+  - ✅ .specify/templates/plan-template.md (Constitution Check + testing language)
+  - ✅ .specify/templates/spec-template.md (remove testing language)
+  - ✅ .specify/templates/tasks-template.md (remove test sections)
+  - ⚠ .specify/templates/agent-file-template.md (no changes required)
+  - ⚠ .specify/templates/checklist-template.md (no changes required)
+- Deferred TODOs:
+  - TODO(RATIFICATION_DATE): Original adoption date unknown; set when governance approves
+-->
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Clean Code
+- Code MUST be readable, maintainable, and consistent. Prefer clarity over cleverness.
+- Naming MUST be descriptive; avoid abbreviations. Keep functions small with single responsibility.
+- Enforce simple control flow and early returns; avoid deep nesting.
+- Comments ONLY for non-obvious rationale and invariants.
+Rationale: Clear code reduces defects and accelerates onboarding and change.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Simple, Responsive UX
+- UX MUST be simple, fast, and responsive across devices.
+- Prioritize core flows; avoid optional features that add complexity.
+- UI performance targets: first interaction under 200ms p95 on modern devices.
+Rationale: Simplicity increases user success and lowers maintenance.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Minimal Dependencies
+- Add dependencies ONLY when they remove substantial, recurring complexity.
+- Prefer standard library and project-local modules.
+- Any new dependency MUST have a clear owner, license compatibility, and removal plan.
+Rationale: Fewer dependencies reduce security, upgrade, and runtime risk.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Clear Architecture Boundaries
+- Separate concerns by layers and modules with explicit contracts.
+- Backend, frontend, database, and cache boundaries MUST be respected; no cross-layer leaks.
+- Data flow MUST be unidirectional across boundaries; shared types live in dedicated modules.
+Rationale: Strong boundaries enable parallel work and safer changes.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. No Testing Policy (Superseding)
+- No unit, integration, or end-to-end tests are permitted.
+- Templates, plans, and tasks MUST NOT introduce tests or test scaffolding.
+Rationale: This project explicitly excludes all automated testing by policy.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+## Technology Stack & Operational Constraints
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+- Backend: Golang
+- Frontend: ViteJS
+- Database: PostgreSQL
+- Cache: Redis
+- Containerization: Docker
+- Monitoring/Observability: Prometheus (metrics), Grafana (dashboards)
+- CI/CD: GitHub Actions
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+Constraints:
+- Adhere to minimal dependency principle when selecting libraries.
+- Instrument essential metrics (latency, errors, throughput) for operators.
+- Keep docker images small; prefer multi-stage builds.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+## Development Workflow & Review
+
+- Code Review: All changes MUST be reviewed for compliance with principles.
+- Branching: Use short-lived feature branches; merge via PR with CI passing.
+- CI/CD: GitHub Actions MUST build, lint, and deploy; no test steps allowed.
+- UX: Validate responsiveness manually on common breakpoints before merge.
+- Documentation: Update README and module docs when contracts or behaviors change.
+
+Constitution Check (PR Gate):
+- No new tests or test tooling introduced.
+- Dependencies justified against Minimal Dependencies.
+- Boundaries respected between backend, frontend, DB, Redis.
+- UX remains simple and responsive.
+- Monitoring and CI/CD configurations remain functional.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+- Supremacy: This constitution supersedes conflicting guidance in templates or docs.
+- Amendments: Propose via PR that updates this file and the Sync Impact Report.
+- Versioning: Semantic for governance text.
+  - MAJOR: Backward-incompatible policy changes or removals.
+  - MINOR: Added or materially expanded principles/sections.
+  - PATCH: Clarifications or wording fixes.
+- Compliance: Reviewers MUST block PRs violating principles or stack constraints.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: TODO(RATIFICATION_DATE) | **Last Amended**: 2025-11-06
