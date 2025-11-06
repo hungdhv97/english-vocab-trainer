@@ -19,3 +19,7 @@ backend/.DS_Store
 *.log
 build/
 .idea
+
+# Codex
+.codex/
+!.codex/prompts/

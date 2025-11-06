@@ -17,10 +17,10 @@
   the iteration process.
 -->
 
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
+**Language/Version**: [e.g., Go 1.x (backend), React+TypeScript (frontend)]  
+**Primary Dependencies**: [e.g., Vite, Gin, Tailwind; keep minimal]  
+**Storage**: [PostgreSQL; Redis for caching/queues]  
+**Testing**: Not permitted per Constitution v1.0.0  
 **Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
 **Project Type**: [single/web/mobile - determines source structure]  
 **Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
@@ -31,7 +31,9 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- No automated tests of any kind are allowed (unit/integration/e2e).
+- Enforce minimal dependencies and clear architecture boundaries.
+- Use Go backend, ViteJS frontend, PostgreSQL, Redis, Docker, GitHub Actions, Prometheus+Grafana.
 
 ## Project Structure
 
@@ -63,32 +65,27 @@ src/
 ├── cli/
 └── lib/
 
-tests/
-├── contract/
-├── integration/
-└── unit/
+# Note: tests/ directories are prohibited by Constitution v1.0.0
 
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
+# [REMOVE IF UNUSED] Option 2: Web application (frontend + backend)
 backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
+└── src/
+    ├── models/
+    ├── services/
+    └── api/
 
 frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
+└── src/
+    ├── components/
+    ├── pages/
+    └── services/
 
 # [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
 api/
 └── [same as backend above]
 
 ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+└── [platform-specific structure]
 ```
 
 **Structure Decision**: [Document the selected structure and reference the real

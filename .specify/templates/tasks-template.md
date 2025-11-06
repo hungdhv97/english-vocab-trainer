@@ -8,9 +8,9 @@ description: "Task list template for feature implementation"
 **Input**: Design documents from `/specs/[###-feature-name]/`
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
-**Tests**: The examples below include test tasks. Tests are OPTIONAL - only include them if explicitly requested in the feature specification.
+**Tests**: Prohibited by Constitution v1.0.0. Do not create or run any automated tests.
 
-**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+**Organization**: Tasks are grouped by user story to enable independent implementation and live verification of each story.
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -20,7 +20,7 @@ description: "Task list template for feature implementation"
 
 ## Path Conventions
 
-- **Single project**: `src/`, `tests/` at repository root
+- **Single project**: `src/` at repository root (no `tests/` directories)
 - **Web app**: `backend/src/`, `frontend/src/`
 - **Mobile**: `api/src/`, `ios/src/` or `android/src/`
 - Paths shown below assume single project - adjust based on plan.md structure
@@ -77,14 +77,7 @@ Examples of foundational tasks (adjust based on your project):
 
 **Goal**: [Brief description of what this story delivers]
 
-**Independent Test**: [How to verify this story works on its own]
-
-### Tests for User Story 1 (OPTIONAL - only if tests requested) ⚠️
-
-> **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
-
-- [ ] T010 [P] [US1] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T011 [P] [US1] Integration test for [user journey] in tests/integration/test_[name].py
+**Independent Verification**: [How to verify this story works on its own (demo/checklist)]
 
 ### Implementation for User Story 1
 
@@ -95,7 +88,7 @@ Examples of foundational tasks (adjust based on your project):
 - [ ] T016 [US1] Add validation and error handling
 - [ ] T017 [US1] Add logging for user story 1 operations
 
-**Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
+**Checkpoint**: At this point, User Story 1 should be fully functional and verifiable independently
 
 ---
 
@@ -103,12 +96,7 @@ Examples of foundational tasks (adjust based on your project):
 
 **Goal**: [Brief description of what this story delivers]
 
-**Independent Test**: [How to verify this story works on its own]
-
-### Tests for User Story 2 (OPTIONAL - only if tests requested) ⚠️
-
-- [ ] T018 [P] [US2] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T019 [P] [US2] Integration test for [user journey] in tests/integration/test_[name].py
+**Independent Verification**: [How to verify this story works on its own]
 
 ### Implementation for User Story 2
 
@@ -125,12 +113,7 @@ Examples of foundational tasks (adjust based on your project):
 
 **Goal**: [Brief description of what this story delivers]
 
-**Independent Test**: [How to verify this story works on its own]
-
-### Tests for User Story 3 (OPTIONAL - only if tests requested) ⚠️
-
-- [ ] T024 [P] [US3] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T025 [P] [US3] Integration test for [user journey] in tests/integration/test_[name].py
+**Independent Verification**: [How to verify this story works on its own]
 
 ### Implementation for User Story 3
 
@@ -153,7 +136,7 @@ Examples of foundational tasks (adjust based on your project):
 - [ ] TXXX [P] Documentation updates in docs/
 - [ ] TXXX Code cleanup and refactoring
 - [ ] TXXX Performance optimization across all stories
-- [ ] TXXX [P] Additional unit tests (if requested) in tests/unit/
+- [ ] TXXX [P] Observability dashboards and alerts (Prometheus/Grafana)
 - [ ] TXXX Security hardening
 - [ ] TXXX Run quickstart.md validation
 
@@ -173,12 +156,11 @@ Examples of foundational tasks (adjust based on your project):
 ### User Story Dependencies
 
 - **User Story 1 (P1)**: Can start after Foundational (Phase 2) - No dependencies on other stories
-- **User Story 2 (P2)**: Can start after Foundational (Phase 2) - May integrate with US1 but should be independently testable
-- **User Story 3 (P3)**: Can start after Foundational (Phase 2) - May integrate with US1/US2 but should be independently testable
+- **User Story 2 (P2)**: Can start after Foundational (Phase 2) - May integrate with US1 but should be independently verifiable
+- **User Story 3 (P3)**: Can start after Foundational (Phase 2) - May integrate with US1/US2 but should be independently verifiable
 
 ### Within Each User Story
 
-- Tests (if included) MUST be written and FAIL before implementation
 - Models before services
 - Services before endpoints
 - Core implementation before integration
@@ -198,10 +180,6 @@ Examples of foundational tasks (adjust based on your project):
 ## Parallel Example: User Story 1
 
 ```bash
-# Launch all tests for User Story 1 together (if tests requested):
-Task: "Contract test for [endpoint] in tests/contract/test_[name].py"
-Task: "Integration test for [user journey] in tests/integration/test_[name].py"
-
 # Launch all models for User Story 1 together:
 Task: "Create [Entity1] model in src/models/[entity1].py"
 Task: "Create [Entity2] model in src/models/[entity2].py"
@@ -216,15 +194,15 @@ Task: "Create [Entity2] model in src/models/[entity2].py"
 1. Complete Phase 1: Setup
 2. Complete Phase 2: Foundational (CRITICAL - blocks all stories)
 3. Complete Phase 3: User Story 1
-4. **STOP and VALIDATE**: Test User Story 1 independently
+4. **STOP and VALIDATE**: Verify User Story 1 independently (demo/feature flag)
 5. Deploy/demo if ready
 
 ### Incremental Delivery
 
 1. Complete Setup + Foundational → Foundation ready
-2. Add User Story 1 → Test independently → Deploy/Demo (MVP!)
-3. Add User Story 2 → Test independently → Deploy/Demo
-4. Add User Story 3 → Test independently → Deploy/Demo
+2. Add User Story 1 → Verify independently → Deploy/Demo (MVP!)
+3. Add User Story 2 → Verify independently → Deploy/Demo
+4. Add User Story 3 → Verify independently → Deploy/Demo
 5. Each story adds value without breaking previous stories
 
 ### Parallel Team Strategy
@@ -244,8 +222,7 @@ With multiple developers:
 
 - [P] tasks = different files, no dependencies
 - [Story] label maps task to specific user story for traceability
-- Each user story should be independently completable and testable
-- Verify tests fail before implementing
+- Each user story should be independently completable and verifiable live
 - Commit after each task or logical group
 - Stop at any checkpoint to validate story independently
 - Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence
