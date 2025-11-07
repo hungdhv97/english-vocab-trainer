@@ -76,4 +76,3 @@ func (h *Handler) GetLeaderboard(c *gin.Context) {
 		"leaderboard": entries,
 	})
 }
-

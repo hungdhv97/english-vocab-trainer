@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Game from '@/components/game/Game';
 import Login from '@/components/auth/Login';
@@ -9,68 +9,124 @@ import Dashboard from '@/components/Dashboard';
 import { HomePage } from '@/components/home/HomePage';
 import { ModeToggle } from '@/components/mode-toggle';
 import { ThemeProvider } from '@/components/theme-provider';
+import { isAuthenticated } from '@/lib/api';
 
-export default function App() {
+function AppRoutes() {
   const [userId, setUserId] = useState<number | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isLoggingOut = useRef(false);
+
+  // T048 Fix: Check localStorage for existing JWT token on mount
+  useEffect(() => {
+    // If there's a valid JWT token in localStorage, try to restore user session
+    if (isAuthenticated()) {
+      const storedUserId = localStorage.getItem('user_id');
+      if (storedUserId) {
+        setUserId(parseInt(storedUserId, 10));
+      }
+    }
+  }, []);
+
+  // T063 Fix: Clear state when we're on a public route after logout
+  useEffect(() => {
+    if (isLoggingOut.current && (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register')) {
+      setUserId(null);
+      isLoggingOut.current = false;
+    }
+  }, [location.pathname]);
 
   function handleLoggedIn(id: number) {
     setUserId(id);
+    // T048 Fix: Store user_id in localStorage to persist across page refreshes
+    localStorage.setItem('user_id', id.toString());
   }
 
   function handleLogout() {
-    setUserId(null);
+    // T063 Fix: Set logout flag, clear localStorage immediately, navigate to home
+    isLoggingOut.current = true;
+    // T048 Fix: Clear both JWT token and user_id on logout
+    localStorage.removeItem('jwt_token');
+    localStorage.removeItem('user_id');
+    // Navigate to home page - state will be cleared by useEffect when we're on public route
+    navigate('/', { replace: true });
   }
 
   return (
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <div className="fixed top-4 right-4 z-[9999]">
+        <ModeToggle />
+      </div>
+      <Toaster position="top-center" />
+      <Routes>
+        <Route path="/login" element={<Login onLogin={handleLoggedIn} />} />
+        <Route
+          path="/register"
+          element={<Register onRegister={handleLoggedIn} />}
+        />
+        <Route
+          path="/dashboard"
+          element={
+            userId !== null && !isLoggingOut.current ? (
+              <Dashboard onLogout={handleLogout} />
+            ) : isLoggingOut.current ? (
+              <Navigate to="/" replace />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+        <Route
+          path="/game"
+          element={
+            userId !== null && !isLoggingOut.current ? (
+              <Game userId={userId} />
+            ) : isLoggingOut.current ? (
+              <Navigate to="/" replace />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+        {/* T048 Fix: Add route for /game/:code to handle game-specific navigation */}
+        <Route
+          path="/game/:code"
+          element={
+            userId !== null && !isLoggingOut.current ? (
+              <Game userId={userId} />
+            ) : isLoggingOut.current ? (
+              <Navigate to="/" replace />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+        <Route
+          path="/history"
+          element={
+            userId !== null && !isLoggingOut.current ? (
+              <History userId={userId} />
+            ) : isLoggingOut.current ? (
+              <Navigate to="/" replace />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+        {/* Home Page - Public route (no authentication required) */}
+        <Route path="/" element={<HomePage />} />
+        
+        {/* Fallback - redirect unknown routes to home */}
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </ThemeProvider>
+  );
+}
+
+export default function App() {
+  return (
     <BrowserRouter>
-      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        <div className="fixed top-4 right-4 z-[9999]">
-          <ModeToggle />
-        </div>
-        <Toaster position="top-center" />
-        <Routes>
-          <Route path="/login" element={<Login onLogin={handleLoggedIn} />} />
-          <Route
-            path="/register"
-            element={<Register onRegister={handleLoggedIn} />}
-          />
-          <Route
-            path="/dashboard"
-            element={
-              userId !== null ? (
-                <Dashboard onLogout={handleLogout} />
-              ) : (
-                <Navigate to="/login" />
-              )
-            }
-          />
-          <Route
-            path="/game"
-            element={
-              userId !== null ? (
-                <Game userId={userId} />
-              ) : (
-                <Navigate to="/login" />
-              )
-            }
-          />
-          <Route
-            path="/history"
-            element={
-              userId !== null ? (
-                <History userId={userId} />
-              ) : (
-                <Navigate to="/login" />
-              )
-            }
-          />
-          {/* Home Page - Public route (no authentication required) */}
-          <Route path="/" element={<HomePage />} />
-          
-          {/* Fallback - redirect unknown routes to home */}
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </ThemeProvider>
+      <AppRoutes />
     </BrowserRouter>
   );
 }

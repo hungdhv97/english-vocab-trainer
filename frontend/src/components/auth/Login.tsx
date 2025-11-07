@@ -33,20 +33,28 @@ export default function Login({ onLogin }: Props) {
       // Call login with redirect_to parameter
       const user = await login(username, password, redirectTo);
       
-      // Store JWT token if provided
+      // T048 Fix: Store both JWT token and user_id in localStorage
       if (user.jwt_token) {
         localStorage.setItem('jwt_token', user.jwt_token);
+      }
+      if (user.user_id) {
+        localStorage.setItem('user_id', user.user_id.toString());
       }
       
       onLogin(user.user_id);
       
-      // T060: Check if response contains validated redirect_to
-      if (user.redirect_to) {
+      // T060 & T065: Check if response contains validated redirect_to
+      // Only navigate if redirect_to is a non-empty string (backend validates it)
+      // T065: Backend validates redirect_to and only includes it in response if valid
+      // Invalid redirects (like https://evil.com) are rejected and not included in response
+      if (user.redirect_to && typeof user.redirect_to === 'string' && user.redirect_to.trim() !== '') {
         // Backend validated the redirect URL - navigate to it
         navigate(user.redirect_to);
       } else {
         // No redirect or invalid redirect - navigate to default dashboard
-        navigate('/dashboard');
+        // T065: Backend rejected invalid redirect_to (like https://evil.com) and didn't include it in response
+        // Check backend logs for "[SECURITY] Rejected" messages
+        navigate('/');
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Login failed';
@@ -84,7 +92,14 @@ export default function Login({ onLogin }: Props) {
               type="button"
               variant="link"
               className="w-full"
-              onClick={() => navigate('/register')}
+              onClick={() => {
+                // T062 Fix: Preserve redirect_to parameter when switching to register
+                if (redirectTo) {
+                  navigate(`/register?redirect_to=${encodeURIComponent(redirectTo)}`);
+                } else {
+                  navigate('/register');
+                }
+              }}
             >
               Register
             </Button>

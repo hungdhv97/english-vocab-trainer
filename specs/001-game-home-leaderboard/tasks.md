@@ -140,10 +140,10 @@ This is a **web application** with:
 ### Manual Verification for User Story 3
 
 - [x] T047 [US3] Test unauthenticated click: clear localStorage, click game card, verify redirect to `/login?redirect_to=/game/{code}` with correct game code in URL
-- [ ] T048 [US3] Test authenticated click: login and get JWT, navigate to home page, click game card, verify direct navigation to `/game/{code}` without login redirect
-- [ ] T049 [US3] Test multiple game selections: click different games, verify each redirects with correct game code in redirect_to parameter
-- [ ] T050 [US3] Test keyboard navigation: use Tab to focus game card, press Enter, verify same behavior as mouse click
-- [ ] T051 [US3] Test edge case: close browser after clicking game (before login redirect completes), reopen and verify no issues (expected: redirect lost, acceptable behavior)
+- [x] T048 [US3] Test authenticated click: login and get JWT, navigate to home page, click game card, verify direct navigation to `/game/{code}` without login redirect
+- [x] T049 [US3] Test multiple game selections: click different games, verify each redirects with correct game code in redirect_to parameter
+- [x] T050 [US3] Test keyboard navigation: use Tab to focus game card, press Enter, verify same behavior as mouse click
+- [x] T051 [US3] Test edge case: close browser after clicking game (before login redirect completes), reopen and verify no issues (expected: redirect lost, acceptable behavior)
 
 **Checkpoint**: User Stories 1, 2, AND 3 complete - users can browse games, view leaderboards, and initiate game selection with proper authentication flow
 
@@ -173,13 +173,13 @@ This is a **web application** with:
 
 ### Manual Verification for User Story 4
 
-- [ ] T062 [US4] Test full registration flow: from home page, click game "Word Scramble" → redirected to `/login?redirect_to=/game/word-scramble` → switch to Register tab → complete registration → verify automatic navigation to `/game/word-scramble`
-- [ ] T063 [US4] Test full login flow: logout, click game "Vocab Quiz" → redirected to login with redirect_to → enter valid credentials → verify automatic navigation to `/game/vocab-quiz`
-- [ ] T064 [US4] Test invalid credentials: attempt login with wrong password → verify error message displayed, redirect_to parameter preserved in URL, can retry
-- [ ] T065 [US4] Test redirect validation: manually navigate to `/login?redirect_to=https://evil.com` → complete login → verify redirect to default dashboard (not evil.com), check backend logs for rejected redirect
-- [ ] T066 [US4] Test no redirect parameter: directly navigate to `/login` without redirect_to → complete login → verify navigation to default dashboard
-- [ ] T067 [US4] Test login/register page UI: verify both login and registration options visible on auth page (tabs or forms)
-- [ ] T068 [US4] Test back navigation: start auth flow for game A, navigate back to home, click game B → verify redirect_to updated to game B
+- [x] T062 [US4] Test full registration flow: from home page, click game "Word Scramble" → redirected to `/login?redirect_to=/game/word-scramble` → switch to Register tab → complete registration → verify automatic navigation to `/game/word-scramble`
+- [x] T063 [US4] Test full login flow: logout, click game "Vocab Quiz" → redirected to login with redirect_to → enter valid credentials → verify automatic navigation to `/game/vocab-quiz`
+- [x] T064 [US4] Test invalid credentials: attempt login with wrong password → verify error message displayed, redirect_to parameter preserved in URL, can retry
+- [x] T065 [US4] Test redirect validation: manually navigate to `/login?redirect_to=https://evil.com` → complete login → verify redirect to default dashboard (not evil.com), check backend logs for rejected redirect
+- [x] T066 [US4] Test no redirect parameter: directly navigate to `/login` without redirect_to → complete login → verify navigation to default dashboard
+- [x] T067 [US4] Test login/register page UI: verify both login and registration options visible on auth page (tabs or forms)
+- [x] T068 [US4] Test back navigation: start auth flow for game A, navigate back to home, click game B → verify redirect_to updated to game B
 
 **Checkpoint**: All 4 user stories complete and independently functional - full home page with games, leaderboards, game selection, and authentication flow working end-to-end
 
@@ -194,15 +194,16 @@ This is a **web application** with:
 - [x] T071 [P] Optimize game icon loading - add lazy loading attribute to img tags in GameCard component
 - [x] T072 [P] Add empty state handling in `HomePage.tsx` - if no games exist in system, display "No games available" message with appropriate styling
 - [x] T073 [P] Add tooltip to game cards in `GameCard.tsx` - show full description on hover if truncated (using Radix UI Tooltip component)
-- [ ] T074 Verify mobile responsiveness - test on physical devices or browser emulation at 320px (iPhone SE), 768px (iPad), 1024px (iPad Pro)
+- [x] T074 Verify mobile responsiveness - test on physical devices or browser emulation at 320px (iPhone SE), 768px (iPad), 1024px (iPad Pro)
 - [ ] T075 Run Lighthouse audit on home page - target Performance score >80, Accessibility score >90, verify Core Web Vitals (FCP <2s, LCP <3s)
+  - **Note**: Current Performance score: 50 (below target of >80). Needs optimization.
 - [ ] T076 [P] Add API response time logging in backend - log all /api/v1/games and /api/v1/games/:id/leaderboard requests with duration, set up Prometheus metrics if available
-- [ ] T077 [P] Test leaderboard cache invalidation - complete a game session, verify leaderboard updates within 5 minutes (cache TTL)
-- [ ] T078 Verify all acceptance scenarios from spec.md - run through complete checklist in quickstart.md (27 manual verification steps)
-- [ ] T079 Test edge cases from spec.md - verify handling of: very long game names/descriptions, empty leaderboards, unavailable games, concurrent leaderboard updates
-- [ ] T080 Run gofmt and golangci-lint on backend code - ensure all backend files pass linting
-- [ ] T081 Run ESLint on frontend code - ensure all frontend files pass linting
-- [ ] T082 Final end-to-end manual test - complete full user journey from landing on home page to playing a game, verify all success criteria from spec.md met
+- [x] T077 [P] Test leaderboard cache invalidation - complete a game session, verify leaderboard updates within 5 minutes (cache TTL)
+- [x] T078 Verify all acceptance scenarios from spec.md - run through complete checklist in quickstart.md (27 manual verification steps)
+- [x] T079 Test edge cases from spec.md - verify handling of: very long game names/descriptions, empty leaderboards, unavailable games, concurrent leaderboard updates
+- [x] T080 Run gofmt and golangci-lint on backend code - ensure all backend files pass linting
+- [x] T081 Run ESLint on frontend code - ensure all frontend files pass linting
+- [x] T082 Final end-to-end manual test - complete full user journey from landing on home page to playing a game, verify all success criteria from spec.md met
 
 ---
 

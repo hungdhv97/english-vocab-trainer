@@ -33,19 +33,24 @@ export default function Register({ onRegister }: Props) {
       // Call register with redirect_to parameter
       const user = await register(username, password, redirectTo);
       
-      // Store JWT token if provided
+      // T048 Fix: Store both JWT token and user_id in localStorage
       if (user.jwt_token) {
         localStorage.setItem('jwt_token', user.jwt_token);
+      }
+      if (user.user_id) {
+        localStorage.setItem('user_id', user.user_id.toString());
       }
       
       onRegister(user.user_id);
       
-      // T061: Check if response contains validated redirect_to
-      if (user.redirect_to) {
+      // T061 & T065: Check if response contains validated redirect_to
+      // Only navigate if redirect_to is a non-empty string (backend validates it)
+      if (user.redirect_to && typeof user.redirect_to === 'string' && user.redirect_to.trim() !== '') {
         // Backend validated the redirect URL - navigate to it
         navigate(user.redirect_to);
       } else {
         // No redirect or invalid redirect - navigate to default dashboard
+        // T065: Backend rejected invalid redirect_to (like https://evil.com) and didn't include it in response
         navigate('/dashboard');
       }
     } catch (err) {
@@ -84,7 +89,14 @@ export default function Register({ onRegister }: Props) {
               type="button"
               variant="link"
               className="w-full"
-              onClick={() => navigate('/login')}
+              onClick={() => {
+                // T062 Fix: Preserve redirect_to parameter when switching to login
+                if (redirectTo) {
+                  navigate(`/login?redirect_to=${encodeURIComponent(redirectTo)}`);
+                } else {
+                  navigate('/login');
+                }
+              }}
             >
               Login
             </Button>

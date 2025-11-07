@@ -2,21 +2,21 @@ package config
 
 // Config holds application configuration.
 type Config struct {
-	Env        string         `mapstructure:"env"`
-	HTTP       HTTPConfig     `mapstructure:"http"`
-	Postgres   PostgresConfig `mapstructure:"postgres"`
-	Redis      RedisConfig    `mapstructure:"redis"`
-	Cursor     CursorConfig   `mapstructure:"cursor"`
-	DeepL      DeepLConfig    `mapstructure:"deepl"`
-	Jobs       JobsConfig     `mapstructure:"jobs"`
-	JWT        JWTConfig      `mapstructure:"jwt"`
-	CORS       CORSConfig     `mapstructure:"cors"`
-	RateLimit  RateLimitConfig `mapstructure:"rate_limit"`
-	Security   SecurityConfig `mapstructure:"security"`
-	Database   DatabaseConfig `mapstructure:"database"`
+	Env        string           `mapstructure:"env"`
+	HTTP       HTTPConfig       `mapstructure:"http"`
+	Postgres   PostgresConfig   `mapstructure:"postgres"`
+	Redis      RedisConfig      `mapstructure:"redis"`
+	Cursor     CursorConfig     `mapstructure:"cursor"`
+	DeepL      DeepLConfig      `mapstructure:"deepl"`
+	Jobs       JobsConfig       `mapstructure:"jobs"`
+	JWT        JWTConfig        `mapstructure:"jwt"`
+	CORS       CORSConfig       `mapstructure:"cors"`
+	RateLimit  RateLimitConfig  `mapstructure:"rate_limit"`
+	Security   SecurityConfig   `mapstructure:"security"`
+	Database   DatabaseConfig   `mapstructure:"database"`
 	Monitoring MonitoringConfig `mapstructure:"monitoring"`
-	Health     HealthConfig   `mapstructure:"health"`
-	Log        LogConfig      `mapstructure:"log"`
+	Health     HealthConfig     `mapstructure:"health"`
+	Log        LogConfig        `mapstructure:"log"`
 }
 
 // HTTPConfig holds HTTP server related configuration.

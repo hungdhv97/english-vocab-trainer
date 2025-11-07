@@ -22,4 +22,3 @@ type GameLevel struct {
 	GameID  int64 `json:"game_id" db:"game_id"`
 	LevelID int64 `json:"level_id" db:"level_id"`
 }
-

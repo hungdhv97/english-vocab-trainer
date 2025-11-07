@@ -19,4 +19,3 @@ type LeaderboardResponse struct {
 	GameName    string             `json:"game_name"`
 	Leaderboard []LeaderboardEntry `json:"leaderboard"`
 }
-

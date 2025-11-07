@@ -38,7 +38,7 @@ func (h *Handler) Register(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	// Extract and validate redirect_to query parameter
 	redirectTo := c.Query("redirect_to")
 	var validatedRedirect *string
@@ -49,7 +49,7 @@ func (h *Handler) Register(c *gin.Context) {
 		}
 		// If invalid, validatedRedirect remains nil (not included in response)
 	}
-	
+
 	// Return user with optional redirect_to
 	response := gin.H{
 		"user_id":   user.ID,
@@ -79,7 +79,7 @@ func (h *Handler) Login(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	// Extract and validate redirect_to query parameter
 	redirectTo := c.Query("redirect_to")
 	var validatedRedirect *string
@@ -90,7 +90,7 @@ func (h *Handler) Login(c *gin.Context) {
 		}
 		// If invalid, validatedRedirect remains nil (not included in response)
 	}
-	
+
 	// Return user with optional redirect_to
 	response := gin.H{
 		"user_id":   user.ID,

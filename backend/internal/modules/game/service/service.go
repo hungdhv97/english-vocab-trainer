@@ -94,7 +94,7 @@ func (s *Service) GetLeaderboard(ctx context.Context, gameID int64) ([]model.Lea
 	// Try to get from cache first
 	cacheKey := fmt.Sprintf("leaderboard:%d", gameID)
 	cachedData, err := s.redis.Get(ctx, cacheKey).Result()
-	
+
 	// Cache hit - return cached data
 	// Note: redis.Nil is returned when key doesn't exist (cache miss), which is not an error
 	if err == nil && cachedData != "" {
@@ -177,4 +177,3 @@ func (s *Service) GetLeaderboard(ctx context.Context, gameID int64) ([]model.Lea
 
 	return entries, nil
 }
-

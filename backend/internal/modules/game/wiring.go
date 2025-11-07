@@ -17,4 +17,3 @@ func RegisterRoutes(r *gin.RouterGroup, d *deps.Deps) {
 	r.GET("/games", h.ListGames)
 	r.GET("/games/:id/leaderboard", h.GetLeaderboard)
 }
-
