@@ -2,35 +2,31 @@
 ================================================================================
 SYNC IMPACT REPORT
 ================================================================================
-Version Change: INITIAL → 1.0.0
+Version Change: 1.0.0 → 1.1.0
 
-Modified Principles: N/A (initial constitution)
+Modified Principles:
+  - Principle numbering updated: IV → V (Minimal Dependencies), V → VI (No Testing Required)
 
 Added Sections:
-  - Core Principles (5 principles defined)
-  - Technology Stack & Architecture
-  - Development Workflow & Quality
-  - Governance
+  - III. Latest shadcn UI Components (NEW PRINCIPLE)
 
 Removed Sections: N/A
 
 Templates Requiring Updates:
-  ✅ plan-template.md - Constitution Check section aligned with new principles
-  ✅ spec-template.md - No changes required (user story format compatible)
-  ✅ tasks-template.md - Updated to reflect NO TESTING policy
-  ⚠️  agent-file-template.md - PENDING REVIEW for principle references
-  ⚠️  checklist-template.md - PENDING REVIEW for quality gates
+  ✅ plan-template.md - Technology Stack Compliance updated to reference shadcn UI
+  ✅ spec-template.md - No changes required
+  ✅ tasks-template.md - No changes required
+  ✅ agent-file-template.md - No changes required
+  ✅ checklist-template.md - No changes required
 
-Follow-up TODOs:
-  - Review agent-file-template.md for any test-related guidance to remove
-  - Update checklist-template.md to reflect no-testing workflow
-  - Ensure GitHub Actions workflows align with CI/CD principle
-  - Document Grafana/Prometheus monitoring setup procedures
+Follow-up TODOs: N/A
 
-Rationale for Version 1.0.0:
-  Initial constitution ratification establishing project governance and
-  core principles. This is the first formal documentation of project
-  standards and non-negotiable rules.
+Rationale for Version 1.1.0:
+  Added new principle (III) mandating use of latest shadcn UI components for
+  all frontend UI development. Updated Technology Stack section to emphasize
+  shadcn UI over generic Radix UI reference. Renumbered subsequent principles
+  accordingly. This is a MINOR version bump as it adds new guidance without
+  removing or breaking existing principles.
 ================================================================================
 -->
 
@@ -64,7 +60,20 @@ User interfaces MUST prioritize simplicity, speed, and accessibility:
 
 **Rationale**: Users abandon slow or confusing applications. Responsive design ensures accessibility across devices. Our spaced-repetition learning system demands a friction-free experience to maintain engagement.
 
-### III. Minimal Dependencies (NON-NEGOTIABLE)
+### III. Latest shadcn UI Components (NON-NEGOTIABLE)
+
+Frontend UI components MUST use shadcn UI as the primary component library:
+
+- **Use shadcn UI components**: All UI components MUST be sourced from shadcn UI (`npx shadcn@latest add [component]`)
+- **Keep components updated**: When adding new components, always use the latest version (`shadcn@latest`)
+- **Prefer shadcn over custom**: Do not build custom components when a shadcn equivalent exists
+- **Stay current**: Regularly update existing shadcn components to latest versions for bug fixes and improvements
+- **Component customization**: shadcn components can be customized via Tailwind classes and component props, but core structure should remain shadcn-based
+- **No direct Radix imports**: Use shadcn components (which wrap Radix primitives) rather than importing Radix UI directly
+
+**Rationale**: shadcn UI provides accessible, well-designed, and maintainable React components built on Radix UI primitives. Using the latest versions ensures we benefit from security updates, bug fixes, and new features. This reduces development time, ensures consistency, and maintains high accessibility standards without requiring custom component development.
+
+### IV. Minimal Dependencies (NON-NEGOTIABLE)
 
 Dependencies MUST be justified by significant value vs. maintenance cost:
 
@@ -76,7 +85,7 @@ Dependencies MUST be justified by significant value vs. maintenance cost:
 
 **Rationale**: Every dependency is a liability—security vulnerabilities, breaking changes, abandonment risk. Minimal dependencies reduce attack surface, build times, and maintenance burden.
 
-### IV. Clear Architecture Boundaries (NON-NEGOTIABLE)
+### V. Clear Architecture Boundaries (NON-NEGOTIABLE)
 
 System architecture MUST enforce separation of concerns with explicit boundaries:
 
@@ -89,7 +98,7 @@ System architecture MUST enforce separation of concerns with explicit boundaries
 
 **Rationale**: Clear boundaries enable parallel development, isolated testing, and easier refactoring. Our modular backend structure (user, word, level, play) exemplifies this principle.
 
-### V. No Testing Required
+### VI. No Testing Required
 
 This project does NOT require automated tests. Development proceeds without:
 
@@ -119,7 +128,7 @@ This project uses the following technology stack exclusively:
 - **Build Tool**: Vite 5+ (development and production builds)
 - **Framework**: React 19+ with TypeScript 5+
 - **Styling**: Tailwind CSS 3+ (utility-first CSS)
-- **UI Components**: Radix UI (accessible component primitives)
+- **UI Components**: shadcn UI (latest version, accessible components built on Radix UI primitives)
 - **State Management**: React Context API or Zustand (if needed)
 
 **Infrastructure**:
@@ -278,4 +287,4 @@ Violations of NON-NEGOTIABLE principles will result in:
 
 ---
 
-**Version**: 1.0.0 | **Ratified**: 2025-11-06 | **Last Amended**: 2025-11-06
+**Version**: 1.1.0 | **Ratified**: 2025-11-06 | **Last Amended**: 2025-11-08
