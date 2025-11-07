@@ -1,0 +1,29 @@
+# english-vocab-trainer Development Guidelines
+
+Auto-generated from all feature plans. Last updated: 2025-11-07
+
+## Active Technologies
+
+- (001-game-home-leaderboard)
+
+## Project Structure
+
+```text
+src/
+tests/
+```
+
+## Commands
+
+# Add commands for 
+
+## Code Style
+
+: Follow standard conventions
+
+## Recent Changes
+
+- 001-game-home-leaderboard: Added
+
+<!-- MANUAL ADDITIONS START -->
+<!-- MANUAL ADDITIONS END -->

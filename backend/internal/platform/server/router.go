@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/game"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/level"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/play"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/user"
@@ -22,6 +23,7 @@ func NewRouter(d *deps.Deps) *gin.Engine {
 	word.RegisterRoutes(api, d)
 	level.RegisterRoutes(api, d)
 	play.RegisterRoutes(api, d)
+	game.RegisterRoutes(api, d)
 
 	r.GET("/openapi.yaml", func(c *gin.Context) { c.File("docs/openapi.yaml") })
 	r.GET("/docs", func(c *gin.Context) {

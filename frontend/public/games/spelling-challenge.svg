@@ -1,0 +1,6 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="64" height="64" rx="12" fill="#F59E0B"/>
+  <path d="M32 16 L38 28 L52 28 L40 36 L45 48 L32 40 L19 48 L24 36 L12 28 L26 28 Z" fill="white"/>
+  <text x="50%" y="75%" dominant-baseline="middle" text-anchor="middle" fill="white" font-size="12" font-family="Arial, sans-serif" font-weight="bold">ABC</text>
+</svg>
+

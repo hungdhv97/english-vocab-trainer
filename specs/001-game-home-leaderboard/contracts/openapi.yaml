@@ -1,0 +1,556 @@
+openapi: 3.0.3
+info:
+  title: English Vocab Trainer - Game Home API
+  description: |
+    API endpoints for the Game Home Page with Leaderboards feature.
+    
+    This specification covers:
+    - Listing all active games with metadata
+    - Retrieving game-specific leaderboards (top 10 players)
+    - Authentication endpoints with redirect support
+    
+    **Feature**: Game Home Page with Leaderboards
+    **Branch**: 001-game-home-leaderboard
+    **Version**: 1.0.0
+  version: 1.0.0
+  contact:
+    name: English Vocab Trainer Team
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development server
+  - url: https://api.english-vocab-trainer.com/api/v1
+    description: Production server
+
+tags:
+  - name: games
+    description: Game listing and metadata
+  - name: leaderboards
+    description: Game leaderboard data
+  - name: auth
+    description: Authentication with redirect support
+
+paths:
+  /games:
+    get:
+      summary: List all active games
+      description: |
+        Retrieves all active games with their metadata for display on the home page.
+        
+        **Authorization**: None (public endpoint)
+        
+        **Performance**: 
+        - Response time: <500ms
+        - Caching: Results cached for 5 minutes (Redis)
+        
+        **Functional Requirements**: FR-001, FR-002, FR-014
+      operationId: listGames
+      tags:
+        - games
+      responses:
+        '200':
+          description: Successful response with list of active games
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  games:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Game'
+                    description: Array of active games ordered by display_order then name
+              examples:
+                success:
+                  summary: Multiple games available
+                  value:
+                    games:
+                      - game_id: 1
+                        code: "word-scramble"
+                        name: "Word Scramble"
+                        description: "Unscramble letters to form correct English words. Test your spelling skills!"
+                        icon_path: "/games/word-scramble.svg"
+                        category: "vocabulary"
+                        display_order: 1
+                        is_active: true
+                        created_at: "2025-11-01T00:00:00Z"
+                        updated_at: "2025-11-01T00:00:00Z"
+                      - game_id: 2
+                        code: "vocab-quiz"
+                        name: "Vocabulary Quiz"
+                        description: "Match words with their definitions. Expand your vocabulary knowledge!"
+                        icon_path: "/games/vocab-quiz.svg"
+                        category: "vocabulary"
+                        display_order: 2
+                        is_active: true
+                        created_at: "2025-11-01T00:00:00Z"
+                        updated_at: "2025-11-01T00:00:00Z"
+                empty:
+                  summary: No games available
+                  value:
+                    games: []
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /games/{gameId}/leaderboard:
+    get:
+      summary: Get leaderboard for a specific game
+      description: |
+        Retrieves the top 10 players for a specific game, ranked by best score.
+        
+        **Authorization**: None (public endpoint)
+        
+        **Performance**: 
+        - Response time: <1s (includes aggregation query)
+        - Caching: Results cached for 5 minutes (Redis)
+        
+        **Ranking Logic**:
+        - Each user appears once (best score only)
+        - Ties broken by earliest achievement timestamp
+        - Only completed sessions included
+        - Inactive users excluded
+        
+        **Functional Requirements**: FR-003, FR-004, FR-012, FR-013
+      operationId: getGameLeaderboard
+      tags:
+        - leaderboards
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          description: Unique identifier of the game
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: Successful response with leaderboard entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  game_id:
+                    type: integer
+                    format: int64
+                    description: ID of the game
+                  game_name:
+                    type: string
+                    description: Name of the game
+                  leaderboard:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LeaderboardEntry'
+                    description: Array of top 10 leaderboard entries (may be empty)
+                    maxItems: 10
+              examples:
+                with_players:
+                  summary: Game with leaderboard data
+                  value:
+                    game_id: 1
+                    game_name: "Word Scramble"
+                    leaderboard:
+                      - rank: 1
+                        user_id: 42
+                        username: "vocab_master"
+                        score: 9500
+                        achieved_at: "2025-11-06T10:30:00Z"
+                      - rank: 2
+                        user_id: 17
+                        username: "quick_learner"
+                        score: 8700
+                        achieved_at: "2025-11-05T14:20:00Z"
+                      - rank: 3
+                        user_id: 89
+                        username: "word_wizard"
+                        score: 8200
+                        achieved_at: "2025-11-07T08:15:00Z"
+                no_players:
+                  summary: Game with no players yet
+                  value:
+                    game_id: 5
+                    game_name: "Pronunciation Practice"
+                    leaderboard: []
+        '404':
+          description: Game not found or inactive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Game not found"
+                message: "No active game with ID 5 exists"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /auth/login:
+    post:
+      summary: Login with optional redirect
+      description: |
+        Authenticates user with username/password and returns JWT token.
+        
+        **New Feature**: Supports optional `redirect_to` query parameter for post-login navigation.
+        
+        **Authorization**: None (public endpoint)
+        
+        **Security**:
+        - redirect_to validated against allowlist pattern: `/game/[a-z0-9-]+`
+        - Rejects absolute URLs, protocol-relative URLs, JavaScript URLs
+        - Invalid redirects logged for security monitoring
+        
+        **Functional Requirements**: FR-006, FR-007, FR-008, FR-009, FR-010
+      operationId: login
+      tags:
+        - auth
+      parameters:
+        - name: redirect_to
+          in: query
+          required: false
+          description: Path to redirect after successful login (validated against allowlist)
+          schema:
+            type: string
+            pattern: '^/game/[a-z0-9-]+$'
+          example: "/game/word-scramble"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 50
+                  description: User's username
+                password:
+                  type: string
+                  minLength: 8
+                  description: User's password
+            example:
+              username: "vocab_master"
+              password: "SecurePass123!"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT authentication token
+                  user:
+                    $ref: '#/components/schemas/User'
+                  redirect_to:
+                    type: string
+                    nullable: true
+                    description: Validated redirect path (null if not provided or invalid)
+              example:
+                token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                user:
+                  user_id: 42
+                  username: "vocab_master"
+                  is_active: true
+                  created_at: "2025-10-15T12:00:00Z"
+                redirect_to: "/game/word-scramble"
+        '400':
+          description: Invalid request (missing fields, validation errors)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Validation error"
+                message: "Username is required"
+        '401':
+          description: Authentication failed (invalid credentials)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Authentication failed"
+                message: "Invalid username or password"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /auth/register:
+    post:
+      summary: Register new user with optional redirect
+      description: |
+        Creates new user account and returns JWT token for immediate authentication.
+        
+        **New Feature**: Supports optional `redirect_to` query parameter for post-registration navigation.
+        
+        **Authorization**: None (public endpoint)
+        
+        **Security**:
+        - redirect_to validated against allowlist pattern: `/game/[a-z0-9-]+`
+        - Password must meet minimum strength requirements
+        - Username uniqueness enforced at database level
+        
+        **Functional Requirements**: FR-006, FR-007, FR-008, FR-009, FR-010
+      operationId: register
+      tags:
+        - auth
+      parameters:
+        - name: redirect_to
+          in: query
+          required: false
+          description: Path to redirect after successful registration (validated against allowlist)
+          schema:
+            type: string
+            pattern: '^/game/[a-z0-9-]+$'
+          example: "/game/vocab-quiz"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 50
+                  pattern: '^[a-zA-Z0-9_-]+$'
+                  description: Desired username (alphanumeric, hyphens, underscores)
+                password:
+                  type: string
+                  minLength: 8
+                  description: Password (minimum 8 characters)
+            example:
+              username: "new_learner"
+              password: "MyPassword123!"
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT authentication token
+                  user:
+                    $ref: '#/components/schemas/User'
+                  redirect_to:
+                    type: string
+                    nullable: true
+                    description: Validated redirect path (null if not provided or invalid)
+              example:
+                token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                user:
+                  user_id: 150
+                  username: "new_learner"
+                  is_active: true
+                  created_at: "2025-11-07T15:30:00Z"
+                redirect_to: "/game/vocab-quiz"
+        '400':
+          description: Invalid request (validation errors)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Validation error"
+                message: "Password must be at least 8 characters"
+        '409':
+          description: Username already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Conflict"
+                message: "Username 'new_learner' is already taken"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    Game:
+      type: object
+      required:
+        - game_id
+        - code
+        - name
+        - description
+        - display_order
+        - is_active
+        - created_at
+        - updated_at
+      properties:
+        game_id:
+          type: integer
+          format: int64
+          description: Unique identifier for the game
+          example: 1
+        code:
+          type: string
+          minLength: 1
+          maxLength: 50
+          pattern: '^[a-z0-9-]+$'
+          description: Machine-readable game identifier (URL-safe)
+          example: "word-scramble"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: User-facing game title
+          example: "Word Scramble"
+        description:
+          type: string
+          minLength: 10
+          maxLength: 500
+          description: Brief explanation of game mechanics and learning objectives
+          example: "Unscramble letters to form correct English words. Test your spelling skills!"
+        icon_path:
+          type: string
+          nullable: true
+          maxLength: 255
+          pattern: '^/games/[a-z0-9-]+\.(svg|png|jpg|webp)$'
+          description: Relative path to game icon in public assets
+          example: "/games/word-scramble.svg"
+        category:
+          type: string
+          nullable: true
+          maxLength: 50
+          enum: [vocabulary, grammar, pronunciation, mixed]
+          description: Learning category for grouping games
+          example: "vocabulary"
+        display_order:
+          type: integer
+          minimum: 0
+          description: Sort order on home page (lower = displayed first)
+          example: 1
+        is_active:
+          type: boolean
+          description: Controls visibility on home page
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          description: Record creation timestamp (ISO 8601)
+          example: "2025-11-01T00:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Record last update timestamp (ISO 8601)
+          example: "2025-11-01T00:00:00Z"
+
+    LeaderboardEntry:
+      type: object
+      required:
+        - rank
+        - user_id
+        - username
+        - score
+        - achieved_at
+      properties:
+        rank:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: Player's position in leaderboard (1 = highest score)
+          example: 1
+        user_id:
+          type: integer
+          format: int64
+          description: Unique identifier of the player
+          example: 42
+        username:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Player's display name
+          example: "vocab_master"
+        score:
+          type: integer
+          minimum: 0
+          description: Player's best score for this game
+          example: 9500
+        achieved_at:
+          type: string
+          format: date-time
+          description: Timestamp when best score was achieved (ISO 8601)
+          example: "2025-11-06T10:30:00Z"
+
+    User:
+      type: object
+      required:
+        - user_id
+        - username
+        - is_active
+        - created_at
+      properties:
+        user_id:
+          type: integer
+          format: int64
+          description: Unique identifier for the user
+          example: 42
+        username:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: User's display name
+          example: "vocab_master"
+        is_active:
+          type: boolean
+          description: Account active status
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          description: Account creation timestamp (ISO 8601)
+          example: "2025-10-15T12:00:00Z"
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error category (e.g., "Validation error", "Not found")
+          example: "Validation error"
+        message:
+          type: string
+          description: Human-readable error description
+          example: "Game ID must be a positive integer"
+
+  responses:
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Internal server error"
+            message: "An unexpected error occurred. Please try again later."
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token obtained from /auth/login or /auth/register.
+        
+        Note: Game listing and leaderboard endpoints are public and do not require authentication.
+
+security: []  # No global security requirement (endpoints explicitly marked as public)
+

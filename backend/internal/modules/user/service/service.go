@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"errors"
+	"log"
+	"regexp"
 	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -60,4 +62,51 @@ func (s *Service) Authenticate(username, password string) (model.User, error) {
 		return model.User{}, errors.New("account is inactive")
 	}
 	return user, nil
+}
+
+// ValidateRedirectURL validates a redirect URL for security purposes.
+// T052 [US4]: Validates against pattern `^/game/[a-z0-9-]+$`
+// Rejects: absolute URLs, protocol-relative URLs, JavaScript URLs
+// Logs rejected attempts for security monitoring
+func (s *Service) ValidateRedirectURL(url, clientIP string) bool {
+	// Empty URL is invalid
+	if strings.TrimSpace(url) == "" {
+		return false
+	}
+
+	// Security checks: reject dangerous patterns
+	urlLower := strings.ToLower(url)
+	
+	// Reject absolute URLs (http://, https://, ftp://, etc.)
+	if strings.Contains(urlLower, "://") {
+		log.Printf("[SECURITY] Rejected absolute URL redirect attempt from %s: %s", clientIP, url)
+		return false
+	}
+	
+	// Reject protocol-relative URLs (//example.com)
+	if strings.HasPrefix(url, "//") {
+		log.Printf("[SECURITY] Rejected protocol-relative URL redirect attempt from %s: %s", clientIP, url)
+		return false
+	}
+	
+	// Reject javascript: URLs
+	if strings.HasPrefix(urlLower, "javascript:") {
+		log.Printf("[SECURITY] Rejected JavaScript URL redirect attempt from %s: %s", clientIP, url)
+		return false
+	}
+	
+	// Reject data: URLs
+	if strings.HasPrefix(urlLower, "data:") {
+		log.Printf("[SECURITY] Rejected data URL redirect attempt from %s: %s", clientIP, url)
+		return false
+	}
+	
+	// Valid pattern: /game/{game-code} where game-code is lowercase alphanumeric with hyphens
+	validPattern := regexp.MustCompile(`^/game/[a-z0-9-]+$`)
+	if !validPattern.MatchString(url) {
+		log.Printf("[SECURITY] Rejected invalid redirect URL pattern from %s: %s", clientIP, url)
+		return false
+	}
+	
+	return true
 }

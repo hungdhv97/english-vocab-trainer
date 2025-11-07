@@ -6,6 +6,7 @@ import Login from '@/components/auth/Login';
 import Register from '@/components/auth/Register';
 import History from '@/components/history/History';
 import Dashboard from '@/components/Dashboard';
+import { HomePage } from '@/components/home/HomePage';
 import { ModeToggle } from '@/components/mode-toggle';
 import { ThemeProvider } from '@/components/theme-provider';
 
@@ -63,17 +64,11 @@ export default function App() {
               )
             }
           />
-          <Route
-            path="/"
-            element={
-              userId !== null ? (
-                <Navigate to="/dashboard" />
-              ) : (
-                <Navigate to="/login" />
-              )
-            }
-          />
-          <Route path="*" element={<Navigate to="/login" />} />
+          {/* Home Page - Public route (no authentication required) */}
+          <Route path="/" element={<HomePage />} />
+          
+          {/* Fallback - redirect unknown routes to home */}
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </ThemeProvider>
     </BrowserRouter>

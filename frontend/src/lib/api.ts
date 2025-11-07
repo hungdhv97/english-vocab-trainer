@@ -1,10 +1,14 @@
-import type { WordBatch, HistoryPlay, Level } from '@/types';
+import type { WordBatch, HistoryPlay, Level, Game, LeaderboardEntry } from '@/types';
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || 'http://localhost:8180/api/v1';
 
-export async function register(username: string, password: string) {
-  const res = await fetch(`${API_BASE_URL}/register`, {
+export async function register(username: string, password: string, redirectTo?: string | null) {
+  let url = `${API_BASE_URL}/register`;
+  if (redirectTo) {
+    url += `?redirect_to=${encodeURIComponent(redirectTo)}`;
+  }
+  const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
@@ -17,8 +21,12 @@ export async function register(username: string, password: string) {
   return res.json();
 }
 
-export async function login(username: string, password: string) {
-  const res = await fetch(`${API_BASE_URL}/login`, {
+export async function login(username: string, password: string, redirectTo?: string | null) {
+  let url = `${API_BASE_URL}/login`;
+  if (redirectTo) {
+    url += `?redirect_to=${encodeURIComponent(redirectTo)}`;
+  }
+  const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
@@ -95,4 +103,65 @@ export async function fetchLevels(): Promise<Level[]> {
   const res = await fetch(`${API_BASE_URL}/levels`, { credentials: 'include' });
   if (!res.ok) throw new Error('levels failed');
   return res.json();
+}
+
+// ===== Authentication Utilities =====
+
+/**
+ * Checks if the user is currently authenticated by verifying JWT token in localStorage.
+ * Returns true if a valid token exists, false otherwise.
+ */
+export function isAuthenticated(): boolean {
+  const token = localStorage.getItem('jwt_token');
+  if (!token) return false;
+  
+  try {
+    // Basic JWT validation - check if it has 3 parts (header.payload.signature)
+    const parts = token.split('.');
+    if (parts.length !== 3) return false;
+    
+    // Decode payload to check expiration
+    const payload = JSON.parse(atob(parts[1]));
+    const exp = payload.exp;
+    
+    // Check if token is expired (exp is in seconds, Date.now() is in milliseconds)
+    if (exp && exp * 1000 < Date.now()) {
+      localStorage.removeItem('jwt_token');
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    // If token is malformed, remove it and return false
+    localStorage.removeItem('jwt_token');
+    return false;
+  }
+}
+
+// ===== Game Home Page API Functions =====
+
+/**
+ * Fetches all active games for display on the home page.
+ * This is a public endpoint - no authentication required.
+ */
+export async function fetchGames(): Promise<Game[]> {
+  const res = await fetch(`${API_BASE_URL}/games`);
+  if (!res.ok) {
+    throw new Error('Failed to fetch games');
+  }
+  const data = await res.json();
+  return data.games || [];
+}
+
+/**
+ * Fetches the top 10 leaderboard entries for a specific game.
+ * This is a public endpoint - no authentication required.
+ */
+export async function fetchLeaderboard(gameId: number): Promise<LeaderboardEntry[]> {
+  const res = await fetch(`${API_BASE_URL}/games/${gameId}/leaderboard`);
+  if (!res.ok) {
+    throw new Error('Failed to fetch leaderboard');
+  }
+  const data = await res.json();
+  return data.leaderboard || [];
 }

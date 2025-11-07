@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,14 +13,41 @@ interface Props {
 export default function Login({ onLogin }: Props) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  
+  // T056 [US4]: Extract redirect_to from URL query params
+  const [redirectTo, setRedirectTo] = useState<string | null>(null);
 
+  useEffect(() => {
+    const redirect = searchParams.get('redirect_to');
+    if (redirect) {
+      setRedirectTo(redirect);
+    }
+  }, [searchParams]);
+
+  // T058 & T060 [US4]: Send redirect_to to backend and handle validated response
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
-      const user = await login(username, password);
+      // Call login with redirect_to parameter
+      const user = await login(username, password, redirectTo);
+      
+      // Store JWT token if provided
+      if (user.jwt_token) {
+        localStorage.setItem('jwt_token', user.jwt_token);
+      }
+      
       onLogin(user.user_id);
-      navigate('/game');
+      
+      // T060: Check if response contains validated redirect_to
+      if (user.redirect_to) {
+        // Backend validated the redirect URL - navigate to it
+        navigate(user.redirect_to);
+      } else {
+        // No redirect or invalid redirect - navigate to default dashboard
+        navigate('/dashboard');
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Login failed';
       toast.error(message);

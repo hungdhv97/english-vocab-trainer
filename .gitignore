@@ -24,3 +24,21 @@ build/
 # Codex
 .codex/
 !.codex/prompts/
+
+# IDE
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+
+# Go specific
+*.exe
+*.test
+*.out
+
+# Node/TypeScript specific  
+*.tsbuildinfo
+.eslintcache

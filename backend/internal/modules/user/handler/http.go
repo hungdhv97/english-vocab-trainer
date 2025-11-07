@@ -22,6 +22,7 @@ func New(s *service.Service) *Handler {
 }
 
 // Register handles user registration.
+// T054 [US4]: Accepts optional redirect_to query parameter and validates it
 func (h *Handler) Register(c *gin.Context) {
 	var req dto.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -37,10 +38,32 @@ func (h *Handler) Register(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, user)
+	
+	// Extract and validate redirect_to query parameter
+	redirectTo := c.Query("redirect_to")
+	var validatedRedirect *string
+	if redirectTo != "" {
+		clientIP := c.ClientIP()
+		if h.svc.ValidateRedirectURL(redirectTo, clientIP) {
+			validatedRedirect = &redirectTo
+		}
+		// If invalid, validatedRedirect remains nil (not included in response)
+	}
+	
+	// Return user with optional redirect_to
+	response := gin.H{
+		"user_id":   user.ID,
+		"username":  user.Username,
+		"is_active": user.IsActive,
+	}
+	if validatedRedirect != nil {
+		response["redirect_to"] = *validatedRedirect
+	}
+	c.JSON(http.StatusOK, response)
 }
 
 // Login handles user authentication.
+// T053 [US4]: Accepts optional redirect_to query parameter and validates it
 func (h *Handler) Login(c *gin.Context) {
 	var req dto.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -56,5 +79,26 @@ func (h *Handler) Login(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, user)
+	
+	// Extract and validate redirect_to query parameter
+	redirectTo := c.Query("redirect_to")
+	var validatedRedirect *string
+	if redirectTo != "" {
+		clientIP := c.ClientIP()
+		if h.svc.ValidateRedirectURL(redirectTo, clientIP) {
+			validatedRedirect = &redirectTo
+		}
+		// If invalid, validatedRedirect remains nil (not included in response)
+	}
+	
+	// Return user with optional redirect_to
+	response := gin.H{
+		"user_id":   user.ID,
+		"username":  user.Username,
+		"is_active": user.IsActive,
+	}
+	if validatedRedirect != nil {
+		response["redirect_to"] = *validatedRedirect
+	}
+	c.JSON(http.StatusOK, response)
 }

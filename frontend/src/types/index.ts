@@ -61,3 +61,29 @@ export interface Level {
     };
   };
 }
+
+// Game Home Page Types
+export interface Game {
+  game_id: number;
+  code: string;
+  name: string;
+  description: string;
+  icon_path: string | null;
+  category: string | null;
+  display_order: number;
+  is_active: boolean;
+  created_at: string; // ISO 8601 timestamp
+  updated_at: string;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  user_id: number;
+  username: string;
+  score: number;
+  achieved_at: string; // ISO 8601 timestamp
+}
+
+export interface GameWithLeaderboard extends Game {
+  leaderboard: LeaderboardEntry[];
+}
