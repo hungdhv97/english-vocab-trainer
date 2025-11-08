@@ -100,12 +100,12 @@ export default function History({ userId }: Props) {
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="flex min-h-screen w-full">
+      <div className="flex min-h-[calc(100vh-200px)] w-full">
         <Sidebar collapsible="icon">
           <SidebarHeader className="border-b">
             <div className="flex items-center justify-between p-4">
               <h2 className="text-lg font-semibold">Game Sessions</h2>
-              <Button onClick={() => navigate('/dashboard')} size="sm">
+              <Button onClick={() => navigate('/')} size="sm">
                 Back
               </Button>
             </div>

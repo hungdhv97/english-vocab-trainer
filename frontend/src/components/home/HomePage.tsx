@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import type { Game, GameWithLeaderboard } from '@/types';
-import { fetchGames, fetchLeaderboard, isAuthenticated } from '@/lib/api';
+import { useNavigate, useLocation } from 'react-router-dom';
+import type { Game } from '@/types';
+import { fetchGames, isAuthenticated } from '@/lib/api';
 import { GameGrid } from './GameGrid';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -10,38 +10,55 @@ import { Skeleton } from '@/components/ui/skeleton';
  * - Fetches games on mount
  * - Shows loading skeletons while fetching
  * - Handles errors gracefully
- * - Game selection navigation will be added in User Story 3
+ * - Displays games in a responsive grid without leaderboard information
  */
 export function HomePage() {
   const navigate = useNavigate();
-  const [games, setGames] = useState<GameWithLeaderboard[]>([]);
+  const location = useLocation();
+  const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userId, setUserId] = useState<number | null>(null);
+
+  // Get userId from localStorage if authenticated and update on auth state changes
+  useEffect(() => {
+    const updateUserId = () => {
+      if (isAuthenticated()) {
+        const storedUserId = localStorage.getItem('user_id');
+        if (storedUserId) {
+          setUserId(parseInt(storedUserId, 10));
+        }
+      } else {
+        setUserId(null);
+      }
+    };
+
+    // Update on mount and location changes (e.g., after login redirect)
+    updateUserId();
+
+    // Listen for storage changes (login/logout from other tabs/components)
+    window.addEventListener('storage', updateUserId);
+
+    return () => {
+      window.removeEventListener('storage', updateUserId);
+    };
+  }, [location]);
 
   useEffect(() => {
-    const loadGamesWithLeaderboards = async () => {
+    const loadGames = async () => {
       try {
         setLoading(true);
         setError(null);
         
-        // Fetch all games first
+        // Fetch all games
         const gamesData = await fetchGames();
         
-        // Fetch leaderboards for all games in parallel
-        const gamesWithLeaderboards = await Promise.all(
-          gamesData.map(async (game) => {
-            try {
-              const leaderboard = await fetchLeaderboard(game.game_id);
-              return { ...game, leaderboard };
-            } catch (err) {
-              console.error(`Failed to fetch leaderboard for game ${game.game_id}:`, err);
-              // Return game with empty leaderboard on error
-              return { ...game, leaderboard: [] };
-            }
-          })
-        );
+        // Filter to show only active games and sort by display_order
+        const activeGames = gamesData
+          .filter(game => game.is_active)
+          .sort((a, b) => a.display_order - b.display_order);
         
-        setGames(gamesWithLeaderboards);
+        setGames(activeGames);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load games');
         console.error('Failed to fetch games:', err);
@@ -50,7 +67,7 @@ export function HomePage() {
       }
     };
 
-    loadGamesWithLeaderboards();
+    loadGames();
   }, []);
 
   /**
@@ -70,21 +87,7 @@ export function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            English Vocabulary Trainer
-          </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Choose a game to start learning and improving your English skills
-          </p>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         {/* Error State */}
         {error && (
           <div
@@ -122,7 +125,7 @@ export function HomePage() {
 
         {/* Games Grid or Empty State */}
         {!loading && !error && games.length > 0 && (
-          <GameGrid games={games} onGameClick={handleGameClick} />
+          <GameGrid games={games} onGameClick={handleGameClick} userId={userId} />
         )}
         
         {/* T072: Empty State */}
@@ -145,16 +148,6 @@ export function HomePage() {
             </div>
           </div>
         )}
-      </main>
-
-      {/* Footer */}
-      <footer className="mt-16 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-            © 2025 English Vocabulary Trainer. All rights reserved.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }

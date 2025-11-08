@@ -3,8 +3,9 @@
 Auto-generated from all feature plans. Last updated: 2025-11-07
 
 ## Active Technologies
-
 - (001-game-home-leaderboard)
+
+- (002-homepage-redesign)
 
 ## Project Structure
 
@@ -22,8 +23,9 @@ tests/
 : Follow standard conventions
 
 ## Recent Changes
-
 - 001-game-home-leaderboard: Added
+
+- 002-homepage-redesign: Added
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

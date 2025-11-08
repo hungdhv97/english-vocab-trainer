@@ -1,9 +1,10 @@
-import type { GameWithLeaderboard } from '@/types';
+import type { Game } from '@/types';
 import { GameCard } from './GameCard';
 
 interface GameGridProps {
-  games: GameWithLeaderboard[];
-  onGameClick?: (game: GameWithLeaderboard) => void;
+  games: Game[];
+  onGameClick?: (game: Game) => void;
+  userId?: number | null;
 }
 
 /**
@@ -13,7 +14,7 @@ interface GameGridProps {
  * - Tablet (640px - 1024px): 2 columns
  * - Desktop (>= 1024px): 3 columns
  */
-export function GameGrid({ games, onGameClick }: GameGridProps) {
+export function GameGrid({ games, onGameClick, userId }: GameGridProps) {
   if (games.length === 0) {
     return (
       <div className="text-center py-12">
@@ -38,6 +39,7 @@ export function GameGrid({ games, onGameClick }: GameGridProps) {
           <GameCard
             game={game}
             onClick={() => onGameClick?.(game)}
+            userId={userId}
           />
         </div>
       ))}

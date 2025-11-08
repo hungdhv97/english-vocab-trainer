@@ -1,19 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Game from '@/components/game/Game';
 import Login from '@/components/auth/Login';
 import Register from '@/components/auth/Register';
 import History from '@/components/history/History';
-import Dashboard from '@/components/Dashboard';
 import { HomePage } from '@/components/home/HomePage';
+import { LeaderboardPage } from '@/components/leaderboard/LeaderboardPage';
+import { Layout } from '@/components/layout/Layout';
 import { ModeToggle } from '@/components/mode-toggle';
 import { ThemeProvider } from '@/components/theme-provider';
 import { isAuthenticated } from '@/lib/api';
 
 function AppRoutes() {
   const [userId, setUserId] = useState<number | null>(null);
-  const navigate = useNavigate();
   const location = useLocation();
   const isLoggingOut = useRef(false);
 
@@ -42,83 +42,66 @@ function AppRoutes() {
     localStorage.setItem('user_id', id.toString());
   }
 
-  function handleLogout() {
-    // T063 Fix: Set logout flag, clear localStorage immediately, navigate to home
-    isLoggingOut.current = true;
-    // T048 Fix: Clear both JWT token and user_id on logout
-    localStorage.removeItem('jwt_token');
-    localStorage.removeItem('user_id');
-    // Navigate to home page - state will be cleared by useEffect when we're on public route
-    navigate('/', { replace: true });
-  }
-
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <div className="fixed top-4 right-4 z-[9999]">
         <ModeToggle />
       </div>
       <Toaster position="top-center" />
-      <Routes>
-        <Route path="/login" element={<Login onLogin={handleLoggedIn} />} />
-        <Route
-          path="/register"
-          element={<Register onRegister={handleLoggedIn} />}
-        />
-        <Route
-          path="/dashboard"
-          element={
-            userId !== null && !isLoggingOut.current ? (
-              <Dashboard onLogout={handleLogout} />
-            ) : isLoggingOut.current ? (
-              <Navigate to="/" replace />
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
-        />
-        <Route
-          path="/game"
-          element={
-            userId !== null && !isLoggingOut.current ? (
-              <Game userId={userId} />
-            ) : isLoggingOut.current ? (
-              <Navigate to="/" replace />
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
-        />
-        {/* T048 Fix: Add route for /game/:code to handle game-specific navigation */}
-        <Route
-          path="/game/:code"
-          element={
-            userId !== null && !isLoggingOut.current ? (
-              <Game userId={userId} />
-            ) : isLoggingOut.current ? (
-              <Navigate to="/" replace />
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
-        />
-        <Route
-          path="/history"
-          element={
-            userId !== null && !isLoggingOut.current ? (
-              <History userId={userId} />
-            ) : isLoggingOut.current ? (
-              <Navigate to="/" replace />
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
-        />
-        {/* Home Page - Public route (no authentication required) */}
-        <Route path="/" element={<HomePage />} />
-        
-        {/* Fallback - redirect unknown routes to home */}
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
+      <Layout>
+        <Routes>
+          <Route path="/login" element={<Login onLogin={handleLoggedIn} />} />
+          <Route
+            path="/register"
+            element={<Register onRegister={handleLoggedIn} />}
+          />
+          <Route
+            path="/game"
+            element={
+              userId !== null && !isLoggingOut.current ? (
+                <Game userId={userId} />
+              ) : isLoggingOut.current ? (
+                <Navigate to="/" replace />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+          {/* T048 Fix: Add route for /game/:code to handle game-specific navigation */}
+          <Route
+            path="/game/:code"
+            element={
+              userId !== null && !isLoggingOut.current ? (
+                <Game userId={userId} />
+              ) : isLoggingOut.current ? (
+                <Navigate to="/" replace />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+          <Route
+            path="/history"
+            element={
+              userId !== null && !isLoggingOut.current ? (
+                <History userId={userId} />
+              ) : isLoggingOut.current ? (
+                <Navigate to="/" replace />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+          {/* Home Page - Public route (no authentication required) */}
+          <Route path="/" element={<HomePage />} />
+          
+          {/* Leaderboard Page - Public route (no authentication required) */}
+          <Route path="/leaderboard" element={<LeaderboardPage />} />
+          
+          {/* Fallback - redirect unknown routes to home */}
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </Layout>
     </ThemeProvider>
   );
 }

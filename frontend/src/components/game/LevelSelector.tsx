@@ -22,10 +22,10 @@ export default function LevelSelector({
   const navigate = useNavigate();
 
   return (
-    <div className="flex items-center justify-center h-screen">
+    <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-8">
       <Card className="w-full max-w-md text-center h-80 flex flex-col justify-center relative">
         <Button
-          onClick={() => navigate('/dashboard')}
+          onClick={() => navigate('/')}
           variant="ghost"
           size="icon"
           className="absolute top-[10px] left-[10px]"

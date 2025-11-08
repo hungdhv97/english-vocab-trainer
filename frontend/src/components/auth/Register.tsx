@@ -43,16 +43,21 @@ export default function Register({ onRegister }: Props) {
       
       onRegister(user.user_id);
       
-      // T061 & T065: Check if response contains validated redirect_to
-      // Only navigate if redirect_to is a non-empty string (backend validates it)
-      if (user.redirect_to && typeof user.redirect_to === 'string' && user.redirect_to.trim() !== '') {
-        // Backend validated the redirect URL - navigate to it
-        navigate(user.redirect_to);
-      } else {
-        // No redirect or invalid redirect - navigate to default dashboard
-        // T065: Backend rejected invalid redirect_to (like https://evil.com) and didn't include it in response
-        navigate('/dashboard');
-      }
+      // Dispatch custom event to notify Header and other components of auth state change
+      // Use a small delay to ensure localStorage is fully written before navigation
+      setTimeout(() => {
+        window.dispatchEvent(new Event('auth-state-changed'));
+        
+        // Check if response contains validated redirect_to
+        // Only navigate if redirect_to is a non-empty string (backend validates it)
+        if (user.redirect_to && typeof user.redirect_to === 'string' && user.redirect_to.trim() !== '') {
+          // Backend validated the redirect URL - navigate to it
+          navigate(user.redirect_to);
+        } else {
+          // No redirect or invalid redirect - navigate to home page
+          navigate('/');
+        }
+      }, 50);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Register failed';
       toast.error(message);
@@ -60,7 +65,7 @@ export default function Register({ onRegister }: Props) {
   }
 
   return (
-    <div className="flex items-center justify-center h-screen">
+    <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-8">
       <Card className="w-full max-w-md text-center h-80 flex flex-col justify-center">
         <CardHeader>
           <CardTitle className="text-2xl">Register</CardTitle>

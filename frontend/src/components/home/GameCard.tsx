@@ -1,22 +1,35 @@
-import type { GameWithLeaderboard } from '@/types';
+import { useNavigate } from 'react-router-dom';
+import type { Game } from '@/types';
 import { Card } from '@/components/ui/card';
-import { Leaderboard } from './Leaderboard';
+import { Button } from '@/components/ui/button';
+import { isAuthenticated } from '@/lib/api';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { History } from 'lucide-react';
 
 interface GameCardProps {
-  game: GameWithLeaderboard;
+  game: Game;
   onClick?: () => void;
+  userId?: number | null;
 }
 
 /**
  * GameCard displays a single game with its icon, name, description, and category.
- * Designed to be clickable for game selection (implemented in User Story 3).
+ * Includes Play button and View History button (if authenticated).
  */
-export function GameCard({ game, onClick }: GameCardProps) {
+export function GameCard({ game, onClick, userId }: GameCardProps) {
+  const navigate = useNavigate();
+  const authenticated = isAuthenticated() && userId !== null;
+
+  const handleViewHistory = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (authenticated && userId !== null) {
+      navigate('/history');
+    }
+  };
   const categoryColors: Record<string, string> = {
     vocabulary: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
     grammar: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
@@ -76,7 +89,7 @@ export function GameCard({ game, onClick }: GameCardProps) {
           </div>
         )}
 
-        {/* Game Description with Tooltip - T073 */}
+        {/* Game Description with Tooltip */}
         <Tooltip>
           <TooltipTrigger asChild>
             <p className="text-sm text-gray-600 dark:text-gray-400 text-center line-clamp-3 cursor-help">
@@ -90,9 +103,33 @@ export function GameCard({ game, onClick }: GameCardProps) {
           )}
         </Tooltip>
 
-        {/* Leaderboard */}
-        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-          <Leaderboard entries={game.leaderboard} />
+        {/* Play Button */}
+        <div className="pt-4 space-y-2">
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick?.();
+            }}
+            className="w-full"
+            size="lg"
+            aria-label={`Play ${game.name}`}
+          >
+            Play
+          </Button>
+          
+          {/* View History Button - Only show if authenticated */}
+          {authenticated && (
+            <Button
+              onClick={handleViewHistory}
+              variant="outline"
+              className="w-full"
+              size="lg"
+              aria-label={`View history for ${game.name}`}
+            >
+              <History className="h-4 w-4 mr-2" />
+              View History
+            </Button>
+          )}
         </div>
       </div>
 

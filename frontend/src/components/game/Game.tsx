@@ -148,14 +148,14 @@ export default function Game({ userId }: Props) {
 
   if (!current && !gameCompleted) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-8">
         <p>Loading...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center justify-center h-screen">
+    <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-8">
       <Card className="w-full max-w-md text-center relative h-80 flex flex-col justify-center">
         <Button
           onClick={handleReset}
