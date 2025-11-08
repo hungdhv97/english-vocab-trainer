@@ -50,6 +50,8 @@ export default function Game({ userId }: Props) {
   const timerRef = useRef<number | null>(null);
   const [target, setTarget] = useState(0);
   const [gameCompleted, setGameCompleted] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
+  const [sessionError, setSessionError] = useState<string | null>(null);
 
   // Route to Coming Soon page for unimplemented games
   if (!isVocabQuiz) {
@@ -73,11 +75,23 @@ export default function Game({ userId }: Props) {
       setTarget(config.target || 0);
       setTargetScore(0);
       setScore(0);
-      createSession(userId, level.level_id);
-      fetchRandomWords(20, 'en', level.difficulty).then((data: WordBatch) => {
-        setWords(data.words);
-        setCursor(data.next_cursor);
-      });
+      setSessionReady(false);
+      setSessionError(null);
+      
+      // Create session first and wait for it to complete
+      createSession(userId, level.level_id)
+        .then(() => {
+          setSessionReady(true);
+          // Fetch words after session is created
+          return fetchRandomWords(20, 'en', level.difficulty);
+        })
+        .then((data: WordBatch) => {
+          setWords(data.words);
+          setCursor(data.next_cursor);
+        })
+        .catch((err) => {
+          setSessionError(err instanceof Error ? err.message : 'Failed to create session');
+        });
     }
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -113,7 +127,7 @@ export default function Game({ userId }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!level || !current) return;
+    if (!level || !current || !sessionReady) return;
 
     const res = await submitAnswer({
       word_id: current.word_id,
@@ -154,6 +168,8 @@ export default function Game({ userId }: Props) {
     setCurrent(null);
     setElapsed(0);
     setGameCompleted(false);
+    setSessionReady(false);
+    setSessionError(null);
   }
 
   useEffect(() => {
@@ -166,10 +182,17 @@ export default function Game({ userId }: Props) {
     return <LevelSelector levels={levels} onSelectLevel={setLevel} />;
   }
 
-  if (!current && !gameCompleted) {
+  if (!sessionReady || (!current && !gameCompleted)) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-8">
-        <p>Loading...</p>
+        {sessionError ? (
+          <div className="text-center">
+            <p className="text-red-500">Error: {sessionError}</p>
+            <Button onClick={handleReset} className="mt-4">Go Back</Button>
+          </div>
+        ) : (
+          <p>Loading...</p>
+        )}
       </div>
     );
   }
@@ -204,6 +227,7 @@ export default function Game({ userId }: Props) {
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
                 onSubmit={handleSubmit}
+                disabled={!sessionReady}
               />
               <Feedback
                 feedback={feedback}

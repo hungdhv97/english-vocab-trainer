@@ -20,5 +20,13 @@ export default defineConfig({
       usePolling: true,
       interval: 100,
     },
+    proxy: {
+      // Proxy API requests to backend to avoid CORS/cookie issues in development
+      '/api': {
+        target: 'http://localhost:8180',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 });

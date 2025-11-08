@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -131,14 +132,36 @@ func (h *Handler) Session(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	
+	// Determine cookie settings based on environment
+	// In development (HTTP on localhost): Use None mode without Secure (browsers allow this for localhost)
+	// In production (HTTPS): Use None mode with Secure (required for cross-site cookies)
+	isDev := isDevelopmentMode()
 	cookie := &http.Cookie{
 		Name:     "session_tag",
 		Value:    tag.String(),
 		Path:     "/",
 		HttpOnly: true,
-		SameSite: http.SameSiteNoneMode,
-		Secure:   true,
 	}
+	
+	if isDev {
+		// Development: Use Lax mode since we're using Vite proxy for same-origin requests
+		// Vite proxy makes API requests appear same-origin, so Lax works perfectly
+		// This is more reliable than SameSite=None without Secure
+		cookie.SameSite = http.SameSiteLaxMode
+		cookie.Secure = false
+	} else {
+		// Production: Use None with Secure for cross-site cookies on HTTPS
+		cookie.SameSite = http.SameSiteNoneMode
+		cookie.Secure = true
+	}
+	
 	http.SetCookie(c.Writer, cookie)
 	c.JSON(http.StatusOK, gin.H{"session_tag": tag.String()})
+}
+
+// isDevelopmentMode checks if the application is running in development mode
+func isDevelopmentMode() bool {
+	env := os.Getenv("APP_ENV")
+	return env == "development" || env == "dev" || env == ""
 }

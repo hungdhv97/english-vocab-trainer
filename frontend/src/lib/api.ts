@@ -1,7 +1,10 @@
 import type { WordBatch, HistoryPlay, Level, Game, LeaderboardEntry } from '@/types';
 
+// In development, use relative path (proxied by Vite)
+// In production, use full URL or environment variable
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8180/api/v1';
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.DEV ? '/api/v1' : 'http://localhost:8180/api/v1');
 
 export async function register(username: string, password: string, redirectTo?: string | null) {
   let url = `${API_BASE_URL}/register`;

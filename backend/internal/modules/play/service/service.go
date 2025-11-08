@@ -160,7 +160,15 @@ ORDER BY p.played_at DESC`, userID)
 func (s *Service) CreateSession(userID, levelID int64) (uuid.UUID, error) {
 	tag := uuid.New()
 	ctx := context.Background()
-	if _, err := s.db.Exec(ctx, `INSERT INTO game_sessions (session_tag, user_id, level_id) VALUES ($1,$2,$3)`, tag, userID, levelID); err != nil {
+	
+	// Get game_id from level_id via game_levels junction table
+	var gameID int64
+	if err := s.db.QueryRow(ctx, `SELECT game_id FROM game_levels WHERE level_id = $1`, levelID).Scan(&gameID); err != nil {
+		return uuid.Nil, err
+	}
+	
+	// Insert session with game_id
+	if _, err := s.db.Exec(ctx, `INSERT INTO game_sessions (session_tag, user_id, level_id, game_id) VALUES ($1,$2,$3,$4)`, tag, userID, levelID, gameID); err != nil {
 		return uuid.Nil, err
 	}
 	return tag, nil

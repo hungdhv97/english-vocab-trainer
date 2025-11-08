@@ -4,12 +4,14 @@ interface AnswerInputProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSubmit: (e: React.FormEvent) => void;
+  disabled?: boolean;
 }
 
 export default function AnswerInput({
   value,
   onChange,
   onSubmit,
+  disabled = false,
 }: AnswerInputProps) {
   return (
     <form onSubmit={onSubmit}>
@@ -18,6 +20,7 @@ export default function AnswerInput({
         onChange={onChange}
         className="text-center"
         autoFocus
+        disabled={disabled}
       />
     </form>
   );
