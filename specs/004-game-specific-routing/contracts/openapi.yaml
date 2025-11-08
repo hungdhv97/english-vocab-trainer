@@ -1,0 +1,215 @@
+openapi: 3.0.0
+info:
+  title: Game-Specific Routing API Contracts
+  description: API endpoints used by the game-specific routing feature
+  version: 1.0.0
+servers:
+  - url: http://localhost:8180/api/v1
+    description: Local development server
+
+paths:
+  /games:
+    get:
+      summary: List all active games
+      description: Returns all active games for display on the homepage. This is a public endpoint (no authentication required).
+      tags: [games]
+      responses:
+        "200":
+          description: Successfully retrieved games
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  games:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Game"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /games/code/{code}:
+    get:
+      summary: Get game by code
+      description: Returns game information by game code. Used for routing and Coming Soon page display. This is a public endpoint (no authentication required).
+      tags: [games]
+      parameters:
+        - name: code
+          in: path
+          required: true
+          description: Game code (e.g., "vocab-quiz", "word-scramble")
+          schema:
+            type: string
+            example: word-scramble
+      responses:
+        "200":
+          description: Successfully retrieved game
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  game:
+                    $ref: "#/components/schemas/Game"
+        "404":
+          description: Game not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /games/{id}/leaderboard:
+    get:
+      summary: Get leaderboard for a specific game
+      description: Returns the top 10 leaderboard entries for a specific game. This is a public endpoint (no authentication required).
+      tags: [games]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Game ID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Successfully retrieved leaderboard (may be empty)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  game_id:
+                    type: integer
+                    format: int64
+                  leaderboard:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LeaderboardEntry"
+        "400":
+          description: Bad request - Invalid game ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Game not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  schemas:
+    Game:
+      type: object
+      required: [game_id, code, name, description, display_order, is_active, created_at, updated_at]
+      properties:
+        game_id:
+          type: integer
+          format: int64
+          description: Unique identifier for the game
+          example: 1
+        code:
+          type: string
+          description: Game code used for routing
+          example: vocab-quiz
+        name:
+          type: string
+          description: Display name of the game
+          example: Vocabulary Quiz
+        description:
+          type: string
+          description: Short description of the game
+          example: Test your vocabulary knowledge with multiple-choice questions
+        icon_path:
+          type: string
+          nullable: true
+          description: Relative path to game icon in public assets
+          example: /games/vocab-quiz.svg
+        category:
+          type: string
+          nullable: true
+          description: Game category
+          enum: [vocabulary, grammar, pronunciation, mixed]
+          example: vocabulary
+        display_order:
+          type: integer
+          description: Order for displaying games on homepage
+          example: 1
+        is_active:
+          type: boolean
+          description: Whether the game is currently active and should be displayed
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp of when the game was created
+          example: "2025-01-01T00:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp of when the game was last updated
+          example: "2025-01-01T00:00:00Z"
+
+    LeaderboardEntry:
+      type: object
+      required: [rank, user_id, username, score, achieved_at]
+      properties:
+        rank:
+          type: integer
+          description: Player's position in leaderboard (1 = highest score)
+          minimum: 1
+          example: 1
+        user_id:
+          type: integer
+          format: int64
+          description: Unique identifier of the player
+          example: 1
+        username:
+          type: string
+          description: Player's display name
+          example: player1
+        score:
+          type: integer
+          description: Player's best score for this game
+          minimum: 0
+          example: 1000
+        achieved_at:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the best score was achieved
+          example: "2025-01-27T10:00:00Z"
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error type
+          example: Game not found
+        message:
+          type: string
+          description: Error message
+          example: No game found with code: invalid-game
+        details:
+          type: string
+          nullable: true
+          description: Additional error details (may be omitted)
+

@@ -177,3 +177,46 @@ func (s *Service) GetLeaderboard(ctx context.Context, gameID int64) ([]model.Lea
 
 	return entries, nil
 }
+
+// GetGameByCode retrieves a game by its code.
+// Returns the game if found and active, or an error if not found.
+// This is used for routing and Coming Soon page display.
+func (s *Service) GetGameByCode(ctx context.Context, code string) (*model.Game, error) {
+	query := `
+		SELECT 
+			game_id, 
+			code, 
+			name, 
+			description, 
+			icon_path, 
+			category, 
+			display_order, 
+			is_active, 
+			created_at, 
+			updated_at
+		FROM games
+		WHERE code = $1 AND is_active = TRUE
+		LIMIT 1
+	`
+
+	var game model.Game
+	err := s.db.QueryRow(ctx, query, code).Scan(
+		&game.GameID,
+		&game.Code,
+		&game.Name,
+		&game.Description,
+		&game.IconPath,
+		&game.Category,
+		&game.DisplayOrder,
+		&game.IsActive,
+		&game.CreatedAt,
+		&game.UpdatedAt,
+	)
+
+	if err != nil {
+		// Return nil and error if game not found or other database error
+		return nil, err
+	}
+
+	return &game, nil
+}

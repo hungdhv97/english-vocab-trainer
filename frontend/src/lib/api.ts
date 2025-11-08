@@ -182,3 +182,20 @@ export async function fetchLeaderboard(gameId: number): Promise<LeaderboardEntry
   const data = await res.json();
   return data.leaderboard || [];
 }
+
+/**
+ * Fetches game information by game code.
+ * This is a public endpoint - no authentication required.
+ * Used for routing and Coming Soon page display.
+ */
+export async function fetchGameByCode(code: string): Promise<Game> {
+  const res = await fetch(`${API_BASE_URL}/games/code/${encodeURIComponent(code)}`);
+  if (!res.ok) {
+    if (res.status === 404) {
+      throw new Error('Game not found');
+    }
+    throw new Error('Failed to fetch game');
+  }
+  const data = await res.json();
+  return data.game;
+}

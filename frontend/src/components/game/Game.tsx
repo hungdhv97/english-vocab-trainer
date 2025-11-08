@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -7,6 +8,8 @@ import LevelSelector from '@/components/game/LevelSelector';
 import WordDisplay from '@/components/game/WordDisplay';
 import AnswerInput from '@/components/game/AnswerInput';
 import Feedback from '@/components/game/Feedback';
+import { isGameImplemented } from '@/constants/games';
+import ComingSoon from '@/components/game/ComingSoon';
 import {
   fetchRandomWords,
   submitAnswer,
@@ -20,6 +23,18 @@ interface Props {
 }
 
 export default function Game({ userId }: Props) {
+  // Extract game code from URL
+  const { code } = useParams<{ code: string }>();
+  const gameCode = code || '';
+
+  // Handle empty or undefined game code - redirect to homepage
+  if (!gameCode) {
+    return null; // Will be handled by App.tsx route fallback
+  }
+
+  // Check if this is the Vocabulary Quiz game
+  const isVocabQuiz = gameCode === 'vocab-quiz' && isGameImplemented(gameCode);
+
   const [levels, setLevels] = useState<Level[]>([]);
   const [level, setLevel] = useState<Level | null>(null);
   const [words, setWords] = useState<Word[]>([]);
@@ -35,6 +50,11 @@ export default function Game({ userId }: Props) {
   const timerRef = useRef<number | null>(null);
   const [target, setTarget] = useState(0);
   const [gameCompleted, setGameCompleted] = useState(false);
+
+  // Route to Coming Soon page for unimplemented games
+  if (!isVocabQuiz) {
+    return <ComingSoon gameCode={gameCode} />;
+  }
 
   useEffect(() => {
     fetchLevels()

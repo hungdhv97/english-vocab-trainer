@@ -76,7 +76,7 @@ function AppRoutes() {
               ) : isLoggingOut.current ? (
                 <Navigate to="/" replace />
               ) : (
-                <Navigate to="/login" />
+                <Navigate to={`/login?redirect_to=${encodeURIComponent(location.pathname)}`} />
               )
             }
           />

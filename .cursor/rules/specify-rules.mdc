@@ -5,6 +5,7 @@ Auto-generated from all feature plans. Last updated: 2025-11-07
 ## Active Technologies
 - (001-game-home-leaderboard)
 - N/A (frontend-only UI component migration, no data model changes) (003-shadcn-components)
+- PostgreSQL 15+ (primary data store for games table - no schema changes needed), Redis 7+ (session storage and caching) (004-game-specific-routing)
 
 - (002-homepage-redesign)
 
@@ -24,10 +25,10 @@ tests/
 : Follow standard conventions
 
 ## Recent Changes
+- 004-game-specific-routing: Added PostgreSQL 15+ (primary data store for games table - no schema changes needed), Redis 7+ (session storage and caching)
 - 003-shadcn-components: Added N/A (frontend-only UI component migration, no data model changes)
 - 001-game-home-leaderboard: Added
 
-- 002-homepage-redesign: Added
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

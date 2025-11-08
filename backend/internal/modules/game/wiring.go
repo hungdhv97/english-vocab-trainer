@@ -15,5 +15,6 @@ func RegisterRoutes(r *gin.RouterGroup, d *deps.Deps) {
 
 	// Public endpoints - no authentication required
 	r.GET("/games", h.ListGames)
+	r.GET("/games/code/:code", h.GetGameByCode)
 	r.GET("/games/:id/leaderboard", h.GetLeaderboard)
 }
