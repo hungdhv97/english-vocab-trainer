@@ -144,7 +144,7 @@ export function isAuthenticated(): boolean {
       }
       
       return true;
-    } catch (error) {
+    } catch {
       // If token is malformed but user_id exists, assume cookie-based auth
       return true;
     }

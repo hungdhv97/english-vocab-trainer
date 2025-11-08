@@ -107,8 +107,8 @@ export function Header({ onLogout }: HeaderProps) {
               to="/"
               className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                 isActive('/')
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
-                  : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                  ? 'bg-accent text-accent-foreground'
+                  : 'text-foreground hover:bg-accent hover:text-accent-foreground'
               }`}
               aria-current={isActive('/') ? 'page' : undefined}
             >
@@ -118,8 +118,8 @@ export function Header({ onLogout }: HeaderProps) {
               to="/leaderboard"
               className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                 isActive('/leaderboard')
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
-                  : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                  ? 'bg-accent text-accent-foreground'
+                  : 'text-foreground hover:bg-accent hover:text-accent-foreground'
               }`}
               aria-current={isActive('/leaderboard') ? 'page' : undefined}
             >
@@ -143,8 +143,8 @@ export function Header({ onLogout }: HeaderProps) {
                   to="/login"
                   className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                     isActive('/login')
-                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
-                      : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                      ? 'bg-accent text-accent-foreground'
+                      : 'text-foreground hover:bg-accent hover:text-accent-foreground'
                   }`}
                   aria-current={isActive('/login') ? 'page' : undefined}
                 >
@@ -154,8 +154,8 @@ export function Header({ onLogout }: HeaderProps) {
                   to="/register"
                   className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                     isActive('/register')
-                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
-                      : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                      ? 'bg-accent text-accent-foreground'
+                      : 'text-foreground hover:bg-accent hover:text-accent-foreground'
                   }`}
                   aria-current={isActive('/register') ? 'page' : undefined}
                 >

@@ -4,6 +4,8 @@ import { fetchGames, fetchLeaderboard } from '@/lib/api';
 import { Leaderboard } from '@/components/home/Leaderboard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 
 interface GameWithLeaderboard {
   game: Game;
@@ -106,23 +108,15 @@ export function LeaderboardPage() {
 
         {/* Error State - Global */}
         {error && (
-          <div
-            className="mb-8 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
-            role="alert"
-          >
-            <p className="text-red-800 dark:text-red-200 font-medium">
-              Error loading games
-            </p>
-            <p className="text-red-600 dark:text-red-400 text-sm mt-1">
+          <Alert variant="destructive" className="mb-8">
+            <AlertTitle>Error loading games</AlertTitle>
+            <AlertDescription>
               {error}
-            </p>
-            <button
-              onClick={handleRetry}
-              className="mt-3 text-sm text-red-700 dark:text-red-300 underline hover:no-underline"
-            >
-              Try again
-            </button>
-          </div>
+              <Button onClick={handleRetry} variant="outline" size="sm" className="mt-3">
+                Try again
+              </Button>
+            </AlertDescription>
+          </Alert>
         )}
 
         {/* Loading State */}
@@ -169,11 +163,12 @@ export function LeaderboardPage() {
 
                 {/* Game-specific Error State */}
                 {gameError && (
-                  <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                    <p className="text-yellow-800 dark:text-yellow-200 text-sm">
+                  <Alert className="mb-4">
+                    <AlertTitle>Warning</AlertTitle>
+                    <AlertDescription>
                       Failed to load leaderboard for this game
-                    </p>
-                  </div>
+                    </AlertDescription>
+                  </Alert>
                 )}
 
                 {/* Game Loading State */}
@@ -205,12 +200,12 @@ export function LeaderboardPage() {
               <p className="text-gray-600 dark:text-gray-400 mb-6">
                 There are currently no games available. Please check back later.
               </p>
-              <button
+              <Button
                 onClick={handleRetry}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                variant="default"
               >
                 Refresh Page
-              </button>
+              </Button>
             </div>
           </div>
         )}

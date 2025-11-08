@@ -4,6 +4,8 @@ import type { Game } from '@/types';
 import { fetchGames, isAuthenticated } from '@/lib/api';
 import { GameGrid } from './GameGrid';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 
 /**
  * HomePage is the main landing page displaying all available games.
@@ -90,23 +92,15 @@ export function HomePage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         {/* Error State */}
         {error && (
-          <div
-            className="mb-8 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
-            role="alert"
-          >
-            <p className="text-red-800 dark:text-red-200 font-medium">
-              Error loading games
-            </p>
-            <p className="text-red-600 dark:text-red-400 text-sm mt-1">
+          <Alert variant="destructive" className="mb-8">
+            <AlertTitle>Error loading games</AlertTitle>
+            <AlertDescription>
               {error}
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="mt-3 text-sm text-red-700 dark:text-red-300 underline hover:no-underline"
-            >
-              Try again
-            </button>
-          </div>
+              <Button onClick={() => window.location.reload()} variant="outline" size="sm" className="mt-3">
+                Try again
+              </Button>
+            </AlertDescription>
+          </Alert>
         )}
 
         {/* Loading State */}
@@ -139,12 +133,12 @@ export function HomePage() {
               <p className="text-gray-600 dark:text-gray-400 mb-6">
                 There are currently no games available. Please check back later or contact support if this issue persists.
               </p>
-              <button
+              <Button
                 onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                variant="default"
               >
                 Refresh Page
-              </button>
+              </Button>
             </div>
           </div>
         )}

@@ -4,6 +4,7 @@ Auto-generated from all feature plans. Last updated: 2025-11-07
 
 ## Active Technologies
 - (001-game-home-leaderboard)
+- N/A (frontend-only UI component migration, no data model changes) (003-shadcn-components)
 
 - (002-homepage-redesign)
 
@@ -23,6 +24,7 @@ tests/
 : Follow standard conventions
 
 ## Recent Changes
+- 003-shadcn-components: Added N/A (frontend-only UI component migration, no data model changes)
 - 001-game-home-leaderboard: Added
 
 - 002-homepage-redesign: Added
