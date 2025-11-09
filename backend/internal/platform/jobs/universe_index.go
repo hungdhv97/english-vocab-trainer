@@ -42,10 +42,12 @@ func rebuildUniverseIndex(db *pgxpool.Pool) {
 		return
 	}
 
+	// Note: This table is deprecated and will be removed in migration 012
+	// TODO: Remove this job or update to use new schema (T128)
 	if _, err := tx.Exec(ctx, `INSERT INTO universe_index(language_code, difficulty, rank, word_id)
         SELECT language_code, difficulty,
-               ROW_NUMBER() OVER (PARTITION BY language_code, difficulty ORDER BY word_id) - 1 AS rank,
-               word_id
+               ROW_NUMBER() OVER (PARTITION BY language_code, difficulty ORDER BY id) - 1 AS rank,
+               id as word_id
         FROM words`); err != nil {
 		log.Printf("fill universe_index: %v", err)
 		return

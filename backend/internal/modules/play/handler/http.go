@@ -50,51 +50,93 @@ func (h *Handler) History(c *gin.Context) {
 }
 
 // Answer handles recording an answer and returning the correct translation.
+// Updated to support new schema with translation_id and correct_answer (T056).
 func (h *Handler) Answer(c *gin.Context) {
 	var req dto.AnswerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := h.validate.Struct(req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	
+	// Validate: Either language_code (old schema) or translation_id + correct_answer (new schema) must be provided
+	if req.LanguageCode == "" && (req.TranslationID == nil || req.CorrectAnswer == "") {
+		// Try to get correct answer from translation_id if provided
+		if req.TranslationID != nil {
+			// New schema: Get correct answer from translation
+			// This will be handled by the service, but we need to validate the answer format
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "either language_code or translation_id with correct_answer is required"})
+			return
+		}
 	}
+	
 	cookie, err := c.Request.Cookie("session_tag")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "missing session_tag"})
 		return
 	}
-	correct, err := h.words.GetMeaning(req.WordID, req.LanguageCode)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	
+	var correct string
+	var isCorrect bool
+	
+	// Use new schema if translation_id and correct_answer are provided
+	if req.TranslationID != nil && req.CorrectAnswer != "" {
+		// New schema: Use provided correct_answer
+		correct = req.CorrectAnswer
+		isCorrect = req.UserAnswer != "" && strings.EqualFold(req.UserAnswer, correct)
+	} else {
+		// Old schema: Get correct answer from word service
+		correct, err = h.words.GetMeaning(req.WordID, req.LanguageCode)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		isCorrect = req.UserAnswer != "" && strings.EqualFold(req.UserAnswer, correct)
 	}
-	isCorrect := req.UserAnswer != "" && strings.EqualFold(req.UserAnswer, correct)
+	
 	play := model.Play{
 		UserID:     req.UserID,
 		WordID:     req.WordID,
 		UserAnswer: req.UserAnswer,
 		IsCorrect:  isCorrect,
 	}
+	
+	// Set translation_id and correct_answer if provided (new schema)
+	if req.TranslationID != nil {
+		play.TranslationID = req.TranslationID
+	}
+	if req.CorrectAnswer != "" {
+		play.CorrectAnswer = req.CorrectAnswer
+	}
+	
 	if tag, err := uuid.Parse(cookie.Value); err == nil {
 		play.SessionTag = tag
 	} else {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid session_tag"})
 		return
 	}
+	
 	pRec, total, err := h.svc.RecordPlay(play)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
+	
+	// Build response with translation_id if available (T056)
+	response := gin.H{
 		"correct_answer": correct,
 		"is_correct":     isCorrect,
 		"score":          pRec.Score,
 		"target":         pRec.Target,
 		"total_score":    total,
-	})
+	}
+	
+	// Add translation_id to response if available (new schema)
+	if pRec.TranslationID != nil {
+		response["translation_id"] = *pRec.TranslationID
+	}
+	
+	c.JSON(http.StatusOK, response)
 }
 
 // Finish marks the current session as finished.
@@ -117,17 +159,41 @@ func (h *Handler) Finish(c *gin.Context) {
 }
 
 // Session creates a new session tag cookie.
+// Updated to support both old schema (level_id) and new schema (cefr_level_id, translation_direction) (T055).
 func (h *Handler) Session(c *gin.Context) {
 	var req dto.SessionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := h.validate.Struct(req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	
+	// Validate: Either level_id (old schema) or cefr_level_id (new schema) must be provided
+	if req.LevelID == 0 && (req.CefrLevelID == nil || *req.CefrLevelID == 0) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "either level_id or cefr_level_id is required"})
 		return
 	}
-	tag, err := h.svc.CreateSession(req.UserID, req.LevelID)
+	
+	var tag uuid.UUID
+	var err error
+	
+	// Use new schema if cefr_level_id is provided
+	if req.CefrLevelID != nil && *req.CefrLevelID > 0 {
+		// For new schema, try to get game_id from level_id if available (for backward compatibility)
+		// If level_id is not provided or game_id cannot be found, pass 0 (will insert NULL)
+		var gameID int64
+		if req.LevelID > 0 {
+			// Try to get game_id from level_id via game_levels
+			ctx := c.Request.Context()
+			if foundGameID, err := h.svc.GetGameIDFromLevelID(ctx, req.LevelID); err == nil {
+				gameID = foundGameID
+			}
+		}
+		tag, err = h.svc.CreateSessionWithDirection(req.UserID, gameID, req.LevelID, *req.CefrLevelID, req.TranslationDirection)
+	} else {
+		// Old schema: Use level_id
+		tag, err = h.svc.CreateSession(req.UserID, req.LevelID)
+	}
+	
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

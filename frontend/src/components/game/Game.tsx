@@ -2,25 +2,33 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
-import type { Level, Word, WordBatch } from '@/types';
-import LevelSelector from '@/components/game/LevelSelector';
-import WordDisplay from '@/components/game/WordDisplay';
-import AnswerInput from '@/components/game/AnswerInput';
-import Feedback from '@/components/game/Feedback';
+import type {
+  CefrLevel,
+  Question,
+  TranslationDirection,
+  SessionStatistics,
+} from '@/types';
+import CefrLevelSelector from '@/components/game/CefrLevelSelector';
+import DirectionSelector from '@/components/game/DirectionSelector';
+import QuestionDisplay from '@/components/game/QuestionDisplay';
 import { isGameImplemented } from '@/constants/games';
 import ComingSoon from '@/components/game/ComingSoon';
 import {
-  fetchRandomWords,
-  submitAnswer,
-  createSession,
-  fetchLevels,
-  finishSession,
+  fetchCefrLevels,
+  createVocabQuizSession,
+  generateVocabQuizQuestions,
+  submitVocabQuizAnswer,
+  finishVocabQuizSession,
+  getVocabQuizSessionStatistics,
+  fetchGameByCode,
 } from '@/lib/api';
+import type { Game } from '@/types';
 
 interface Props {
   userId: number;
 }
+
+type GameState = 'level-selection' | 'direction-selection' | 'playing' | 'completed';
 
 export default function Game({ userId }: Props) {
   // Extract game code from URL
@@ -35,209 +43,451 @@ export default function Game({ userId }: Props) {
   // Check if this is the Vocabulary Quiz game
   const isVocabQuiz = gameCode === 'vocab-quiz' && isGameImplemented(gameCode);
 
-  const [levels, setLevels] = useState<Level[]>([]);
-  const [level, setLevel] = useState<Level | null>(null);
-  const [words, setWords] = useState<Word[]>([]);
-  const [current, setCurrent] = useState<Word | null>(null);
-  const [cursor, setCursor] = useState<string | null>(null);
-  const [answer, setAnswer] = useState('');
-  const [targetScore, setTargetScore] = useState(0);
+  // Game state
+  const [gameState, setGameState] = useState<GameState>('level-selection');
+  const [game, setGame] = useState<Game | null>(null);
+  const [cefrLevels, setCefrLevels] = useState<CefrLevel[]>([]);
+  const [selectedLevel, setSelectedLevel] = useState<CefrLevel | null>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [submittedAnswer, setSubmittedAnswer] = useState<string | null>(null);
+  const [correctAnswer, setCorrectAnswer] = useState<string | null>(null);
+  const [sessionTag, setSessionTag] = useState<string | null>(null);
   const [score, setScore] = useState(0);
-  const [feedback, setFeedback] = useState<'correct' | 'incorrect' | ''>('');
-  const [feedbackAnswer, setFeedbackAnswer] = useState('');
-  const [feedbackKey, setFeedbackKey] = useState(0);
-  const [elapsed, setElapsed] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [incorrectCount, setIncorrectCount] = useState(0);
+  const [sessionStatistics, setSessionStatistics] = useState<SessionStatistics | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [timeElapsed, setTimeElapsed] = useState(0);
   const timerRef = useRef<number | null>(null);
-  const [target, setTarget] = useState(0);
-  const [gameCompleted, setGameCompleted] = useState(false);
-  const [sessionReady, setSessionReady] = useState(false);
-  const [sessionError, setSessionError] = useState<string | null>(null);
+  const [answeredQuestions, setAnsweredQuestions] = useState<Set<number>>(new Set()); // T094: Prevent duplicate submissions
 
   // Route to Coming Soon page for unimplemented games
   if (!isVocabQuiz) {
     return <ComingSoon gameCode={gameCode} />;
   }
 
+  // Fetch game and CEFR levels on mount
   useEffect(() => {
-    fetchLevels()
-      .then(setLevels)
-      .catch(() => {});
-  }, []);
+    const loadData = async () => {
+      try {
+        // Fetch game to get game_id
+        const gameData = await fetchGameByCode(gameCode);
+        setGame(gameData);
+        
+        // Fetch CEFR levels
+        const levels = await fetchCefrLevels();
+        setCefrLevels(levels);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load game data');
+      }
+    };
+    loadData();
+  }, [gameCode]);
 
+  // Timer for tracking elapsed time
   useEffect(() => {
-    if (level) {
-      const start = Date.now();
-      setElapsed(0);
+    if (gameState === 'playing' && startTime) {
       timerRef.current = window.setInterval(() => {
-        setElapsed(Date.now() - start);
-      }, 10);
-      const config = level.scoring_config;
-      setTarget(config.target || 0);
-      setTargetScore(0);
-      setScore(0);
-      setSessionReady(false);
-      setSessionError(null);
-      
-      // Create session first and wait for it to complete
-      createSession(userId, level.level_id)
-        .then(() => {
-          setSessionReady(true);
-          // Fetch words after session is created
-          return fetchRandomWords(20, 'en', level.difficulty);
-        })
-        .then((data: WordBatch) => {
-          setWords(data.words);
-          setCursor(data.next_cursor);
-        })
-        .catch((err) => {
-          setSessionError(err instanceof Error ? err.message : 'Failed to create session');
-        });
+        setTimeElapsed(Date.now() - startTime);
+      }, 100);
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     }
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [level, userId]);
-
-  useEffect(() => {
-    if (timerRef.current && targetScore >= target) {
-      clearInterval(timerRef.current);
-    }
-  }, [targetScore, target]);
-
-  function nextWord() {
-    setWords((prev) => prev.slice(1));
-  }
-
-  useEffect(() => {
-    if (words.length > 0) {
-      setCurrent(words[0]);
-    }
-  }, [words]);
-
-  useEffect(() => {
-    if (level && cursor && words.length < 5) {
-      fetchRandomWords(20, 'en', level.difficulty, cursor).then(
-        (data: WordBatch) => {
-          setWords((prev) => [...prev, ...data.words]);
-          setCursor(data.next_cursor);
-        },
-      );
-    }
-  }, [words, cursor, level]);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!level || !current || !sessionReady) return;
-
-    const res = await submitAnswer({
-      word_id: current.word_id,
-      user_id: userId,
-      language_code: 'vi',
-      user_answer: answer,
-    });
-    const newTargetScore = targetScore + res.target;
-    setScore((s) => s + res.score);
-    setTargetScore(newTargetScore);
-
-    if (res.is_correct) {
-      if (newTargetScore >= target) {
-        setCurrent(null);
-        setFeedback('');
-        setGameCompleted(true);
-      } else {
-        setFeedback('correct');
-        nextWord();
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
       }
-    } else {
-      setFeedback('incorrect');
-      setFeedbackAnswer(res.correct_answer);
-      nextWord();
+    };
+  }, [gameState, startTime]);
+
+  // Handle level selection (T076)
+  const handleLevelSelect = (level: CefrLevel) => {
+    setSelectedLevel(level);
+    setGameState('direction-selection');
+    setError(null);
+  };
+
+  // Handle direction selection (T076)
+  const handleDirectionSelect = async (direction: TranslationDirection) => {
+    if (!selectedLevel) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      if (!game) {
+        setError('Game information not loaded');
+        return;
+      }
+      
+      // Create session (T087)
+      const sessionResponse = await createVocabQuizSession({
+        user_id: userId,
+        game_id: game.game_id,
+        cefr_level_id: selectedLevel.id,
+        translation_direction: direction,
+      });
+      setSessionTag(sessionResponse.session_tag);
+
+      // Generate questions (T077)
+      const generatedQuestions = await generateVocabQuizQuestions(
+        selectedLevel.id,
+        direction,
+        20,
+      );
+
+      if (generatedQuestions.length === 0) {
+        setError('No questions available for this level. Please try a different level.');
+        setGameState('level-selection');
+        setLoading(false);
+        return;
+      }
+
+      setQuestions(generatedQuestions);
+      setCurrentQuestionIndex(0);
+      setGameState('playing');
+      setStartTime(Date.now());
+      setScore(0);
+      setCorrectCount(0);
+      setIncorrectCount(0);
+      setAnsweredQuestions(new Set());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to start quiz');
+      setGameState('direction-selection');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle answer selection (T078)
+  const handleAnswerSelect = (letter: string) => {
+    if (submittedAnswer !== null) return; // T094: Prevent duplicate submissions
+    setSelectedAnswer(letter);
+  };
+
+  // Handle answer submission (T078, T089, T090)
+  const handleSubmitAnswer = async () => {
+    if (!selectedAnswer || !sessionTag || submittedAnswer !== null) return; // T094: Prevent duplicate submissions
+
+    const currentQuestion = questions[currentQuestionIndex];
+    if (!currentQuestion) return;
+
+    // T094: Prevent duplicate submissions - check if this question was already answered
+    if (answeredQuestions.has(currentQuestion.id)) {
+      return;
     }
 
-    setAnswer('');
-    setFeedbackKey((k) => k + 1);
-  }
+    // Mark question as answered to prevent duplicate submissions (T094)
+    answeredQuestions.add(currentQuestion.id);
+    setSubmittedAnswer(selectedAnswer);
+    setCorrectAnswer(currentQuestion.correct_answer);
+    setLoading(true);
 
-  function handleReset() {
-    setLevel(null);
-    setTarget(0);
-    setTargetScore(0);
+    try {
+      // Submit answer (T088)
+      const response = await submitVocabQuizAnswer({
+        word_id: currentQuestion.word_id,
+        translation_id: currentQuestion.translation_id,
+        user_answer: selectedAnswer,
+        correct_answer: currentQuestion.correct_answer,
+        user_id: userId,
+        session_tag: sessionTag,
+      });
+
+      // Update score and statistics (T090)
+      setScore(response.total_score);
+      if (response.is_correct) {
+        setCorrectCount((prev) => prev + 1);
+      } else {
+        setIncorrectCount((prev) => prev + 1);
+      }
+
+      // Show feedback immediately (T089)
+      // Feedback is shown via showFeedback prop in QuestionDisplay
+
+      // Move to next question after a delay
+      setTimeout(() => {
+        if (currentQuestionIndex < questions.length - 1) {
+          setCurrentQuestionIndex((prev) => prev + 1);
+          setSelectedAnswer(null);
+          setSubmittedAnswer(null);
+          setCorrectAnswer(null);
+        } else {
+          // All questions answered, finish session (T091)
+          handleFinishSession();
+        }
+        setLoading(false);
+      }, 2000); // 2 second delay to show feedback
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to submit answer');
+      setLoading(false);
+      // Reset submission state on error
+      setSubmittedAnswer(null);
+      answeredQuestions.delete(currentQuestion.id);
+    }
+  };
+
+  // Handle session completion (T091)
+  const handleFinishSession = async () => {
+    if (!sessionTag) return;
+
+    try {
+      // Finish session and get statistics
+      const stats = await finishVocabQuizSession(sessionTag);
+      setSessionStatistics({
+        ...stats,
+        time_elapsed: timeElapsed / 1000, // Convert to seconds
+      });
+      setGameState('completed');
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    } catch (err) {
+      // If finish fails, try to get statistics anyway
+      try {
+        const stats = await getVocabQuizSessionStatistics(sessionTag);
+        setSessionStatistics({
+          ...stats,
+          time_elapsed: timeElapsed / 1000,
+        });
+        setGameState('completed');
+      } catch (statsErr) {
+        setError(err instanceof Error ? err.message : 'Failed to finish session');
+      }
+    }
+  };
+
+  // Handle back navigation (T076)
+  const handleBack = () => {
+    if (gameState === 'direction-selection') {
+      setGameState('level-selection');
+      setSelectedLevel(null);
+    } else if (gameState === 'level-selection') {
+      // Navigate to home (handled by parent or router)
+      window.history.back();
+    }
+  };
+
+  // Handle reset/restart
+  const handleReset = () => {
+    setGameState('level-selection');
+    setSelectedLevel(null);
+    setQuestions([]);
+    setCurrentQuestionIndex(0);
+    setSelectedAnswer(null);
+    setSubmittedAnswer(null);
+    setCorrectAnswer(null);
+    setSessionTag(null);
     setScore(0);
-    setAnswer('');
-    setFeedback('');
-    setCurrent(null);
-    setElapsed(0);
-    setGameCompleted(false);
-    setSessionReady(false);
-    setSessionError(null);
-  }
-
-  useEffect(() => {
-    if (gameCompleted) {
-      finishSession().catch(() => {});
+    setCorrectCount(0);
+    setIncorrectCount(0);
+    setSessionStatistics(null);
+    setError(null);
+    setStartTime(null);
+    setTimeElapsed(0);
+    answeredQuestions.clear();
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
     }
-  }, [gameCompleted]);
+  };
 
-  if (!level) {
-    return <LevelSelector levels={levels} onSelectLevel={setLevel} />;
+  // Reset answered questions when starting new quiz
+  useEffect(() => {
+    if (gameState === 'playing' && questions.length > 0) {
+      answeredQuestions.clear();
+    }
+  }, [gameState, questions.length]);
+
+  // Render level selection
+  if (gameState === 'level-selection') {
+    return (
+      <CefrLevelSelector
+        levels={cefrLevels}
+        onSelectLevel={handleLevelSelect}
+        onBack={handleBack}
+      />
+    );
   }
 
-  if (!sessionReady || (!current && !gameCompleted)) {
+  // Render direction selection
+  if (gameState === 'direction-selection') {
+    if (!selectedLevel) {
+      setGameState('level-selection');
+      return null;
+    }
+    return (
+      <DirectionSelector
+        selectedLevel={selectedLevel}
+        onSelectDirection={handleDirectionSelect}
+        onBack={handleBack}
+      />
+    );
+  }
+
+  // Render loading state
+  if (loading && questions.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-8">
-        {sessionError ? (
-          <div className="text-center">
-            <p className="text-red-500">Error: {sessionError}</p>
-            <Button onClick={handleReset} className="mt-4">Go Back</Button>
-          </div>
-        ) : (
-          <p>Loading...</p>
-        )}
+        <Card className="w-full max-w-md text-center">
+          <CardContent className="pt-6">
+            <p>Loading questions...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Render error state
+  if (error && gameState !== 'playing' && gameState !== 'completed') {
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-8">
+        <Card className="w-full max-w-md text-center">
+          <CardHeader>
+            <CardTitle className="text-red-500">Error</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-red-500 mb-4">{error}</p>
+            <Button onClick={handleReset}>Go Back</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Render completed state with statistics (T091)
+  if (gameState === 'completed' && sessionStatistics) {
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-8">
+        <Card className="w-full max-w-2xl text-center">
+          <CardHeader>
+            <CardTitle className="text-2xl">Quiz Completed!</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+              <div>
+                <p className="text-2xl font-bold text-green-600">{correctCount}</p>
+                <p className="text-sm text-muted-foreground">Correct</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-red-600">{incorrectCount}</p>
+                <p className="text-sm text-muted-foreground">Incorrect</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{score}</p>
+                <p className="text-sm text-muted-foreground">Total Score</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold">
+                  {sessionStatistics.accuracy_percentage.toFixed(1)}%
+                </p>
+                <p className="text-sm text-muted-foreground">Accuracy</p>
+              </div>
+            </div>
+            {sessionStatistics.time_elapsed && (
+              <div className="mt-4">
+                <p className="text-lg">
+                  Time: {(sessionStatistics.time_elapsed / 60).toFixed(1)} minutes
+                </p>
+              </div>
+            )}
+            <div className="mt-6 space-x-4">
+              <Button onClick={handleReset}>Play Again</Button>
+              <Button onClick={handleBack} variant="outline">
+                Back to Levels
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Render playing state
+  const currentQuestion = questions[currentQuestionIndex];
+  if (!currentQuestion) {
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-8">
+        <Card className="w-full max-w-md text-center">
+          <CardContent className="pt-6">
+            <p>No questions available</p>
+            <Button onClick={handleReset} className="mt-4">
+              Go Back
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-8">
-      <Card className="w-full max-w-md text-center relative h-80 flex flex-col justify-center">
-        <Button
-          onClick={handleReset}
-          variant="ghost"
-          size="icon"
-          className="absolute top-[10px] left-[10px]"
-        >
-          <ArrowLeft />
-        </Button>
-        <CardHeader>
-          <CardTitle>Score: {score}</CardTitle>
-          <div className="text-sm">
-            Progress: {targetScore}/{target}
-          </div>
-          <div className="text-sm text-muted-foreground">
-            Time: {(elapsed / 1000).toFixed(2)}s
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {gameCompleted ? (
-            <p>Finished!</p>
-          ) : (
-            <>
-              {current && <WordDisplay word={current} />}
-              <AnswerInput
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                onSubmit={handleSubmit}
-                disabled={!sessionReady}
-              />
-              <Feedback
-                feedback={feedback}
-                answer={feedbackAnswer}
-                feedbackKey={feedbackKey}
-              />
-            </>
-          )}
-        </CardContent>
-      </Card>
+    <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-8 px-4">
+      <div className="w-full max-w-4xl space-y-4">
+        {/* Header with score and progress */}
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle>Score: {score}</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Correct: {correctCount} | Incorrect: {incorrectCount}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground">
+                  Time: {(timeElapsed / 1000).toFixed(1)}s
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Question {currentQuestionIndex + 1} of {questions.length}
+                </p>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+
+        {/* Question display */}
+        <QuestionDisplay
+          question={currentQuestion}
+          selectedAnswer={selectedAnswer}
+          correctAnswer={submittedAnswer ? correctAnswer : null}
+          onSelectAnswer={handleAnswerSelect}
+          disabled={submittedAnswer !== null || loading}
+          showFeedback={submittedAnswer !== null}
+          questionNumber={currentQuestionIndex + 1}
+          totalQuestions={questions.length}
+        />
+
+        {/* Submit button */}
+        <div className="flex justify-center gap-4">
+          <Button
+            onClick={handleSubmitAnswer}
+            disabled={!selectedAnswer || submittedAnswer !== null || loading}
+            size="lg"
+          >
+            {submittedAnswer ? 'Submitted' : 'Submit Answer'}
+          </Button>
+          <Button onClick={handleBack} variant="outline" size="lg">
+            Quit
+          </Button>
+        </div>
+
+        {/* Error display */}
+        {error && (
+          <Card className="border-red-500">
+            <CardContent className="pt-6">
+              <p className="text-red-500 text-center">{error}</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

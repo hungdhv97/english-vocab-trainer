@@ -19,10 +19,10 @@ func Start(d *deps.Deps) {
 	}
 
 	// Register translation job if translator is available and enabled
+	// Updated to remove batchSize parameter (T066)
 	if d.Translator != nil && d.Cfg.Jobs.TranslateMissing.Enabled {
 		registerTranslateMissing(c, d.PG, d.Translator,
-			d.Cfg.Jobs.TranslateMissing.Schedule,
-			d.Cfg.Jobs.TranslateMissing.BatchSize)
+			d.Cfg.Jobs.TranslateMissing.Schedule)
 	} else {
 		if d.Translator == nil {
 			log.Println("DeepL translator not available, skipping translation job")

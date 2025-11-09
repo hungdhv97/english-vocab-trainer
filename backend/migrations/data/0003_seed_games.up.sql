@@ -58,11 +58,12 @@ ON CONFLICT (code) DO NOTHING;
 -- Note: This is a simple example. Adjust based on your actual level structure.
 -- For now, we'll map each game to the first available level as a placeholder.
 
+-- Note: After migration 005, games.game_id is renamed to games.id and levels.level_id is renamed to levels.id
 INSERT INTO game_levels (game_id, level_id)
-SELECT g.game_id, l.level_id
+SELECT g.id, l.id
 FROM games g
 CROSS JOIN LATERAL (
-  SELECT level_id 
+  SELECT id 
   FROM levels 
   WHERE is_active = TRUE 
   LIMIT 1
@@ -73,8 +74,8 @@ ON CONFLICT (game_id, level_id) DO NOTHING;
 -- Alternative: If you want specific level mappings, uncomment and adjust:
 -- INSERT INTO game_levels (game_id, level_id)
 -- VALUES
---   ((SELECT game_id FROM games WHERE code = 'word-scramble'), 1),
---   ((SELECT game_id FROM games WHERE code = 'vocab-quiz'), 2),
---   ((SELECT game_id FROM games WHERE code = 'spelling-challenge'), 3)
+--   ((SELECT id FROM games WHERE code = 'word-scramble'), 1),
+--   ((SELECT id FROM games WHERE code = 'vocab-quiz'), 2),
+--   ((SELECT id FROM games WHERE code = 'spelling-challenge'), 3)
 -- ON CONFLICT (game_id, level_id) DO NOTHING;
 

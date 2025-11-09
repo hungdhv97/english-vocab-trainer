@@ -59,10 +59,10 @@ type JobsConfig struct {
 }
 
 // TranslateMissingJobConfig holds configuration for the translate missing job.
+// Updated to remove BatchSize field - job now processes all words (full scan) (T067).
 type TranslateMissingJobConfig struct {
-	Schedule  string `mapstructure:"schedule"`
-	Enabled   bool   `mapstructure:"enabled"`
-	BatchSize int    `mapstructure:"batch_size"`
+	Schedule string `mapstructure:"schedule"`
+	Enabled  bool   `mapstructure:"enabled"`
 }
 
 // UniverseIndexJobConfig holds configuration for the universe index rebuild job.

@@ -1,0 +1,170 @@
+package handler
+
+import (
+	"net/http"
+	"os"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+
+	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/vocab_quiz/model"
+	vocabquizservice "github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/vocab_quiz/service"
+)
+
+// Handler provides HTTP handlers for vocab quiz endpoints.
+type Handler struct {
+	svc *vocabquizservice.Service
+}
+
+// New creates a new vocab quiz handler.
+func New(s *vocabquizservice.Service) *Handler {
+	return &Handler{svc: s}
+}
+
+// CreateSession creates a new vocab quiz session with questions (T084).
+func (h *Handler) CreateSession(c *gin.Context) {
+	var req model.CreateSessionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Set default question count to 20 if not provided
+	if req.QuestionCount == 0 {
+		req.QuestionCount = 20
+	}
+
+	// Create session and generate questions
+	ctx := c.Request.Context()
+	sessionID, questions, err := h.svc.CreateSessionAndQuestions(
+		ctx,
+		req.UserID,
+		req.GameID,
+		req.CefrLevelID,
+		req.TranslationDirection,
+		req.QuestionCount,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Set session ID in cookie for convenience (though frontend should use session_id from response)
+	isDev := isDevelopmentMode()
+	cookie := &http.Cookie{
+		Name:     "session_id",
+		Value:    strconv.FormatInt(sessionID, 10),
+		Path:     "/",
+		HttpOnly: true,
+	}
+
+	if isDev {
+		cookie.SameSite = http.SameSiteLaxMode
+		cookie.Secure = false
+	} else {
+		cookie.SameSite = http.SameSiteNoneMode
+		cookie.Secure = true
+	}
+
+	http.SetCookie(c.Writer, cookie)
+	c.JSON(http.StatusOK, model.CreateSessionResponse{
+		SessionID: sessionID,
+		Questions: questions,
+	})
+}
+
+// SubmitAnswer submits an answer for a question (T086).
+func (h *Handler) SubmitAnswer(c *gin.Context) {
+	var req model.AnswerRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Validate required fields
+	if req.SessionQuestionID == 0 || req.ChosenOption == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "session_question_id and chosen_option are required"})
+		return
+	}
+
+	// Submit answer
+	ctx := c.Request.Context()
+	isCorrect, err := h.svc.SubmitAnswer(ctx, req.SessionQuestionID, req.ChosenOption, req.TimeSpentMs)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Get session statistics to return current counts
+	// We need to get the session ID from the question
+	session, err := h.svc.GetSessionByQuestionID(ctx, req.SessionQuestionID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get session"})
+		return
+	}
+
+	// Get updated session statistics
+	stats, err := h.svc.GetSessionStatistics(ctx, session.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get statistics"})
+		return
+	}
+
+	c.JSON(http.StatusOK, model.AnswerResponse{
+		IsCorrect:    isCorrect,
+		CorrectCount: stats.CorrectCount,
+		TotalCount:   stats.CorrectCount + stats.IncorrectCount,
+	})
+}
+
+// FinishSession marks the session as finished and returns statistics.
+func (h *Handler) FinishSession(c *gin.Context) {
+	sessionIDStr := c.Param("sessionId")
+	sessionID, err := strconv.ParseInt(sessionIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid session_id"})
+		return
+	}
+
+	ctx := c.Request.Context()
+	// Finish session
+	err = h.svc.FinishSession(ctx, sessionID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Get session statistics
+	stats, err := h.svc.GetSessionStatistics(ctx, sessionID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, stats)
+}
+
+// GetSessionStatistics retrieves statistics for a session.
+func (h *Handler) GetSessionStatistics(c *gin.Context) {
+	sessionIDStr := c.Param("sessionId")
+	sessionID, err := strconv.ParseInt(sessionIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid session_id"})
+		return
+	}
+
+	ctx := c.Request.Context()
+	stats, err := h.svc.GetSessionStatistics(ctx, sessionID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, stats)
+}
+
+// isDevelopmentMode checks if the application is running in development mode
+func isDevelopmentMode() bool {
+	env := os.Getenv("APP_ENV")
+	return env == "development" || env == "dev" || env == ""
+}

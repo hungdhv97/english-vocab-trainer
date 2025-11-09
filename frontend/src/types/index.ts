@@ -87,3 +87,75 @@ export interface LeaderboardEntry {
 export interface GameWithLeaderboard extends Game {
   leaderboard: LeaderboardEntry[];
 }
+
+// ===== Vocab Quiz Types =====
+
+// CEFR Level types
+export interface CefrLevel {
+  id: number;
+  code: string; // A1, A2, B1, B2, C1, C2
+  group_name: string; // Basic User, Independent User, Proficient User
+  level_name: string; // Beginner / Breakthrough, etc.
+  description: string;
+}
+
+// Translation direction
+export type TranslationDirection = 'en-to-vi' | 'vi-to-en';
+
+// Question and Option types
+export interface Option {
+  letter: string; // a, b, c, or d
+  text: string;
+  word_id: number;
+}
+
+export interface Question {
+  id: number;
+  word_id: number;
+  word_text: string;
+  translation_id: number;
+  options: Option[];
+  correct_answer: string; // a, b, c, or d
+}
+
+// Answer submission and response
+export interface AnswerRequest {
+  word_id: number;
+  translation_id: number;
+  user_answer: string; // a, b, c, or d
+  correct_answer: string; // a, b, c, or d
+  user_id: number;
+  session_tag?: string;
+}
+
+export interface AnswerResponse {
+  is_correct: boolean;
+  correct_answer: string;
+  score: number;
+  total_score: number;
+  translation_id?: number;
+}
+
+// Session management
+export interface VocabQuizSessionRequest {
+  user_id: number;
+  game_id: number;
+  cefr_level_id: number;
+  translation_direction: TranslationDirection;
+}
+
+export interface VocabQuizSessionResponse {
+  session_tag: string;
+  cefr_level_id?: number;
+  translation_direction?: TranslationDirection;
+}
+
+// Session statistics
+export interface SessionStatistics {
+  session_tag: string;
+  correct_count: number;
+  incorrect_count: number;
+  total_score: number;
+  accuracy_percentage: number;
+  time_elapsed?: number;
+}

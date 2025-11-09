@@ -1,0 +1,403 @@
+openapi: 3.0.0
+info:
+  title: Vocab Quiz Game API
+  version: 1.0.0
+  description: API endpoints for vocabulary quiz game redesign with multiple-choice questions and CEFR levels
+servers:
+  - url: http://localhost:8180/api/v1
+    description: Development server
+
+paths:
+  /cefr-levels:
+    get:
+      summary: Get all CEFR levels
+      description: Returns list of CEFR levels (A1-C2) available for vocabulary quiz game
+      tags: [vocab-quiz]
+      responses:
+        "200":
+          description: List of CEFR levels
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  levels:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CefrLevel"
+        "500":
+          description: Internal server error
+
+  /cefr-levels/{code}:
+    get:
+      summary: Get CEFR level by code
+      description: Returns a specific CEFR level by its code (A1, A2, B1, B2, C1, C2)
+      tags: [vocab-quiz]
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [A1, A2, B1, B2, C1, C2]
+          description: CEFR level code
+      responses:
+        "200":
+          description: CEFR level found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CefrLevel"
+        "404":
+          description: CEFR level not found
+        "500":
+          description: Internal server error
+
+  /vocab-quiz/session:
+    post:
+      summary: Create a new vocab quiz session
+      description: Creates a new game session for vocabulary quiz with selected level and translation direction
+      tags: [vocab-quiz]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id, cefr_level_id, translation_direction]
+              properties:
+                user_id:
+                  type: integer
+                  format: int64
+                  description: User ID
+                cefr_level_id:
+                  type: integer
+                  format: int64
+                  description: Selected CEFR level ID
+                translation_direction:
+                  type: string
+                  enum: [en-to-vi, vi-to-en]
+                  description: Translation direction for quiz
+      responses:
+        "200":
+          description: Session created successfully
+          headers:
+            Set-Cookie:
+              description: Sets session_tag cookie (HttpOnly)
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+        "400":
+          description: Bad request (invalid level or direction)
+        "500":
+          description: Internal server error
+
+  /vocab-quiz/questions:
+    post:
+      summary: Generate multiple-choice questions
+      description: Generates 20 random multiple-choice questions for the quiz session
+      tags: [vocab-quiz]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cefr_level_id, translation_direction]
+              properties:
+                cefr_level_id:
+                  type: integer
+                  format: int64
+                  description: Selected CEFR level ID
+                translation_direction:
+                  type: string
+                  enum: [en-to-vi, vi-to-en]
+                  description: Translation direction
+                count:
+                  type: integer
+                  format: int32
+                  default: 20
+                  description: Number of questions to generate (default 20)
+      responses:
+        "200":
+          description: Questions generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  questions:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Question"
+        "400":
+          description: Bad request (invalid level or insufficient words)
+        "500":
+          description: Internal server error
+
+  /vocab-quiz/answer:
+    post:
+      summary: Submit multiple-choice answer
+      description: Submits user's answer for a question and returns feedback
+      tags: [vocab-quiz]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [word_id, translation_id, user_answer, session_tag]
+              properties:
+                word_id:
+                  type: integer
+                  format: int64
+                  description: Word ID for the question
+                translation_id:
+                  type: integer
+                  format: int64
+                  description: Translation ID used in question
+                user_answer:
+                  type: string
+                  enum: [a, b, c, d]
+                  description: User's selected answer option
+                session_tag:
+                  type: string
+                  format: uuid
+                  description: Session tag (from cookie)
+                user_id:
+                  type: integer
+                  format: int64
+                  description: User ID
+                correct_answer:
+                  type: string
+                  enum: [a, b, c, d]
+                  description: Correct answer option
+      responses:
+        "200":
+          description: Answer processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnswerResponse"
+        "400":
+          description: Bad request (invalid answer or session)
+        "500":
+          description: Internal server error
+
+  /vocab-quiz/session/{sessionTag}/statistics:
+    get:
+      summary: Get session statistics
+      description: Returns comprehensive statistics for a completed game session
+      tags: [vocab-quiz]
+      parameters:
+        - name: sessionTag
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Session tag
+      responses:
+        "200":
+          description: Session statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionStatistics"
+        "404":
+          description: Session not found
+        "500":
+          description: Internal server error
+
+  /vocab-quiz/session/{sessionTag}/finish:
+    post:
+      summary: Finish game session
+      description: Marks game session as finished and calculates final statistics
+      tags: [vocab-quiz]
+      parameters:
+        - name: sessionTag
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Session tag
+      responses:
+        "200":
+          description: Session finished successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionStatistics"
+        "404":
+          description: Session not found
+        "500":
+          description: Internal server error
+
+components:
+  schemas:
+    CefrLevel:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: CEFR level ID
+        code:
+          type: string
+          description: CEFR level code (A1, A2, B1, B2, C1, C2)
+          example: "A2"
+        group_name:
+          type: string
+          description: CEFR group name (Basic User, Independent User, Proficient User)
+          example: "Basic User"
+        level_name:
+          type: string
+          description: Level name
+          example: "Elementary / Waystage"
+        description:
+          type: string
+          description: Level description
+      required:
+        - id
+        - code
+        - group_name
+        - level_name
+        - description
+
+    Question:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Question ID (sequential, 1-20)
+        word_id:
+          type: integer
+          format: int64
+          description: Word ID for the question
+        word_text:
+          type: string
+          description: Question text (word in source language)
+          example: "hello"
+        translation_id:
+          type: integer
+          format: int64
+          description: Translation ID used for this question
+        options:
+          type: array
+          description: Answer options (4 options with letters a, b, c, d)
+          items:
+            $ref: "#/components/schemas/Option"
+        correct_answer:
+          type: string
+          enum: [a, b, c, d]
+          description: Correct answer option
+          example: "a"
+      required:
+        - id
+        - word_id
+        - word_text
+        - translation_id
+        - options
+        - correct_answer
+
+    Option:
+      type: object
+      properties:
+        letter:
+          type: string
+          enum: [a, b, c, d]
+          description: Option letter
+          example: "a"
+        text:
+          type: string
+          description: Option text (translation word)
+          example: "xin chào"
+        word_id:
+          type: integer
+          format: int64
+          description: Word ID for this option
+      required:
+        - letter
+        - text
+        - word_id
+
+    AnswerResponse:
+      type: object
+      properties:
+        is_correct:
+          type: boolean
+          description: Whether answer is correct
+        correct_answer:
+          type: string
+          enum: [a, b, c, d]
+          description: Correct answer option
+        score:
+          type: integer
+          description: Points awarded (1 for correct, 0 for incorrect)
+        total_score:
+          type: integer
+          description: Total session score after this answer
+        translation_id:
+          type: integer
+          format: int64
+          description: Translation ID (for tracking)
+      required:
+        - is_correct
+        - correct_answer
+        - score
+        - total_score
+
+    SessionResponse:
+      type: object
+      properties:
+        session_tag:
+          type: string
+          format: uuid
+          description: Session tag
+        cefr_level_id:
+          type: integer
+          format: int64
+          description: CEFR level ID
+        translation_direction:
+          type: string
+          enum: [en-to-vi, vi-to-en]
+          description: Translation direction
+      required:
+        - session_tag
+
+    SessionStatistics:
+      type: object
+      properties:
+        session_tag:
+          type: string
+          format: uuid
+          description: Session tag
+        correct_count:
+          type: integer
+          description: Number of correct answers
+        incorrect_count:
+          type: integer
+          description: Number of incorrect answers
+        total_score:
+          type: integer
+          description: Total session score
+        accuracy_percentage:
+          type: number
+          format: float
+          description: Accuracy percentage (0-100)
+        time_elapsed:
+          type: number
+          format: float
+          description: Time elapsed in seconds (optional)
+      required:
+        - session_tag
+        - correct_count
+        - incorrect_count
+        - total_score
+        - accuracy_percentage
+

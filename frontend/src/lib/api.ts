@@ -1,4 +1,18 @@
-import type { WordBatch, HistoryPlay, Level, Game, LeaderboardEntry } from '@/types';
+import type {
+  WordBatch,
+  HistoryPlay,
+  Level,
+  Game,
+  LeaderboardEntry,
+  CefrLevel,
+  Question,
+  AnswerRequest,
+  AnswerResponse,
+  VocabQuizSessionRequest,
+  VocabQuizSessionResponse,
+  SessionStatistics,
+  TranslationDirection,
+} from '@/types';
 
 // In development, use relative path (proxied by Vite)
 // In production, use full URL or environment variable
@@ -201,4 +215,144 @@ export async function fetchGameByCode(code: string): Promise<Game> {
   }
   const data = await res.json();
   return data.game;
+}
+
+// ===== Vocab Quiz API Functions =====
+
+/**
+ * Fetches all CEFR levels (A1-C2) for vocabulary quiz.
+ * This is a public endpoint - no authentication required.
+ */
+export async function fetchCefrLevels(): Promise<CefrLevel[]> {
+  const res = await fetch(`${API_BASE_URL}/cefr-levels`, {
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    throw new Error('Failed to fetch CEFR levels');
+  }
+  const data = await res.json();
+  return data.levels || [];
+}
+
+/**
+ * Fetches a specific CEFR level by its code (A1, A2, B1, B2, C1, C2).
+ * This is a public endpoint - no authentication required.
+ */
+export async function fetchCefrLevelByCode(code: string): Promise<CefrLevel> {
+  const res = await fetch(`${API_BASE_URL}/cefr-levels/${encodeURIComponent(code)}`, {
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    if (res.status === 404) {
+      throw new Error('CEFR level not found');
+    }
+    throw new Error('Failed to fetch CEFR level');
+  }
+  return res.json();
+}
+
+/**
+ * Creates a new vocab quiz session with CEFR level and translation direction.
+ * Sets session_tag cookie automatically.
+ */
+export async function createVocabQuizSession(
+  request: VocabQuizSessionRequest,
+): Promise<VocabQuizSessionResponse> {
+  const res = await fetch(`${API_BASE_URL}/vocab-quiz/session`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(request),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error || 'Failed to create session');
+  }
+  return res.json();
+}
+
+/**
+ * Generates multiple-choice questions for a vocabulary quiz.
+ * Returns 20 questions (or fewer if insufficient words available).
+ */
+export async function generateVocabQuizQuestions(
+  cefrLevelId: number,
+  translationDirection: TranslationDirection,
+  count: number = 20,
+): Promise<Question[]> {
+  const res = await fetch(`${API_BASE_URL}/vocab-quiz/questions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({
+      cefr_level_id: cefrLevelId,
+      translation_direction: translationDirection,
+      count,
+    }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error || 'Failed to generate questions');
+  }
+  const data = await res.json();
+  return data.questions || [];
+}
+
+/**
+ * Submits an answer for a vocabulary quiz question.
+ * Returns feedback including whether the answer is correct and the score.
+ */
+export async function submitVocabQuizAnswer(
+  request: AnswerRequest,
+): Promise<AnswerResponse> {
+  const res = await fetch(`${API_BASE_URL}/vocab-quiz/answer`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(request),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error || 'Failed to submit answer');
+  }
+  return res.json();
+}
+
+/**
+ * Finishes a vocab quiz session and returns final statistics.
+ */
+export async function finishVocabQuizSession(
+  sessionTag: string,
+): Promise<SessionStatistics> {
+  const res = await fetch(
+    `${API_BASE_URL}/vocab-quiz/session/${encodeURIComponent(sessionTag)}/finish`,
+    {
+      method: 'POST',
+      credentials: 'include',
+    },
+  );
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error || 'Failed to finish session');
+  }
+  return res.json();
+}
+
+/**
+ * Gets statistics for a vocab quiz session.
+ */
+export async function getVocabQuizSessionStatistics(
+  sessionTag: string,
+): Promise<SessionStatistics> {
+  const res = await fetch(
+    `${API_BASE_URL}/vocab-quiz/session/${encodeURIComponent(sessionTag)}/statistics`,
+    {
+      credentials: 'include',
+    },
+  );
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error || 'Failed to get session statistics');
+  }
+  return res.json();
 }

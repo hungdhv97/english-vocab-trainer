@@ -5,7 +5,7 @@ import "time"
 // Game represents a vocabulary learning game displayed on the home page.
 // Games are user-facing collections of learning activities that may span multiple difficulty levels.
 type Game struct {
-	GameID       int64     `json:"game_id" db:"game_id"`
+	ID           int64     `json:"game_id" db:"id"`
 	Code         string    `json:"code" db:"code"`
 	Name         string    `json:"name" db:"name"`
 	Description  string    `json:"description" db:"description"`

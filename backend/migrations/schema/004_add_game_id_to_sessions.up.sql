@@ -1,11 +1,16 @@
 -- Up migration: add game_id column to game_sessions table
 
 -- Step 1: Add game_id column as NULLABLE (for backward compatibility during migration)
+-- Note: After migration 005, games.game_id will be renamed to games.id
+-- This migration should run before 005, so it uses game_id
+-- After 005 runs, the foreign key will be updated to reference games.id
 ALTER TABLE game_sessions 
-  ADD COLUMN IF NOT EXISTS game_id INT REFERENCES games(game_id) ON DELETE RESTRICT;
+  ADD COLUMN IF NOT EXISTS game_id INT;
 
 -- Step 2: Backfill game_id from level_id via game_levels junction table
 -- This assumes that game_levels mapping has been populated by data migration 0003_seed_games
+-- Note: After migration 005 runs, games.game_id will be renamed to games.id,
+-- but game_levels.game_id column name stays the same (only the FK reference changes)
 UPDATE game_sessions gs
 SET game_id = gl.game_id
 FROM game_levels gl

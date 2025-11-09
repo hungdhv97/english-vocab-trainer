@@ -1,9 +1,10 @@
 -- Data migration rollback: remove seeded game data
 
 -- Delete game_levels mappings first (foreign key constraint)
+-- Note: After migration 005, games.game_id is renamed to games.id
 DELETE FROM game_levels 
 WHERE game_id IN (
-  SELECT game_id FROM games 
+  SELECT id FROM games 
   WHERE code IN (
     'word-scramble', 
     'vocab-quiz', 

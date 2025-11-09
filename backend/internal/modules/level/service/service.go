@@ -21,7 +21,7 @@ func New(db *pgxpool.Pool) *Service {
 // List returns all active levels.
 func (s *Service) List() ([]model.Level, error) {
 	ctx := context.Background()
-	rows, err := s.db.Query(ctx, `SELECT level_id, code, name, description, difficulty, scoring_config FROM levels WHERE is_active = true ORDER BY level_id`)
+	rows, err := s.db.Query(ctx, `SELECT id, code, name, description, difficulty, scoring_config FROM levels WHERE is_active = true ORDER BY id`)
 	if err != nil {
 		return nil, err
 	}

@@ -65,7 +65,7 @@ func Load() (*Config, error) {
 	// jobs defaults
 	v.SetDefault("jobs.translate_missing.enabled", true)
 	v.SetDefault("jobs.translate_missing.schedule", "0 * * * *") // Every hour
-	v.SetDefault("jobs.translate_missing.batch_size", 100)
+	// Note: batch_size removed - job now processes all words (full scan) (T067)
 
 	// config file
 	v.SetConfigName("config")

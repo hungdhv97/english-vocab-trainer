@@ -4,10 +4,15 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/cefr_level"
+	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/example"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/game"
+	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/language"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/level"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/play"
+	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/translation"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/user"
+	vocabquiz "github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/vocab_quiz"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/word"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/platform/deps"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/platform/middleware"
@@ -24,6 +29,11 @@ func NewRouter(d *deps.Deps) *gin.Engine {
 	level.RegisterRoutes(api, d)
 	play.RegisterRoutes(api, d)
 	game.RegisterRoutes(api, d)
+	language.RegisterRoutes(api, d)
+	cefr_level.RegisterRoutes(api, d)
+	translation.RegisterRoutes(api, d)
+	example.RegisterRoutes(api, d)
+	vocabquiz.RegisterRoutes(api, d)
 
 	r.GET("/openapi.yaml", func(c *gin.Context) { c.File("docs/openapi.yaml") })
 	r.GET("/docs", func(c *gin.Context) {

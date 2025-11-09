@@ -32,7 +32,7 @@ func NewService(db *pgxpool.Pool, redisClient *redis.Client) *Service {
 func (s *Service) ListActiveGames(ctx context.Context) ([]model.Game, error) {
 	query := `
 		SELECT 
-			game_id, 
+			id, 
 			code, 
 			name, 
 			description, 
@@ -57,7 +57,7 @@ func (s *Service) ListActiveGames(ctx context.Context) ([]model.Game, error) {
 	for rows.Next() {
 		var game model.Game
 		err := rows.Scan(
-			&game.GameID,
+			&game.ID,
 			&game.Code,
 			&game.Name,
 			&game.Description,
@@ -110,13 +110,15 @@ func (s *Service) GetLeaderboard(ctx context.Context, gameID int64) ([]model.Lea
 	// Use window functions with CTE for efficient ranking
 	query := `
 		WITH user_best_scores AS (
-			SELECT 
+			SELECT
 				gs.game_id,
 				gs.user_id,
-				MAX(gs.total_score) as best_score,
+				MAX(COALESCE((
+					SELECT SUM(score) FROM plays WHERE session_tag = gs.session_tag
+				), 0)) as best_score,
 				MAX(gs.finished_at) as last_played
 			FROM game_sessions gs
-			WHERE gs.game_id = $1 
+			WHERE gs.game_id = $1
 				AND gs.finished_at IS NOT NULL  -- Only completed sessions
 			GROUP BY gs.game_id, gs.user_id
 		),
@@ -128,7 +130,7 @@ func (s *Service) GetLeaderboard(ctx context.Context, gameID int64) ([]model.Lea
 				ubs.last_played,
 				ROW_NUMBER() OVER (ORDER BY ubs.best_score DESC, ubs.last_played ASC) as rank
 			FROM user_best_scores ubs
-			JOIN users u ON ubs.user_id = u.user_id
+			JOIN users u ON ubs.user_id = u.id
 			WHERE u.is_active = TRUE
 		)
 		SELECT rank, user_id, username, best_score as score, last_played as achieved_at
@@ -184,7 +186,7 @@ func (s *Service) GetLeaderboard(ctx context.Context, gameID int64) ([]model.Lea
 func (s *Service) GetGameByCode(ctx context.Context, code string) (*model.Game, error) {
 	query := `
 		SELECT 
-			game_id, 
+			id, 
 			code, 
 			name, 
 			description, 
@@ -201,7 +203,7 @@ func (s *Service) GetGameByCode(ctx context.Context, code string) (*model.Game, 
 
 	var game model.Game
 	err := s.db.QueryRow(ctx, query, code).Scan(
-		&game.GameID,
+		&game.ID,
 		&game.Code,
 		&game.Name,
 		&game.Description,

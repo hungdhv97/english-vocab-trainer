@@ -64,4 +64,4 @@ jobs:
   translate_missing:
     enabled: true
     schedule: "0 */2 * * *"  # Every 2 hours in production
-    batch_size: 200
+    # Note: batch_size removed - job now processes all words (full scan)
