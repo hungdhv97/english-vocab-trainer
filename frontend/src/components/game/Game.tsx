@@ -53,7 +53,7 @@ export default function Game({ userId }: Props) {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [submittedAnswer, setSubmittedAnswer] = useState<string | null>(null);
   const [correctAnswer, setCorrectAnswer] = useState<string | null>(null);
-  const [sessionTag, setSessionTag] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [incorrectCount, setIncorrectCount] = useState(0);
@@ -127,30 +127,25 @@ export default function Game({ userId }: Props) {
         return;
       }
       
-      // Create session (T087)
+      // Create session and generate questions (T087, T077)
       const sessionResponse = await createVocabQuizSession({
         user_id: userId,
         game_id: game.game_id,
         cefr_level_id: selectedLevel.id,
         translation_direction: direction,
+        question_count: 20,
       });
-      setSessionTag(sessionResponse.session_tag);
+      setSessionId(sessionResponse.session_id);
 
-      // Generate questions (T077)
-      const generatedQuestions = await generateVocabQuizQuestions(
-        selectedLevel.id,
-        direction,
-        20,
-      );
-
-      if (generatedQuestions.length === 0) {
+      // Questions are now included in the session response
+      if (sessionResponse.questions.length === 0) {
         setError('No questions available for this level. Please try a different level.');
         setGameState('level-selection');
         setLoading(false);
         return;
       }
 
-      setQuestions(generatedQuestions);
+      setQuestions(sessionResponse.questions);
       setCurrentQuestionIndex(0);
       setGameState('playing');
       setStartTime(Date.now());
@@ -174,7 +169,7 @@ export default function Game({ userId }: Props) {
 
   // Handle answer submission (T078, T089, T090)
   const handleSubmitAnswer = async () => {
-    if (!selectedAnswer || !sessionTag || submittedAnswer !== null) return; // T094: Prevent duplicate submissions
+    if (!selectedAnswer || !sessionId || submittedAnswer !== null) return; // T094: Prevent duplicate submissions
 
     const currentQuestion = questions[currentQuestionIndex];
     if (!currentQuestion) return;
@@ -191,20 +186,20 @@ export default function Game({ userId }: Props) {
     setLoading(true);
 
     try {
-      // Submit answer (T088)
+      // Calculate time spent (optional)
+      const timeSpentMs = startTime ? Date.now() - startTime : undefined;
+
+      // Submit answer (T088) - use new API format
       const response = await submitVocabQuizAnswer({
-        word_id: currentQuestion.word_id,
-        translation_id: currentQuestion.translation_id,
-        user_answer: selectedAnswer,
-        correct_answer: currentQuestion.correct_answer,
-        user_id: userId,
-        session_tag: sessionTag,
+        session_question_id: currentQuestion.session_question_id || currentQuestion.id,
+        chosen_option: selectedAnswer.toUpperCase(), // Convert to uppercase (A, B, C, D)
+        time_spent_ms: timeSpentMs,
       });
 
       // Update score and statistics (T090)
-      setScore(response.total_score);
       if (response.is_correct) {
         setCorrectCount((prev) => prev + 1);
+        setScore((prev) => prev + 1);
       } else {
         setIncorrectCount((prev) => prev + 1);
       }
@@ -236,11 +231,11 @@ export default function Game({ userId }: Props) {
 
   // Handle session completion (T091)
   const handleFinishSession = async () => {
-    if (!sessionTag) return;
+    if (!sessionId) return;
 
     try {
       // Finish session and get statistics
-      const stats = await finishVocabQuizSession(sessionTag);
+      const stats = await finishVocabQuizSession(sessionId.toString());
       setSessionStatistics({
         ...stats,
         time_elapsed: timeElapsed / 1000, // Convert to seconds
@@ -253,7 +248,7 @@ export default function Game({ userId }: Props) {
     } catch (err) {
       // If finish fails, try to get statistics anyway
       try {
-        const stats = await getVocabQuizSessionStatistics(sessionTag);
+        const stats = await getVocabQuizSessionStatistics(sessionId.toString());
         setSessionStatistics({
           ...stats,
           time_elapsed: timeElapsed / 1000,
@@ -263,6 +258,18 @@ export default function Game({ userId }: Props) {
         setError(err instanceof Error ? err.message : 'Failed to finish session');
       }
     }
+  };
+
+  // Handle quit - finish session and show results
+  const handleQuit = async () => {
+    if (!sessionId) {
+      // If no session, just go back
+      handleBack();
+      return;
+    }
+
+    // Finish the session before quitting
+    await handleFinishSession();
   };
 
   // Handle back navigation (T076)
@@ -285,7 +292,7 @@ export default function Game({ userId }: Props) {
     setSelectedAnswer(null);
     setSubmittedAnswer(null);
     setCorrectAnswer(null);
-    setSessionTag(null);
+    setSessionId(null);
     setScore(0);
     setCorrectCount(0);
     setIncorrectCount(0);
@@ -474,7 +481,7 @@ export default function Game({ userId }: Props) {
           >
             {submittedAnswer ? 'Submitted' : 'Submit Answer'}
           </Button>
-          <Button onClick={handleBack} variant="outline" size="lg">
+          <Button onClick={handleQuit} variant="outline" size="lg" disabled={loading}>
             Quit
           </Button>
         </div>

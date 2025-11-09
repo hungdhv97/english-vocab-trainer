@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -161,6 +162,69 @@ func (h *Handler) GetSessionStatistics(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, stats)
+}
+
+// GenerateQuestions generates multiple-choice questions for a vocabulary quiz (for backward compatibility).
+// Note: In the new flow, questions are generated when creating a session via CreateSession.
+func (h *Handler) GenerateQuestions(c *gin.Context) {
+	var req model.QuestionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Set default count to 20 if not provided
+	if req.Count == 0 {
+		req.Count = 20
+	}
+
+	// Determine source and target languages based on translation direction
+	var fromLangCode, toLangCode string
+	if req.TranslationDirection == "en-to-vi" {
+		fromLangCode = "en"
+		toLangCode = "vi"
+	} else if req.TranslationDirection == "vi-to-en" {
+		fromLangCode = "vi"
+		toLangCode = "en"
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid translation direction"})
+		return
+	}
+
+	// Get CEFR level to determine which levels to include
+	ctx := c.Request.Context()
+	cefrLevel, err := h.svc.GetCefrLevelByID(ctx, req.CefrLevelID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid CEFR level: %v", err)})
+		return
+	}
+
+	// Get all levels up to and including the selected level (hierarchical inclusion)
+	levels, err := h.svc.GetCefrLevelsUpTo(ctx, cefrLevel.Code)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to get levels: %v", err)})
+		return
+	}
+
+	if len(levels) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no CEFR levels found"})
+		return
+	}
+
+	// Extract level IDs
+	levelIDs := make([]int64, len(levels))
+	for i, level := range levels {
+		levelIDs[i] = level.ID
+	}
+
+	// Generate questions
+	questions, _, err := h.svc.GenerateQuestionsWithTranslations(ctx, fromLangCode, toLangCode, levelIDs, req.Count)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"questions": questions})
 }
 
 // isDevelopmentMode checks if the application is running in development mode

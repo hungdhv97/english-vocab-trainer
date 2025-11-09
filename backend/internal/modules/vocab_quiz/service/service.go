@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"math/rand"
 	"time"
 
@@ -140,6 +141,8 @@ func (s *Service) CreateSessionAndQuestions(ctx context.Context, userID int64, g
 
 // generateQuestionsWithTranslations generates questions and returns both the display format and database format.
 func (s *Service) generateQuestionsWithTranslations(ctx context.Context, fromLangCode, toLangCode string, levelIDs []int64, count int) ([]model.Question, []vocabgamemodel.VocabGameSessionQuestion, error) {
+	log.Printf("[generateQuestionsWithTranslations] Starting - fromLang: %s, toLang: %s, levelIDs: %v, count: %d", fromLangCode, toLangCode, levelIDs, count)
+	
 	// Get words with translations for the specified levels
 	query := `
 		SELECT 
@@ -160,8 +163,10 @@ func (s *Service) generateQuestionsWithTranslations(ctx context.Context, fromLan
 		LIMIT $4
 	`
 
+	log.Printf("[generateQuestionsWithTranslations] Executing query with params: fromLang=%s, toLang=%s, levelIDs=%v, count=%d", fromLangCode, toLangCode, levelIDs, count)
 	rows, err := s.db.Query(ctx, query, fromLangCode, toLangCode, levelIDs, count)
 	if err != nil {
+		log.Printf("[generateQuestionsWithTranslations] Query failed: %v", err)
 		return nil, nil, fmt.Errorf("failed to query words: %w", err)
 	}
 	defer rows.Close()
@@ -174,6 +179,7 @@ func (s *Service) generateQuestionsWithTranslations(ctx context.Context, fromLan
 		TargetWordText  string
 	}
 
+	rowCount := 0
 	for rows.Next() {
 		var wt struct {
 			WordID          int64
@@ -183,12 +189,23 @@ func (s *Service) generateQuestionsWithTranslations(ctx context.Context, fromLan
 			TargetWordText  string
 		}
 		if err := rows.Scan(&wt.WordID, &wt.WordText, &wt.TranslationID, &wt.TargetWordID, &wt.TargetWordText); err != nil {
+			log.Printf("[generateQuestionsWithTranslations] Failed to scan row %d: %v", rowCount, err)
 			return nil, nil, fmt.Errorf("failed to scan word: %w", err)
 		}
 		wordTranslations = append(wordTranslations, wt)
+		rowCount++
+		log.Printf("[generateQuestionsWithTranslations] Scanned word: word_id=%d, word_text=%s, translation_id=%d, target_word_id=%d, target_word_text=%s", 
+			wt.WordID, wt.WordText, wt.TranslationID, wt.TargetWordID, wt.TargetWordText)
 	}
 
+	if err := rows.Err(); err != nil {
+		log.Printf("[generateQuestionsWithTranslations] Row iteration error: %v", err)
+		return nil, nil, fmt.Errorf("error iterating rows: %w", err)
+	}
+
+	log.Printf("[generateQuestionsWithTranslations] Found %d word translations", len(wordTranslations))
 	if len(wordTranslations) == 0 {
+		log.Printf("[generateQuestionsWithTranslations] No words available for query")
 		return nil, nil, errors.New("no words available")
 	}
 
@@ -209,10 +226,15 @@ func (s *Service) generateQuestionsWithTranslations(ctx context.Context, fromLan
 		// Ensure we have exactly 4 options (1 correct + 3 distractors)
 		// If we don't have enough distractors, we'll use what we have
 		totalOptions := 1 + len(distractorTranslationIDs)
+		log.Printf("[generateQuestionsWithTranslations] Question %d: totalOptions=%d (1 correct + %d distractors)", 
+			i+1, totalOptions, len(distractorTranslationIDs))
+		
 		if totalOptions < 2 {
+			log.Printf("[generateQuestionsWithTranslations] Question %d: Skipping - insufficient options (%d < 2)", i+1, totalOptions)
 			continue // Skip if we can't create at least 2 options
 		}
 		if totalOptions > 4 {
+			log.Printf("[generateQuestionsWithTranslations] Question %d: Limiting to 4 options (had %d)", i+1, totalOptions)
 			totalOptions = 4
 			distractorTranslationIDs = distractorTranslationIDs[:3]
 		}
@@ -228,6 +250,7 @@ func (s *Service) generateQuestionsWithTranslations(ctx context.Context, fromLan
 		optionWordIDs[0] = wt.TargetWordID
 
 		// Get distractors
+		log.Printf("[generateQuestionsWithTranslations] Question %d: Fetching distractor texts for %d distractors", i+1, len(distractorTranslationIDs))
 		for j := 0; j < len(distractorTranslationIDs) && j < 3; j++ {
 			optionTranslationIDs[j+1] = distractorTranslationIDs[j]
 			// Get word text for this translation
@@ -241,8 +264,12 @@ func (s *Service) generateQuestionsWithTranslations(ctx context.Context, fromLan
 				distractorTranslationIDs[j],
 			).Scan(&distractorWordID, &distractorText)
 			if err != nil {
+				log.Printf("[generateQuestionsWithTranslations] Question %d: Failed to get distractor text for translation_id=%d: %v", 
+					i+1, distractorTranslationIDs[j], err)
 				continue // Skip this distractor if we can't get the text
 			}
+			log.Printf("[generateQuestionsWithTranslations] Question %d: Distractor %d: translation_id=%d, word_id=%d, text=%s", 
+				i+1, j+1, distractorTranslationIDs[j], distractorWordID, distractorText)
 			optionTexts[j+1] = distractorText
 			optionWordIDs[j+1] = distractorWordID
 		}
@@ -262,11 +289,15 @@ func (s *Service) generateQuestionsWithTranslations(ctx context.Context, fromLan
 				WordID:        optionWordIDs[j],
 				Index:         j,
 			}
+			log.Printf("[generateQuestionsWithTranslations] Question %d: Option %d (before shuffle): translation_id=%d, text=%s, word_id=%d, is_correct=%v", 
+				i+1, j, optionTranslationIDs[j], optionTexts[j], optionWordIDs[j], j == 0)
 		}
 
 		rand.Shuffle(len(optionsData), func(i, j int) {
 			optionsData[i], optionsData[j] = optionsData[j], optionsData[i]
 		})
+
+		log.Printf("[generateQuestionsWithTranslations] Question %d: Options shuffled", i+1)
 
 		// Find correct answer position after shuffle
 		correctOption := ""
@@ -276,6 +307,8 @@ func (s *Service) generateQuestionsWithTranslations(ctx context.Context, fromLan
 		for j := 0; j < totalOptions; j++ {
 			if optionsData[j].Index == 0 {
 				correctOption = optionLetters[j]
+				log.Printf("[generateQuestionsWithTranslations] Question %d: Correct answer is option %s (position %d after shuffle)", 
+					i+1, correctOption, j)
 			}
 			letter := optionLetters[j]
 			// Convert to lowercase for display
@@ -287,6 +320,8 @@ func (s *Service) generateQuestionsWithTranslations(ctx context.Context, fromLan
 				Text:   optionsData[j].Text,
 				WordID: optionsData[j].WordID,
 			}
+			log.Printf("[generateQuestionsWithTranslations] Question %d: Option %s: text=%s, word_id=%d, is_correct=%v", 
+				i+1, letter, optionsData[j].Text, optionsData[j].WordID, optionsData[j].Index == 0)
 		}
 
 		// Convert correct option to lowercase for display
@@ -294,6 +329,7 @@ func (s *Service) generateQuestionsWithTranslations(ctx context.Context, fromLan
 		if len(correctOption) > 0 && correctOption[0] >= 'A' && correctOption[0] <= 'Z' {
 			correctOptionLower = string(correctOption[0] + 32)
 		}
+		log.Printf("[generateQuestionsWithTranslations] Question %d: Correct option (lowercase): %s", i+1, correctOptionLower)
 
 		// Create question for display
 		question := model.Question{
@@ -346,55 +382,89 @@ func (s *Service) generateQuestionsWithTranslations(ctx context.Context, fromLan
 			OptionDTranslationID:  optionD,
 			CorrectOption:         correctOption,
 		}
+		log.Printf("[generateQuestionsWithTranslations] Question %d: Session question created - translation_id=%d, options=[A:%d, B:%d, C:%d, D:%d], correct=%s", 
+			i+1, wt.TranslationID, optionA, optionB, optionC, optionD, correctOption)
 		sessionQuestions = append(sessionQuestions, sessionQuestion)
+		log.Printf("[generateQuestionsWithTranslations] Question %d: Successfully created", i+1)
 	}
 
+	log.Printf("[generateQuestionsWithTranslations] Completed - Generated %d questions, %d session questions", 
+		len(questions), len(sessionQuestions))
 	return questions, sessionQuestions, nil
+}
+
+// GenerateQuestionsWithTranslations is a public wrapper for generateQuestionsWithTranslations.
+// It generates questions without creating a session (for backward compatibility).
+func (s *Service) GenerateQuestionsWithTranslations(ctx context.Context, fromLangCode, toLangCode string, levelIDs []int64, count int) ([]model.Question, []vocabgamemodel.VocabGameSessionQuestion, error) {
+	return s.generateQuestionsWithTranslations(ctx, fromLangCode, toLangCode, levelIDs, count)
 }
 
 // getDistractorTranslationIDs gets translation IDs for distractors.
 func (s *Service) getDistractorTranslationIDs(ctx context.Context, toLangCode string, excludeTranslationID int64, levelIDs []int64, limit int) ([]int64, error) {
+	log.Printf("[getDistractorTranslationIDs] Starting - toLangCode=%s, excludeTranslationID=%d, levelIDs=%v, limit=%d", 
+		toLangCode, excludeTranslationID, levelIDs, limit)
+	
 	// Get the target language ID
 	var toLangID int64
 	err := s.db.QueryRow(ctx, `SELECT id FROM languages WHERE code = $1`, toLangCode).Scan(&toLangID)
 	if err != nil {
+		log.Printf("[getDistractorTranslationIDs] Failed to get target language ID for code=%s: %v", toLangCode, err)
 		return nil, fmt.Errorf("failed to get target language ID: %w", err)
 	}
+	log.Printf("[getDistractorTranslationIDs] Target language ID: %d", toLangID)
 
 	// Get the exclude word ID from the translation
 	var excludeWordID int64
 	err = s.db.QueryRow(ctx, `SELECT to_word_id FROM translations WHERE id = $1`, excludeTranslationID).Scan(&excludeWordID)
 	if err != nil {
+		log.Printf("[getDistractorTranslationIDs] Failed to get exclude word ID for translation_id=%d: %v", excludeTranslationID, err)
 		return nil, fmt.Errorf("failed to get exclude word ID: %w", err)
 	}
+	log.Printf("[getDistractorTranslationIDs] Exclude word ID: %d", excludeWordID)
 
 	// Query for distractor translations
 	query := `
-		SELECT DISTINCT t.id
-		FROM translations t
-		JOIN words w ON t.to_word_id = w.id
-		WHERE w.language_id = $1
-		AND t.to_word_id != $2
-		AND (t.cefr_level_id = ANY($3) OR t.cefr_level_id IS NULL)
+		SELECT id
+		FROM (
+			SELECT DISTINCT t.id
+			FROM translations t
+			JOIN words w ON t.to_word_id = w.id
+			WHERE w.language_id = $1
+			AND t.to_word_id != $2
+			AND (t.cefr_level_id = ANY($3) OR t.cefr_level_id IS NULL)
+		) sub
 		ORDER BY RANDOM()
 		LIMIT $4
 	`
 
+	log.Printf("[getDistractorTranslationIDs] Executing query with params: toLangID=%d, excludeWordID=%d, levelIDs=%v, limit=%d", 
+		toLangID, excludeWordID, levelIDs, limit)
 	rows, err := s.db.Query(ctx, query, toLangID, excludeWordID, levelIDs, limit)
 	if err != nil {
+		log.Printf("[getDistractorTranslationIDs] Query failed: %v", err)
 		return nil, fmt.Errorf("failed to query distractors: %w", err)
 	}
 	defer rows.Close()
 
 	var translationIDs []int64
+	rowCount := 0
 	for rows.Next() {
 		var id int64
 		if err := rows.Scan(&id); err != nil {
+			log.Printf("[getDistractorTranslationIDs] Failed to scan row %d: %v", rowCount, err)
 			return nil, fmt.Errorf("failed to scan distractor: %w", err)
 		}
 		translationIDs = append(translationIDs, id)
+		rowCount++
+		log.Printf("[getDistractorTranslationIDs] Found distractor translation_id=%d", id)
 	}
 
+	if err := rows.Err(); err != nil {
+		log.Printf("[getDistractorTranslationIDs] Row iteration error: %v", err)
+		return nil, fmt.Errorf("error iterating rows: %w", err)
+	}
+
+	log.Printf("[getDistractorTranslationIDs] Completed - Found %d distractor translation IDs: %v", len(translationIDs), translationIDs)
 	return translationIDs, nil
 }
 
@@ -476,4 +546,47 @@ func (s *Service) GetSessionByQuestionID(ctx context.Context, sessionQuestionID 
 	}
 
 	return session, nil
+}
+
+// GetCefrLevelByID gets a CEFR level by ID.
+func (s *Service) GetCefrLevelByID(ctx context.Context, levelID int64) (*struct {
+	ID   int64
+	Code string
+}, error) {
+	level, err := s.cefrLevelSvc.GetByID(levelID)
+	if err != nil {
+		return nil, err
+	}
+	return &struct {
+		ID   int64
+		Code string
+	}{
+		ID:   level.ID,
+		Code: level.Code,
+	}, nil
+}
+
+// GetCefrLevelsUpTo gets all CEFR levels up to and including the specified level code.
+func (s *Service) GetCefrLevelsUpTo(ctx context.Context, levelCode string) ([]struct {
+	ID   int64
+	Code string
+}, error) {
+	levels, err := s.cefrLevelSvc.GetLevelsUpTo(levelCode)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]struct {
+		ID   int64
+		Code string
+	}, len(levels))
+	for i, level := range levels {
+		result[i] = struct {
+			ID   int64
+			Code string
+		}{
+			ID:   level.ID,
+			Code: level.Code,
+		}
+	}
+	return result, nil
 }

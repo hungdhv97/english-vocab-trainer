@@ -110,7 +110,8 @@ export interface Option {
 }
 
 export interface Question {
-  id: number;
+  id: number; // Session question ID
+  session_question_id: number; // Same as id, for clarity
   word_id: number;
   word_text: string;
   translation_id: number;
@@ -120,20 +121,15 @@ export interface Question {
 
 // Answer submission and response
 export interface AnswerRequest {
-  word_id: number;
-  translation_id: number;
-  user_answer: string; // a, b, c, or d
-  correct_answer: string; // a, b, c, or d
-  user_id: number;
-  session_tag?: string;
+  session_question_id: number; // ID of the session question
+  chosen_option: string; // A, B, C, or D (uppercase)
+  time_spent_ms?: number; // Optional time spent in milliseconds
 }
 
 export interface AnswerResponse {
   is_correct: boolean;
-  correct_answer: string;
-  score: number;
-  total_score: number;
-  translation_id?: number;
+  correct_count: number;
+  total_count: number;
 }
 
 // Session management
@@ -142,20 +138,20 @@ export interface VocabQuizSessionRequest {
   game_id: number;
   cefr_level_id: number;
   translation_direction: TranslationDirection;
+  question_count?: number; // Default: 20
 }
 
 export interface VocabQuizSessionResponse {
-  session_tag: string;
-  cefr_level_id?: number;
-  translation_direction?: TranslationDirection;
+  session_id: number; // Integer session ID (not UUID anymore)
+  questions: Question[];
 }
 
 // Session statistics
 export interface SessionStatistics {
-  session_tag: string;
+  session_id: number; // Integer session ID
   correct_count: number;
   incorrect_count: number;
   total_score: number;
   accuracy_percentage: number;
-  time_elapsed?: number;
+  time_elapsed?: number; // in seconds
 }

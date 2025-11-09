@@ -300,7 +300,7 @@ export async function generateVocabQuizQuestions(
 
 /**
  * Submits an answer for a vocabulary quiz question.
- * Returns feedback including whether the answer is correct and the score.
+ * Returns feedback including whether the answer is correct and current counts.
  */
 export async function submitVocabQuizAnswer(
   request: AnswerRequest,
@@ -320,12 +320,13 @@ export async function submitVocabQuizAnswer(
 
 /**
  * Finishes a vocab quiz session and returns final statistics.
+ * @param sessionId - Session ID as string (will be converted to number in URL)
  */
 export async function finishVocabQuizSession(
-  sessionTag: string,
+  sessionId: string,
 ): Promise<SessionStatistics> {
   const res = await fetch(
-    `${API_BASE_URL}/vocab-quiz/session/${encodeURIComponent(sessionTag)}/finish`,
+    `${API_BASE_URL}/vocab-quiz/session/${encodeURIComponent(sessionId)}/finish`,
     {
       method: 'POST',
       credentials: 'include',
@@ -340,12 +341,13 @@ export async function finishVocabQuizSession(
 
 /**
  * Gets statistics for a vocab quiz session.
+ * @param sessionId - Session ID as string (will be converted to number in URL)
  */
 export async function getVocabQuizSessionStatistics(
-  sessionTag: string,
+  sessionId: string,
 ): Promise<SessionStatistics> {
   const res = await fetch(
-    `${API_BASE_URL}/vocab-quiz/session/${encodeURIComponent(sessionTag)}/statistics`,
+    `${API_BASE_URL}/vocab-quiz/session/${encodeURIComponent(sessionId)}/statistics`,
     {
       credentials: 'include',
     },
