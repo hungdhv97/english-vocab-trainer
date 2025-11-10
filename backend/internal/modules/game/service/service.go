@@ -87,7 +87,7 @@ func (s *Service) ListActiveGames(ctx context.Context) ([]model.Game, error) {
 }
 
 // GetLeaderboard retrieves the top 10 players for a specific game.
-// Uses PostgreSQL window functions to rank players by their best score.
+// Uses the new vocab_game_sessions table for vocabulary quiz games.
 // Results are cached in Redis for 5 minutes to reduce database load.
 // Returns empty slice if no players have completed sessions for this game.
 func (s *Service) GetLeaderboard(ctx context.Context, gameID int64) ([]model.LeaderboardEntry, error) {
@@ -108,19 +108,18 @@ func (s *Service) GetLeaderboard(ctx context.Context, gameID int64) ([]model.Lea
 
 	// Cache miss or error - fetch from database
 	// Use window functions with CTE for efficient ranking
+	// Query the new vocab_game_sessions table
 	query := `
 		WITH user_best_scores AS (
 			SELECT
-				gs.game_id,
-				gs.user_id,
-				MAX(COALESCE((
-					SELECT SUM(score) FROM plays WHERE session_tag = gs.session_tag
-				), 0)) as best_score,
-				MAX(gs.finished_at) as last_played
-			FROM game_sessions gs
-			WHERE gs.game_id = $1
-				AND gs.finished_at IS NOT NULL  -- Only completed sessions
-			GROUP BY gs.game_id, gs.user_id
+				vgs.game_id,
+				vgs.user_id,
+				MAX(vgs.correct_answers) as best_score,
+				MAX(vgs.finished_at) as last_played
+			FROM vocab_game_sessions vgs
+			WHERE vgs.game_id = $1
+				AND vgs.finished_at IS NOT NULL  -- Only completed sessions
+			GROUP BY vgs.game_id, vgs.user_id
 		),
 		ranked_scores AS (
 			SELECT

@@ -11,56 +11,17 @@ export interface WordBatch {
   next_cursor: string;
 }
 
-export interface Play {
-  play_id: number;
-  user_id: number;
-  word_id: number;
-  user_answer: string;
-  is_correct: boolean;
-  score: number;
-  target: number;
-  played_at: string;
-  session_tag: string;
-  correct_answer: string;
-}
-
-export interface SessionInfo {
-  session_tag: string;
-  started_at: string;
-  level_id: number;
-  total_score: number;
-  finished_at: string | null;
-}
-
-export interface HistoryPlay extends Omit<Play, 'word_id' | 'session_tag'> {
-  word: Word;
-  session: SessionInfo;
-}
+// Note: Play, SessionInfo, and HistoryPlay types have been removed
+// as they were used with the old plays and game_sessions tables.
+// The new vocab quiz uses vocab_game_sessions, vocab_game_session_questions, etc.
 
 export interface User {
   user_id: number;
   username: string;
 }
 
-export interface Level {
-  level_id: number;
-  code: string;
-  name: string;
-  description: string;
-  difficulty: string;
-  scoring_config: {
-    target: number;
-    target_rules: {
-      correct_bonus: number;
-      wrong_penalty: number | string;
-      mode: 'number' | 'formula';
-    };
-    score_rules: {
-      correct_points: number;
-      wrong_penalty: number;
-    };
-  };
-}
+// Note: Level type has been removed as it was used with the old levels table.
+// The new vocab quiz uses CEFR levels (CefrLevel type) instead.
 
 // Game Home Page Types
 export interface Game {

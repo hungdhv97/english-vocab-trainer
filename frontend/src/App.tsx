@@ -4,7 +4,8 @@ import { Toaster } from 'react-hot-toast';
 import Game from '@/components/game/Game';
 import Login from '@/components/auth/Login';
 import Register from '@/components/auth/Register';
-import History from '@/components/history/History';
+// Note: History component has been removed as it was used with the old plays and game_sessions tables.
+// History functionality will be reimplemented using the new vocab_game tables if needed.
 import { HomePage } from '@/components/home/HomePage';
 import { LeaderboardPage } from '@/components/leaderboard/LeaderboardPage';
 import { Layout } from '@/components/layout/Layout';
@@ -80,18 +81,8 @@ function AppRoutes() {
               )
             }
           />
-          <Route
-            path="/history"
-            element={
-              userId !== null && !isLoggingOut.current ? (
-                <History userId={userId} />
-              ) : isLoggingOut.current ? (
-                <Navigate to="/" replace />
-              ) : (
-                <Navigate to="/login" />
-              )
-            }
-          />
+          {/* Note: History route has been removed as it was used with the old plays and game_sessions tables.
+              History functionality will be reimplemented using the new vocab_game tables if needed. */}
           {/* Home Page - Public route (no authentication required) */}
           <Route path="/" element={<HomePage />} />
           

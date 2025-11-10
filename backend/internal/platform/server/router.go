@@ -8,8 +8,6 @@ import (
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/example"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/game"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/language"
-	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/level"
-	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/play"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/translation"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/user"
 	vocabquiz "github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/vocab_quiz"
@@ -26,8 +24,6 @@ func NewRouter(d *deps.Deps) *gin.Engine {
 	api := r.Group("/api/v1")
 	user.RegisterRoutes(api, d)
 	word.RegisterRoutes(api, d)
-	level.RegisterRoutes(api, d)
-	play.RegisterRoutes(api, d)
 	game.RegisterRoutes(api, d)
 	language.RegisterRoutes(api, d)
 	cefr_level.RegisterRoutes(api, d)

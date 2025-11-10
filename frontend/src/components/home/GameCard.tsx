@@ -8,7 +8,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { History } from 'lucide-react';
+// Note: History icon import removed as history functionality has been removed
 
 interface GameCardProps {
   game: Game;
@@ -18,18 +18,13 @@ interface GameCardProps {
 
 /**
  * GameCard displays a single game with its icon, name, description, and category.
- * Includes Play button and View History button (if authenticated).
+ * Includes Play button.
  */
 export function GameCard({ game, onClick, userId }: GameCardProps) {
   const navigate = useNavigate();
   const authenticated = isAuthenticated() && userId !== null;
 
-  const handleViewHistory = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (authenticated && userId !== null) {
-      navigate('/history');
-    }
-  };
+  // Note: handleViewHistory has been removed as history functionality has been removed
   const categoryColors: Record<string, string> = {
     vocabulary: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
     grammar: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
@@ -117,19 +112,8 @@ export function GameCard({ game, onClick, userId }: GameCardProps) {
             Play
           </Button>
           
-          {/* View History Button - Only show if authenticated */}
-          {authenticated && (
-            <Button
-              onClick={handleViewHistory}
-              variant="outline"
-              className="w-full"
-              size="lg"
-              aria-label={`View history for ${game.name}`}
-            >
-              <History className="h-4 w-4 mr-2" />
-              View History
-            </Button>
-          )}
+          {/* Note: View History button has been removed as it was used with the old plays and game_sessions tables.
+              History functionality will be reimplemented using the new vocab_game tables if needed. */}
         </div>
       </div>
 

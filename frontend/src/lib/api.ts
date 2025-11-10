@@ -1,7 +1,5 @@
 import type {
   WordBatch,
-  HistoryPlay,
-  Level,
   Game,
   LeaderboardEntry,
   CefrLevel,
@@ -56,13 +54,9 @@ export async function login(username: string, password: string, redirectTo?: str
   return res.json();
 }
 
-export async function fetchHistory(userId: number): Promise<HistoryPlay[]> {
-  const res = await fetch(`${API_BASE_URL}/history/${userId}`, {
-    credentials: 'include',
-  });
-  if (!res.ok) throw new Error('history failed');
-  return res.json();
-}
+// Note: fetchHistory has been removed as it was used with the old plays and game_sessions tables.
+// The new vocab quiz uses vocab_game_sessions, vocab_game_session_questions, etc.
+// History functionality will be reimplemented using the new tables if needed.
 
 export async function fetchRandomWords(
   count: number,
@@ -80,47 +74,14 @@ export async function fetchRandomWords(
   return res.json();
 }
 
-export async function submitAnswer(data: {
-  word_id: number;
-  user_id: number;
-  language_code: string;
-  user_answer: string;
-}) {
-  const res = await fetch(`${API_BASE_URL}/answer`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error('answer failed');
-  return res.json();
-}
+// Note: The following functions have been removed as they were used with the old plays and game_sessions tables:
+// - submitAnswer: Use submitVocabQuizAnswer for vocab quiz
+// - createSession: Use createVocabQuizSession for vocab quiz
+// - finishSession: Use finishVocabQuizSession for vocab quiz
+// The backend endpoints for these functions no longer exist (play module has been removed).
 
-export async function createSession(user_id: number, level_id: number) {
-  const res = await fetch(`${API_BASE_URL}/session`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({ user_id, level_id }),
-  });
-  if (!res.ok) throw new Error('session failed');
-  return res.json();
-}
-
-export async function finishSession() {
-  const res = await fetch(`${API_BASE_URL}/finish`, {
-    method: 'POST',
-    credentials: 'include',
-  });
-  if (!res.ok) throw new Error('finish failed');
-  return res.json();
-}
-
-export async function fetchLevels(): Promise<Level[]> {
-  const res = await fetch(`${API_BASE_URL}/levels`, { credentials: 'include' });
-  if (!res.ok) throw new Error('levels failed');
-  return res.json();
-}
+// Note: fetchLevels has been removed as it was used with the old levels table.
+// The new vocab quiz uses CEFR levels instead (fetchCefrLevels).
 
 // ===== Authentication Utilities =====
 

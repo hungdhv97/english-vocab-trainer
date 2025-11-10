@@ -28,6 +28,7 @@ services:
       - config/dev/.env
     environment:
       - APP_ENV=development
+      - CGO_ENABLED=0
     depends_on:
       postgres:
         condition: service_healthy
@@ -36,7 +37,8 @@ services:
     volumes:
       - ./backend:/app
       - go_cache:/go/pkg/mod
-    command: sh -c "go install github.com/air-verse/air@latest && air"
+      - air_cache:/go/bin
+    command: sh -c "which air || go install github.com/air-verse/air@latest && air"
     networks:
       - dev-network
 
@@ -79,6 +81,7 @@ volumes:
   redis_data:
   go_cache:
   frontend_cache:
+  air_cache:
 
 networks:
   dev-network:
