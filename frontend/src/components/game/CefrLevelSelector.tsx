@@ -28,18 +28,18 @@ export default function CefrLevelSelector({
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-8">
-      <Card className="w-full max-w-2xl text-center">
+      <Card className="w-full max-w-2xl text-center relative">
         {onBack && (
           <Button
             onClick={onBack}
             variant="ghost"
             size="icon"
-            className="absolute top-[10px] left-[10px]"
+            className="absolute top-2 left-2 z-10"
           >
             <ArrowLeft />
           </Button>
         )}
-        <CardHeader>
+        <CardHeader className="relative">
           <CardTitle className="text-2xl">Select CEFR Level</CardTitle>
           <p className="text-sm text-muted-foreground">
             Choose your proficiency level. Questions will include words from this level and all
@@ -57,7 +57,7 @@ export default function CefrLevelSelector({
                     className="h-auto py-4 flex flex-col items-center justify-center gap-2"
                   >
                     <span className="text-2xl font-bold">{level.code}</span>
-                    <span className="text-xs text-muted-foreground">{level.level_name}</span>
+                    <span className="text-xs text-muted-foreground break-words text-center px-1">{level.level_name}</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-xs">

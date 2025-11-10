@@ -16,7 +16,6 @@ import ComingSoon from '@/components/game/ComingSoon';
 import {
   fetchCefrLevels,
   createVocabQuizSession,
-  generateVocabQuizQuestions,
   submitVocabQuizAnswer,
   finishVocabQuizSession,
   getVocabQuizSessionStatistics,
@@ -77,7 +76,7 @@ export default function Game({ userId }: Props) {
         // Fetch game to get game_id
         const gameData = await fetchGameByCode(gameCode);
         setGame(gameData);
-        
+
         // Fetch CEFR levels
         const levels = await fetchCefrLevels();
         setCefrLevels(levels);
@@ -126,7 +125,7 @@ export default function Game({ userId }: Props) {
         setError('Game information not loaded');
         return;
       }
-      
+
       // Create session and generate questions (T087, T077)
       const sessionResponse = await createVocabQuizSession({
         user_id: userId,
@@ -161,15 +160,9 @@ export default function Game({ userId }: Props) {
     }
   };
 
-  // Handle answer selection (T078)
-  const handleAnswerSelect = (letter: string) => {
-    if (submittedAnswer !== null) return; // T094: Prevent duplicate submissions
-    setSelectedAnswer(letter);
-  };
-
-  // Handle answer submission (T078, T089, T090)
-  const handleSubmitAnswer = async () => {
-    if (!selectedAnswer || !sessionId || submittedAnswer !== null) return; // T094: Prevent duplicate submissions
+  // Handle answer selection (T078) - Auto-submit when answer is selected
+  const handleAnswerSelect = async (letter: string) => {
+    if (submittedAnswer !== null || !sessionId) return; // T094: Prevent duplicate submissions
 
     const currentQuestion = questions[currentQuestionIndex];
     if (!currentQuestion) return;
@@ -181,7 +174,8 @@ export default function Game({ userId }: Props) {
 
     // Mark question as answered to prevent duplicate submissions (T094)
     answeredQuestions.add(currentQuestion.id);
-    setSubmittedAnswer(selectedAnswer);
+    setSelectedAnswer(letter);
+    setSubmittedAnswer(letter);
     setCorrectAnswer(currentQuestion.correct_answer);
     setLoading(true);
 
@@ -192,7 +186,7 @@ export default function Game({ userId }: Props) {
       // Submit answer (T088) - use new API format
       const response = await submitVocabQuizAnswer({
         session_question_id: currentQuestion.session_question_id || currentQuestion.id,
-        chosen_option: selectedAnswer.toUpperCase(), // Convert to uppercase (A, B, C, D)
+        chosen_option: letter.toUpperCase(), // Convert to uppercase (A, B, C, D)
         time_spent_ms: timeSpentMs,
       });
 
@@ -219,7 +213,7 @@ export default function Game({ userId }: Props) {
           handleFinishSession();
         }
         setLoading(false);
-      }, 2000); // 2 second delay to show feedback
+      }, 500); // 500 milliseconds delay to show feedback
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit answer');
       setLoading(false);
@@ -228,6 +222,8 @@ export default function Game({ userId }: Props) {
       answeredQuestions.delete(currentQuestion.id);
     }
   };
+
+  // Note: handleSubmitAnswer removed - answers are now auto-submitted when selected
 
   // Handle session completion (T091)
   const handleFinishSession = async () => {
@@ -260,16 +256,26 @@ export default function Game({ userId }: Props) {
     }
   };
 
-  // Handle quit - finish session and show results
-  const handleQuit = async () => {
+  // Handle stop - finish session and show results
+  const handleStop = async () => {
     if (!sessionId) {
       // If no session, just go back
       handleBack();
       return;
     }
 
-    // Finish the session before quitting
+    // Finish the session before stopping
     await handleFinishSession();
+  };
+
+  // Handle view statistics
+  const handleViewStatistics = () => {
+    // Statistics are already shown in the completed state
+    // This function can be used to navigate to a detailed statistics page if needed
+    // For now, it just ensures we're in the completed state
+    if (sessionStatistics) {
+      setGameState('completed');
+    }
   };
 
   // Handle back navigation (T076)
@@ -408,8 +414,8 @@ export default function Game({ userId }: Props) {
             )}
             <div className="mt-6 space-x-4">
               <Button onClick={handleReset}>Play Again</Button>
-              <Button onClick={handleBack} variant="outline">
-                Back to Levels
+              <Button onClick={handleViewStatistics} variant="outline">
+                View Statistics
               </Button>
             </div>
           </CardContent>
@@ -437,9 +443,9 @@ export default function Game({ userId }: Props) {
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-8 px-4">
-      <div className="w-full max-w-4xl space-y-4">
+      <div className="w-full max-w-2xl space-y-4">
         {/* Header with score and progress */}
-        <Card>
+        <Card className="w-full">
           <CardHeader>
             <div className="flex justify-between items-center">
               <div>
@@ -460,7 +466,7 @@ export default function Game({ userId }: Props) {
           </CardHeader>
         </Card>
 
-        {/* Question display */}
+        {/* Question display with Stop button */}
         <QuestionDisplay
           question={currentQuestion}
           selectedAnswer={selectedAnswer}
@@ -470,25 +476,13 @@ export default function Game({ userId }: Props) {
           showFeedback={submittedAnswer !== null}
           questionNumber={currentQuestionIndex + 1}
           totalQuestions={questions.length}
+          onStop={handleStop}
+          loading={loading}
         />
-
-        {/* Submit button */}
-        <div className="flex justify-center gap-4">
-          <Button
-            onClick={handleSubmitAnswer}
-            disabled={!selectedAnswer || submittedAnswer !== null || loading}
-            size="lg"
-          >
-            {submittedAnswer ? 'Submitted' : 'Submit Answer'}
-          </Button>
-          <Button onClick={handleQuit} variant="outline" size="lg" disabled={loading}>
-            Quit
-          </Button>
-        </div>
 
         {/* Error display */}
         {error && (
-          <Card className="border-red-500">
+          <Card className="border-red-500 w-full">
             <CardContent className="pt-6">
               <p className="text-red-500 text-center">{error}</p>
             </CardContent>

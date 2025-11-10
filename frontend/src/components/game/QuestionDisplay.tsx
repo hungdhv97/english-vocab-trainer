@@ -1,4 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import MultipleChoice from '@/components/game/MultipleChoice';
 import type { Question } from '@/types';
 
@@ -11,6 +12,8 @@ interface QuestionDisplayProps {
   showFeedback?: boolean;
   questionNumber: number;
   totalQuestions: number;
+  onStop?: () => void;
+  loading?: boolean;
 }
 
 export default function QuestionDisplay({
@@ -22,9 +25,22 @@ export default function QuestionDisplay({
   showFeedback = false,
   questionNumber,
   totalQuestions,
+  onStop,
+  loading = false,
 }: QuestionDisplayProps) {
   return (
-    <Card className="w-full max-w-2xl">
+    <Card className="w-full relative">
+      {onStop && (
+        <Button
+          onClick={onStop}
+          variant="outline"
+          size="sm"
+          disabled={loading}
+          className="absolute top-4 right-4"
+        >
+          Stop
+        </Button>
+      )}
       <CardContent className="pt-6">
         <div className="mb-4">
           <div className="flex justify-between items-center mb-2">

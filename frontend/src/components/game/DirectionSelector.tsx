@@ -21,7 +21,7 @@ export default function DirectionSelector({
           onClick={onBack}
           variant="ghost"
           size="icon"
-          className="absolute top-[10px] left-[10px]"
+          className="absolute top-2 left-2"
         >
           <ArrowLeft />
         </Button>
