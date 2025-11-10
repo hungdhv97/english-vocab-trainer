@@ -26,25 +26,25 @@ func cleanSpecialCharacters(text string) string {
 	return cleaned
 }
 
-// registerTranslateMissing schedules a job to translate English words that don't have Vietnamese translations.
-// Updated to remove batchSize parameter - processes all words without translation (T064, T066).
-func registerTranslateMissing(c *cron.Cron, db *pgxpool.Pool, deepLTranslator *translator.DeepLTranslator, schedule string) {
+// registerTranslateMissing schedules a job to translate words that don't have translations.
+// Processes batches of English and Vietnamese words (configurable batch size).
+func registerTranslateMissing(c *cron.Cron, db *pgxpool.Pool, deepLTranslator *translator.DeepLTranslator, schedule string, batchSize int) {
 	_, err := c.AddFunc(schedule, func() {
-		if err := translateMissingVietnamese(db, deepLTranslator); err != nil {
+		if err := translateMissingWords(db, deepLTranslator, batchSize); err != nil {
 			log.Printf("Error in translate missing job: %v", err)
 		}
 	})
 	if err != nil {
 		log.Printf("Failed to register translate missing job: %v", err)
 	} else {
-		log.Printf("Translate missing job registered successfully with schedule: %s (full scan mode)", schedule)
+		log.Printf("Translate missing job registered successfully with schedule: %s (batch size: %d per language)", schedule, batchSize)
 	}
 }
 
-// translateMissingVietnamese finds English words without Vietnamese translations and translates them.
-// Also creates reverse translations (VI -> EN) to ensure bidirectional translation pairs.
-// Updated to use translations table and process all words (full scan) (T064, T065).
-func translateMissingVietnamese(db *pgxpool.Pool, deepLTranslator *translator.DeepLTranslator) error {
+// translateMissingWords finds words without translations and translates them in batches.
+// Processes batchSize English words and batchSize Vietnamese words per run.
+// Creates bidirectional translations (EN->VI and VI->EN) for each word pair.
+func translateMissingWords(db *pgxpool.Pool, deepLTranslator *translator.DeepLTranslator, batchSize int) error {
 	ctx := context.Background()
 
 	// Get language IDs
@@ -58,8 +58,38 @@ func translateMissingVietnamese(db *pgxpool.Pool, deepLTranslator *translator.De
 		return fmt.Errorf("failed to get Vietnamese language ID: %w", err)
 	}
 
-	// Find English words that don't have Vietnamese translations in the translations table
-	// This uses the new schema with translations table (T065)
+	log.Printf("Starting translation job (batch mode: %d words per language)...", batchSize)
+
+	// Process English words without Vietnamese translations
+	enTranslated, enReverse, enSkipped, enErrors := processLanguageBatch(
+		ctx, db, deepLTranslator, enLangID, viLangID, "en", "vi", batchSize,
+	)
+
+	// Process Vietnamese words without English translations
+	viTranslated, viReverse, viSkipped, viErrors := processLanguageBatch(
+		ctx, db, deepLTranslator, viLangID, enLangID, "vi", "en", batchSize,
+	)
+
+	totalSkipped := enSkipped + viSkipped
+	totalErrors := enErrors + viErrors
+
+	log.Printf("Translation job completed. EN->VI: %d (+ %d reverse), VI->EN: %d (+ %d reverse), Skipped: %d, Errors: %d",
+		enTranslated, enReverse, viTranslated, viReverse, totalSkipped, totalErrors)
+
+	return nil
+}
+
+// processLanguageBatch processes a batch of words from one language to another.
+// Returns: translated count, reverse translated count, skipped count, error count
+func processLanguageBatch(
+	ctx context.Context,
+	db *pgxpool.Pool,
+	deepLTranslator *translator.DeepLTranslator,
+	fromLangID, toLangID int64,
+	fromLangCode, toLangCode string,
+	batchSize int,
+) (int, int, int, int) {
+	// Find words that don't have translations to the target language
 	query := `
 		SELECT w.id, w.word_text
 		FROM words w
@@ -76,11 +106,13 @@ func translateMissingVietnamese(db *pgxpool.Pool, deepLTranslator *translator.De
 			)
 		)
 		ORDER BY w.id
+		LIMIT $3
 	`
 
-	rows, err := db.Query(ctx, query, enLangID, viLangID)
+	rows, err := db.Query(ctx, query, fromLangID, toLangID, batchSize)
 	if err != nil {
-		return fmt.Errorf("failed to query words: %w", err)
+		log.Printf("Error querying %s words: %v", fromLangCode, err)
+		return 0, 0, 0, 1
 	}
 	defer rows.Close()
 
@@ -88,8 +120,6 @@ func translateMissingVietnamese(db *pgxpool.Pool, deepLTranslator *translator.De
 	reverseTranslatedCount := 0
 	skippedCount := 0
 	errorCount := 0
-
-	log.Printf("Starting translation job (full scan mode, bidirectional)...")
 
 	for rows.Next() {
 		var wordID int64
@@ -101,35 +131,35 @@ func translateMissingVietnamese(db *pgxpool.Pool, deepLTranslator *translator.De
 			continue
 		}
 
-		// Translate the English word to Vietnamese
-		vietnameseText, err := deepLTranslator.Translate(wordText, "en", "vi")
+		// Translate the word to target language
+		translatedText, err := deepLTranslator.Translate(wordText, fromLangCode, toLangCode)
 		if err != nil {
-			log.Printf("Error translating word '%s' (ID: %d): %v", wordText, wordID, err)
+			log.Printf("Error translating %s word '%s' (ID: %d): %v", fromLangCode, wordText, wordID, err)
 			errorCount++
 			continue
 		}
 
-		// Clean special characters from Vietnamese text
-		vietnameseText = cleanSpecialCharacters(vietnameseText)
+		// Clean special characters from translated text
+		translatedText = cleanSpecialCharacters(translatedText)
 
 		// Convert to lowercase before inserting
-		vietnameseText = strings.ToLower(vietnameseText)
+		translatedText = strings.ToLower(translatedText)
 
-		// Find or create Vietnamese word
-		var viWordID int64
+		// Find or create target language word
+		var toWordID int64
 		err = db.QueryRow(ctx, `
 			SELECT id FROM words 
 			WHERE language_id = $1 AND word_text = $2 
-			LIMIT 1`, viLangID, vietnameseText).Scan(&viWordID)
+			LIMIT 1`, toLangID, translatedText).Scan(&toWordID)
 		
 		if err != nil {
-			// Vietnamese word doesn't exist, create it
+			// Target word doesn't exist, create it
 			err = db.QueryRow(ctx, `
 				INSERT INTO words (language_id, word_text)
 				VALUES ($1, $2)
-				RETURNING id`, viLangID, vietnameseText).Scan(&viWordID)
+				RETURNING id`, toLangID, translatedText).Scan(&toWordID)
 			if err != nil {
-				log.Printf("Error creating Vietnamese word for '%s' -> '%s': %v", wordText, vietnameseText, err)
+				log.Printf("Error creating %s word for '%s' -> '%s': %v", toLangCode, wordText, translatedText, err)
 				errorCount++
 				continue
 			}
@@ -140,7 +170,7 @@ func translateMissingVietnamese(db *pgxpool.Pool, deepLTranslator *translator.De
 		err = db.QueryRow(ctx, `
 			SELECT id FROM translations 
 			WHERE from_word_id = $1 AND to_word_id = $2 
-			LIMIT 1`, wordID, viWordID).Scan(&existingTranslationID)
+			LIMIT 1`, wordID, toWordID).Scan(&existingTranslationID)
 		
 		if err == nil {
 			// Translation already exists, skip
@@ -148,37 +178,37 @@ func translateMissingVietnamese(db *pgxpool.Pool, deepLTranslator *translator.De
 			continue
 		}
 
-		// Create translation record in translations table (EN -> VI)
+		// Create translation record in translations table (from -> to)
 		// Note: We don't set cefr_level_id here as we don't know the level - it can be set later
 		_, insertErr := db.Exec(ctx, `
 			INSERT INTO translations (from_word_id, to_word_id, meaning_order, note)
 			VALUES ($1, $2, 1, 'Auto-translated by job')
-		`, wordID, viWordID)
+		`, wordID, toWordID)
 
 		if insertErr != nil {
 			log.Printf("Error creating translation for '%s' (ID: %d) -> '%s' (ID: %d): %v", 
-				wordText, wordID, vietnameseText, viWordID, insertErr)
+				wordText, wordID, translatedText, toWordID, insertErr)
 			errorCount++
 			continue
 		}
 
-		// Check if reverse translation exists (VI -> EN)
+		// Check if reverse translation exists (to -> from)
 		var existingReverseTranslationID int64
 		err = db.QueryRow(ctx, `
 			SELECT id FROM translations 
 			WHERE from_word_id = $1 AND to_word_id = $2 
-			LIMIT 1`, viWordID, wordID).Scan(&existingReverseTranslationID)
+			LIMIT 1`, toWordID, wordID).Scan(&existingReverseTranslationID)
 		
 		if err != nil {
 			// Reverse translation doesn't exist, create it
 			_, reverseInsertErr := db.Exec(ctx, `
 				INSERT INTO translations (from_word_id, to_word_id, meaning_order, note)
 				VALUES ($1, $2, 1, 'Auto-translated by job (reverse)')
-			`, viWordID, wordID)
+			`, toWordID, wordID)
 			
 			if reverseInsertErr != nil {
 				log.Printf("Error creating reverse translation for '%s' (ID: %d) -> '%s' (ID: %d): %v", 
-					vietnameseText, viWordID, wordText, wordID, reverseInsertErr)
+					translatedText, toWordID, wordText, wordID, reverseInsertErr)
 				// Don't increment errorCount here as the main translation was successful
 			} else {
 				reverseTranslatedCount++
@@ -186,16 +216,12 @@ func translateMissingVietnamese(db *pgxpool.Pool, deepLTranslator *translator.De
 		}
 
 		translatedCount++
-		if translatedCount%100 == 0 {
-			log.Printf("Progress: Translated %d words so far...", translatedCount)
-		}
 	}
 
 	if err := rows.Err(); err != nil {
-		return fmt.Errorf("error iterating rows: %w", err)
+		log.Printf("Error iterating rows for %s words: %v", fromLangCode, err)
+		errorCount++
 	}
 
-	log.Printf("Translation job completed. Translated (EN->VI): %d, Reverse translations (VI->EN): %d, Skipped (already exists): %d, Errors: %d", 
-		translatedCount, reverseTranslatedCount, skippedCount, errorCount)
-	return nil
+	return translatedCount, reverseTranslatedCount, skippedCount, errorCount
 }
