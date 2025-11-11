@@ -116,3 +116,20 @@ export interface SessionStatistics {
   accuracy_percentage: number;
   time_elapsed?: number; // in seconds
 }
+
+// Vocab Quiz Leaderboard types
+export interface VocabQuizLeaderboardEntry {
+  rank: number;
+  user_id: number;
+  username: string;
+  accuracy_percentage: number;
+  games_played: number;
+}
+
+export interface VocabQuizLeaderboardResponse {
+  game_id: number;
+  cefr_level_id: number;
+  cefr_level_code: string;
+  translation_direction: TranslationDirection;
+  leaderboard: VocabQuizLeaderboardEntry[];
+}

@@ -10,6 +10,7 @@ import type {
   VocabQuizSessionResponse,
   SessionStatistics,
   TranslationDirection,
+  VocabQuizLeaderboardResponse,
 } from '@/types';
 
 // In development, use relative path (proxied by Vite)
@@ -316,6 +317,33 @@ export async function getVocabQuizSessionStatistics(
   if (!res.ok) {
     const data = await res.json().catch(() => null);
     throw new Error(data?.error || 'Failed to get session statistics');
+  }
+  return res.json();
+}
+
+/**
+ * Fetches the leaderboard for a vocab quiz game with specific CEFR level and translation direction.
+ * Returns top 10 players who have played at least 5 games, ranked by accuracy percentage.
+ * @param gameId - Game ID (vocab-quiz)
+ * @param cefrLevelId - CEFR level ID (A1, A2, B1, etc.)
+ * @param translationDirection - Translation direction ('en-to-vi' or 'vi-to-en')
+ */
+export async function fetchVocabQuizLeaderboard(
+  gameId: number,
+  cefrLevelId: number,
+  translationDirection: TranslationDirection,
+): Promise<VocabQuizLeaderboardResponse> {
+  const url = new URL(`${API_BASE_URL}/vocab-quiz/leaderboard`);
+  url.searchParams.set('game_id', String(gameId));
+  url.searchParams.set('cefr_level_id', String(cefrLevelId));
+  url.searchParams.set('translation_direction', translationDirection);
+
+  const res = await fetch(url.toString(), {
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error || 'Failed to fetch leaderboard');
   }
   return res.json();
 }

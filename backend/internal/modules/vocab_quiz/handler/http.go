@@ -227,6 +227,67 @@ func (h *Handler) GenerateQuestions(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"questions": questions})
 }
 
+// GetLeaderboard handles GET /vocab-quiz/leaderboard - returns top 10 players for a CEFR level and translation direction.
+// Query parameters: game_id, cefr_level_id, translation_direction
+// Returns HTTP 200 with leaderboard array (may be empty), or HTTP 400/500 on error.
+// This is a public endpoint (no authentication required).
+func (h *Handler) GetLeaderboard(c *gin.Context) {
+	// Parse query parameters
+	gameIDStr := c.Query("game_id")
+	if gameIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "game_id is required"})
+		return
+	}
+	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid game_id"})
+		return
+	}
+
+	cefrLevelIDStr := c.Query("cefr_level_id")
+	if cefrLevelIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cefr_level_id is required"})
+		return
+	}
+	cefrLevelID, err := strconv.ParseInt(cefrLevelIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid cefr_level_id"})
+		return
+	}
+
+	translationDirection := c.Query("translation_direction")
+	if translationDirection == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "translation_direction is required"})
+		return
+	}
+	if translationDirection != "en-to-vi" && translationDirection != "vi-to-en" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "translation_direction must be 'en-to-vi' or 'vi-to-en'"})
+		return
+	}
+
+	// Fetch leaderboard from service
+	ctx := c.Request.Context()
+	entries, cefrLevelCode, err := h.svc.GetLeaderboard(ctx, gameID, cefrLevelID, translationDirection)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Always return a valid response, even if leaderboard is empty
+	if entries == nil {
+		entries = []model.LeaderboardEntry{}
+	}
+
+	// Return the leaderboard
+	c.JSON(http.StatusOK, model.LeaderboardResponse{
+		GameID:             gameID,
+		CefrLevelID:        cefrLevelID,
+		CefrLevelCode:      cefrLevelCode,
+		TranslationDirection: translationDirection,
+		Leaderboard:        entries,
+	})
+}
+
 // isDevelopmentMode checks if the application is running in development mode
 func isDevelopmentMode() bool {
 	env := os.Getenv("APP_ENV")

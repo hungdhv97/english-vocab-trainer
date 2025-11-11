@@ -66,3 +66,28 @@ type CreateSessionResponse struct {
 	Questions  []Question      `json:"questions"`
 }
 
+// LeaderboardEntry represents a single entry in a vocab quiz leaderboard.
+type LeaderboardEntry struct {
+	Rank               int     `json:"rank"`                // Player's position (1 = highest accuracy)
+	UserID             int64   `json:"user_id"`             // Unique identifier of the player
+	Username           string  `json:"username"`            // Player's display name
+	AccuracyPercentage float64 `json:"accuracy_percentage"` // Average accuracy percentage across all sessions
+	GamesPlayed        int     `json:"games_played"`        // Number of games played for this combination
+}
+
+// LeaderboardRequest represents a request to get leaderboard.
+type LeaderboardRequest struct {
+	GameID             int64  `json:"game_id"`               // Game ID (vocab-quiz)
+	CefrLevelID        int64  `json:"cefr_level_id"`         // CEFR level ID (A1, A2, B1, etc.)
+	TranslationDirection string `json:"translation_direction"` // "en-to-vi" or "vi-to-en"
+}
+
+// LeaderboardResponse represents the API response for a vocab quiz leaderboard.
+type LeaderboardResponse struct {
+	GameID             int64              `json:"game_id"`
+	CefrLevelID        int64              `json:"cefr_level_id"`
+	CefrLevelCode      string             `json:"cefr_level_code"`
+	TranslationDirection string           `json:"translation_direction"`
+	Leaderboard        []LeaderboardEntry `json:"leaderboard"`
+}
+

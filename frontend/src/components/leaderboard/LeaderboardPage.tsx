@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import type { Game, LeaderboardEntry } from '@/types';
-import { fetchGames, fetchLeaderboard } from '@/lib/api';
+import type { Game, LeaderboardEntry, CefrLevel } from '@/types';
+import { fetchGames, fetchLeaderboard, fetchCefrLevels } from '@/lib/api';
 import { Leaderboard } from '@/components/home/Leaderboard';
+import VocabQuizLeaderboard from '@/components/game/VocabQuizLeaderboard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -25,6 +26,7 @@ export function LeaderboardPage() {
   const [gamesWithLeaderboards, setGamesWithLeaderboards] = useState<GameWithLeaderboard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [cefrLevels, setCefrLevels] = useState<CefrLevel[]>([]);
 
   useEffect(() => {
     const loadLeaderboards = async () => {
@@ -38,6 +40,14 @@ export function LeaderboardPage() {
           .filter(game => game.is_active)
           .sort((a, b) => a.display_order - b.display_order);
 
+        // Fetch CEFR levels for vocab quiz leaderboard
+        try {
+          const levels = await fetchCefrLevels();
+          setCefrLevels(levels);
+        } catch (err) {
+          console.error('Failed to fetch CEFR levels:', err);
+        }
+
         // Initialize games with loading state
         const gamesInit: GameWithLeaderboard[] = activeGames.map(game => ({
           game,
@@ -47,17 +57,28 @@ export function LeaderboardPage() {
         }));
         setGamesWithLeaderboards(gamesInit);
 
-        // Fetch leaderboards for all games in parallel
+        // Fetch leaderboards for all games in parallel (except vocab-quiz which uses special leaderboard)
         const leaderboardPromises = activeGames.map(async (game, index) => {
+          // Skip vocab-quiz as it uses a special leaderboard component
+          if (game.code === 'vocab-quiz') {
+            return {
+              index,
+              leaderboard: [],
+              error: null,
+              skip: true,
+            };
+          }
+
           try {
             const leaderboard = await fetchLeaderboard(game.game_id);
-            return { index, leaderboard, error: null };
+            return { index, leaderboard, error: null, skip: false };
           } catch (err) {
             console.error(`Failed to fetch leaderboard for game ${game.game_id}:`, err);
             return {
               index,
               leaderboard: [],
               error: err instanceof Error ? err.message : 'Failed to load leaderboard',
+              skip: false,
             };
           }
         });
@@ -72,7 +93,7 @@ export function LeaderboardPage() {
               return {
                 ...item,
                 leaderboard: result.leaderboard,
-                loading: false,
+                loading: result.skip ? false : false, // vocab-quiz doesn't need loading state
                 error: result.error,
               };
             }
@@ -138,54 +159,89 @@ export function LeaderboardPage() {
         {/* Games with Leaderboards */}
         {!loading && !error && gamesWithLeaderboards.length > 0 && (
           <div className="space-y-6">
-            {gamesWithLeaderboards.map(({ game, leaderboard, loading: gameLoading, error: gameError }) => (
-              <Card key={game.game_id} className="p-6">
-                <div className="mb-4">
-                  <div className="flex items-center gap-3 mb-2">
-                    {game.icon_path && (
-                      <img
-                        src={game.icon_path}
-                        alt={`${game.name} icon`}
-                        className="w-8 h-8 object-contain"
-                        loading="lazy"
+            {gamesWithLeaderboards.map(({ game, leaderboard, loading: gameLoading, error: gameError }) => {
+              // Special handling for vocab-quiz game - use VocabQuizLeaderboard component
+              if (game.code === 'vocab-quiz') {
+                return (
+                  <div key={game.game_id} className="space-y-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      {game.icon_path && (
+                        <img
+                          src={game.icon_path}
+                          alt={`${game.name} icon`}
+                          className="w-8 h-8 object-contain"
+                          loading="lazy"
+                        />
+                      )}
+                      <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                        {game.name}
+                      </h2>
+                    </div>
+                    {game.description && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                        {game.description}
+                      </p>
+                    )}
+                    {cefrLevels.length > 0 && (
+                      <VocabQuizLeaderboard
+                        gameId={game.game_id}
+                        cefrLevels={cefrLevels}
                       />
                     )}
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                      {game.name}
-                    </h2>
                   </div>
-                  {game.description && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {game.description}
-                    </p>
+                );
+              }
+
+              // Regular game leaderboard
+              return (
+                <Card key={game.game_id} className="p-6">
+                  <div className="mb-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      {game.icon_path && (
+                        <img
+                          src={game.icon_path}
+                          alt={`${game.name} icon`}
+                          className="w-8 h-8 object-contain"
+                          loading="lazy"
+                        />
+                      )}
+                      <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                        {game.name}
+                      </h2>
+                    </div>
+                    {game.description && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {game.description}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Game-specific Error State */}
+                  {gameError && (
+                    <Alert className="mb-4">
+                      <AlertTitle>Warning</AlertTitle>
+                      <AlertDescription>
+                        Failed to load leaderboard for this game
+                      </AlertDescription>
+                    </Alert>
                   )}
-                </div>
 
-                {/* Game-specific Error State */}
-                {gameError && (
-                  <Alert className="mb-4">
-                    <AlertTitle>Warning</AlertTitle>
-                    <AlertDescription>
-                      Failed to load leaderboard for this game
-                    </AlertDescription>
-                  </Alert>
-                )}
+                  {/* Game Loading State */}
+                  {gameLoading && !gameError && (
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-3/4" />
+                    </div>
+                  )}
 
-                {/* Game Loading State */}
-                {gameLoading && !gameError && (
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-3/4" />
-                  </div>
-                )}
-
-                {/* Leaderboard Display */}
-                {!gameLoading && !gameError && (
-                  <Leaderboard entries={leaderboard} />
-                )}
-              </Card>
-            ))}
+                  {/* Leaderboard Display */}
+                  {!gameLoading && !gameError && (
+                    <Leaderboard entries={leaderboard} />
+                  )}
+                </Card>
+              );
+            })}
           </div>
         )}
 

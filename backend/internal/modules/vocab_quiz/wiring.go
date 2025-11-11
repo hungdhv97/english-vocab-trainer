@@ -29,4 +29,7 @@ func RegisterRoutes(r *gin.RouterGroup, d *deps.Deps) {
 	
 	// Question generation (for backward compatibility - questions are now included in session creation)
 	r.POST("/vocab-quiz/questions", h.GenerateQuestions)
+
+	// Leaderboard
+	r.GET("/vocab-quiz/leaderboard", h.GetLeaderboard)
 }

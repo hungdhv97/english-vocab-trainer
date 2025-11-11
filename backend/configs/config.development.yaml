@@ -65,5 +65,5 @@ jobs:
     schedule: "0 2 * * *"  # 2:00 AM daily
   translate_missing:
     enabled: true
-    schedule: "* * * * *"  # Every minute
+    schedule: "0/5 * * * *"  # Every 5 minutes
     batch_size: 50  # Number of words to process per language per run

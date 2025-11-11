@@ -590,3 +590,118 @@ func (s *Service) GetCefrLevelsUpTo(ctx context.Context, levelCode string) ([]st
 	}
 	return result, nil
 }
+
+// GetLeaderboard retrieves the top 10 players for a specific CEFR level and translation direction.
+// Only includes players who have completed at least 5 games for this combination.
+// Ranking is based on average accuracy percentage across all sessions.
+func (s *Service) GetLeaderboard(ctx context.Context, gameID int64, cefrLevelID int64, translationDirection string) ([]model.LeaderboardEntry, string, error) {
+	// Determine source and target languages based on translation direction
+	var fromLangCode, toLangCode string
+	if translationDirection == "en-to-vi" {
+		fromLangCode = "en"
+		toLangCode = "vi"
+	} else if translationDirection == "vi-to-en" {
+		fromLangCode = "vi"
+		toLangCode = "en"
+	} else {
+		return nil, "", errors.New("invalid translation direction")
+	}
+
+	// Get language IDs
+	var fromLangID, toLangID int64
+	err := s.db.QueryRow(ctx, `SELECT id FROM languages WHERE code = $1`, fromLangCode).Scan(&fromLangID)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to get from language ID: %w", err)
+	}
+	err = s.db.QueryRow(ctx, `SELECT id FROM languages WHERE code = $1`, toLangCode).Scan(&toLangID)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to get to language ID: %w", err)
+	}
+
+	// Get CEFR level code
+	var cefrLevelCode string
+	err = s.db.QueryRow(ctx, `SELECT code FROM cefr_levels WHERE id = $1`, cefrLevelID).Scan(&cefrLevelCode)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to get CEFR level code: %w", err)
+	}
+
+	// Query for leaderboard entries
+	// Calculate average accuracy percentage: SUM(correct_answers) / SUM(total_questions) * 100
+	// Only include users who have played at least 1 finished games
+	query := `
+		WITH user_stats AS (
+			SELECT
+				vgs.user_id,
+				COUNT(*) as games_played,
+				SUM(vgs.correct_answers) as total_correct,
+				SUM(vgs.total_questions) as total_questions
+			FROM vocab_game_sessions vgs
+			WHERE vgs.game_id = $1
+				AND vgs.cefr_level_id = $2
+				AND vgs.from_language_id = $3
+				AND vgs.to_language_id = $4
+				AND vgs.finished_at IS NOT NULL
+			GROUP BY vgs.user_id
+			HAVING COUNT(*) >= 1
+		),
+		user_accuracy AS (
+			SELECT
+				us.user_id,
+				us.games_played,
+				CASE 
+					WHEN us.total_questions > 0 THEN
+						(us.total_correct::float / us.total_questions::float * 100.0)
+					ELSE 0.0
+				END as accuracy_percentage
+			FROM user_stats us
+		),
+		ranked_users AS (
+			SELECT
+				ua.user_id,
+				u.username,
+				ua.games_played,
+				ua.accuracy_percentage,
+				ROW_NUMBER() OVER (ORDER BY ua.accuracy_percentage DESC, ua.user_id ASC) as rank
+			FROM user_accuracy ua
+			JOIN users u ON ua.user_id = u.id
+			WHERE u.is_active = TRUE
+		)
+		SELECT rank, user_id, username, accuracy_percentage, games_played
+		FROM ranked_users
+		WHERE rank <= 10
+		ORDER BY rank ASC
+	`
+
+	rows, err := s.db.Query(ctx, query, gameID, cefrLevelID, fromLangID, toLangID)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to query leaderboard: %w", err)
+	}
+	defer rows.Close()
+
+	var entries []model.LeaderboardEntry
+	for rows.Next() {
+		var entry model.LeaderboardEntry
+		err := rows.Scan(
+			&entry.Rank,
+			&entry.UserID,
+			&entry.Username,
+			&entry.AccuracyPercentage,
+			&entry.GamesPlayed,
+		)
+		if err != nil {
+			return nil, "", fmt.Errorf("failed to scan leaderboard entry: %w", err)
+		}
+		entries = append(entries, entry)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, "", fmt.Errorf("error iterating leaderboard rows: %w", err)
+	}
+
+	// Return empty slice instead of nil if no entries found
+	if entries == nil {
+		entries = []model.LeaderboardEntry{}
+	}
+
+	return entries, cefrLevelCode, nil
+}

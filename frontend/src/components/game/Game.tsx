@@ -11,6 +11,7 @@ import type {
 import CefrLevelSelector from '@/components/game/CefrLevelSelector';
 import DirectionSelector from '@/components/game/DirectionSelector';
 import QuestionDisplay from '@/components/game/QuestionDisplay';
+import StatisticsView from '@/components/game/StatisticsView';
 import { isGameImplemented } from '@/constants/games';
 import ComingSoon from '@/components/game/ComingSoon';
 import {
@@ -63,6 +64,7 @@ export default function Game({ userId }: Props) {
   const [timeElapsed, setTimeElapsed] = useState(0);
   const timerRef = useRef<number | null>(null);
   const [answeredQuestions, setAnsweredQuestions] = useState<Set<number>>(new Set()); // T094: Prevent duplicate submissions
+  const [showStatisticsView, setShowStatisticsView] = useState(false); // T095: Show detailed statistics view
 
   // Route to Coming Soon page for unimplemented games
   if (!isVocabQuiz) {
@@ -213,7 +215,7 @@ export default function Game({ userId }: Props) {
           handleFinishSession();
         }
         setLoading(false);
-      }, 500); // 500 milliseconds delay to show feedback
+      }, 1000); // 1000 milliseconds delay to show feedback
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit answer');
       setLoading(false);
@@ -268,14 +270,16 @@ export default function Game({ userId }: Props) {
     await handleFinishSession();
   };
 
-  // Handle view statistics
+  // Handle view statistics (T095)
   const handleViewStatistics = () => {
-    // Statistics are already shown in the completed state
-    // This function can be used to navigate to a detailed statistics page if needed
-    // For now, it just ensures we're in the completed state
     if (sessionStatistics) {
-      setGameState('completed');
+      setShowStatisticsView(true);
     }
+  };
+
+  // Handle close statistics view (T095)
+  const handleCloseStatisticsView = () => {
+    setShowStatisticsView(false);
   };
 
   // Handle back navigation (T076)
@@ -379,48 +383,57 @@ export default function Game({ userId }: Props) {
   // Render completed state with statistics (T091)
   if (gameState === 'completed' && sessionStatistics) {
     return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-8">
-        <Card className="w-full max-w-2xl text-center">
-          <CardHeader>
-            <CardTitle className="text-2xl">Quiz Completed!</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-              <div>
-                <p className="text-2xl font-bold text-green-600">{correctCount}</p>
-                <p className="text-sm text-muted-foreground">Correct</p>
+      <>
+        <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-8">
+          <Card className="w-full max-w-2xl text-center">
+            <CardHeader>
+              <CardTitle className="text-2xl">Quiz Completed!</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                <div>
+                  <p className="text-2xl font-bold text-green-600">{correctCount}</p>
+                  <p className="text-sm text-muted-foreground">Correct</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-red-600">{incorrectCount}</p>
+                  <p className="text-sm text-muted-foreground">Incorrect</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{score}</p>
+                  <p className="text-sm text-muted-foreground">Total Score</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">
+                    {sessionStatistics.accuracy_percentage.toFixed(1)}%
+                  </p>
+                  <p className="text-sm text-muted-foreground">Accuracy</p>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-red-600">{incorrectCount}</p>
-                <p className="text-sm text-muted-foreground">Incorrect</p>
+              {sessionStatistics.time_elapsed && (
+                <div className="mt-4">
+                  <p className="text-lg">
+                    Time: {(sessionStatistics.time_elapsed / 60).toFixed(1)} minutes
+                  </p>
+                </div>
+              )}
+              <div className="mt-6 space-x-4">
+                <Button onClick={handleReset}>Play Again</Button>
+                <Button onClick={handleViewStatistics} variant="outline">
+                  View Statistics
+                </Button>
               </div>
-              <div>
-                <p className="text-2xl font-bold">{score}</p>
-                <p className="text-sm text-muted-foreground">Total Score</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold">
-                  {sessionStatistics.accuracy_percentage.toFixed(1)}%
-                </p>
-                <p className="text-sm text-muted-foreground">Accuracy</p>
-              </div>
-            </div>
-            {sessionStatistics.time_elapsed && (
-              <div className="mt-4">
-                <p className="text-lg">
-                  Time: {(sessionStatistics.time_elapsed / 60).toFixed(1)} minutes
-                </p>
-              </div>
-            )}
-            <div className="mt-6 space-x-4">
-              <Button onClick={handleReset}>Play Again</Button>
-              <Button onClick={handleViewStatistics} variant="outline">
-                View Statistics
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+        {/* Show detailed statistics view modal (T095) */}
+        {showStatisticsView && sessionStatistics && (
+          <StatisticsView
+            statistics={sessionStatistics}
+            onClose={handleCloseStatisticsView}
+          />
+        )}
+      </>
     );
   }
 
