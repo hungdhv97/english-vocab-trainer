@@ -336,7 +336,7 @@ curl http://localhost:8180/api/v1/games/1/leaderboard
 - **82 Implementation Tasks** defined
 - **51 Tasks Completed** (Phases 1-6 + partial Phase 7)
 - **4 Core User Stories** fully implemented
-- **5 Games Seeded** with placeholder icons
+- **1 Games Seeded** with placeholder icons
 - **Redis Caching** for performance
 - **Security Hardening** (redirect validation + logging)
 - **Modern UI** with shadcn/ui v4 components

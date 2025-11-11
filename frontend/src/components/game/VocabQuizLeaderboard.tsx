@@ -45,6 +45,7 @@ export default function VocabQuizLeaderboard({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cefrLevelCode, setCefrLevelCode] = useState<string>('');
+  const [minGamesPlayed, setMinGamesPlayed] = useState<number>(1); // Default to 1, will be updated from API
 
   // Fetch leaderboard when selection changes
   useEffect(() => {
@@ -57,6 +58,7 @@ export default function VocabQuizLeaderboard({
       .then((response: VocabQuizLeaderboardResponse) => {
         setLeaderboard(response.leaderboard);
         setCefrLevelCode(response.cefr_level_code);
+        setMinGamesPlayed(response.min_games_played || 1);
       })
       .catch((err) => {
         setError(err instanceof Error ? err.message : 'Failed to load leaderboard');
@@ -67,15 +69,13 @@ export default function VocabQuizLeaderboard({
       });
   }, [gameId, selectedCefrLevelId, selectedTranslationDirection]);
 
-  const selectedLevel = sortedLevels.find((level) => level.id === selectedCefrLevelId);
-
   return (
     <div className="w-full max-w-4xl mx-auto space-y-4">
-      <Card>
+      <Card className="border-0 shadow-none">
         <CardHeader>
           <CardTitle className="text-2xl">Vocabulary Quiz Leaderboard</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Top 10 players ranked by accuracy percentage (minimum 5 games required)
+            Top 10 players ranked by accuracy percentage (minimum {minGamesPlayed} {minGamesPlayed === 1 ? 'game' : 'games'} required)
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -140,7 +140,7 @@ export default function VocabQuizLeaderboard({
               <div className="text-center py-8 text-muted-foreground">
                 <p className="text-lg font-semibold mb-2">No players yet</p>
                 <p className="text-sm">
-                  Be the first to play at least 5 games for this level and direction!
+                  Be the first to play at least {minGamesPlayed} {minGamesPlayed === 1 ? 'game' : 'games'} for this level and direction!
                 </p>
               </div>
             )}
@@ -159,10 +159,10 @@ export default function VocabQuizLeaderboard({
                     entry.rank === 1
                       ? '🥇'
                       : entry.rank === 2
-                      ? '🥈'
-                      : entry.rank === 3
-                      ? '🥉'
-                      : `${entry.rank}.`;
+                        ? '🥈'
+                        : entry.rank === 3
+                          ? '🥉'
+                          : `${entry.rank}.`;
 
                   return (
                     <div

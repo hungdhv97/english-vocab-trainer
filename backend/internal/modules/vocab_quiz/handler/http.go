@@ -267,7 +267,7 @@ func (h *Handler) GetLeaderboard(c *gin.Context) {
 
 	// Fetch leaderboard from service
 	ctx := c.Request.Context()
-	entries, cefrLevelCode, err := h.svc.GetLeaderboard(ctx, gameID, cefrLevelID, translationDirection)
+	entries, cefrLevelCode, minGamesPlayed, err := h.svc.GetLeaderboard(ctx, gameID, cefrLevelID, translationDirection)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -284,6 +284,7 @@ func (h *Handler) GetLeaderboard(c *gin.Context) {
 		CefrLevelID:        cefrLevelID,
 		CefrLevelCode:      cefrLevelCode,
 		TranslationDirection: translationDirection,
+		MinGamesPlayed:     minGamesPlayed,
 		Leaderboard:        entries,
 	})
 }

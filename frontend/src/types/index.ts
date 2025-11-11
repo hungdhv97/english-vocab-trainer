@@ -131,5 +131,6 @@ export interface VocabQuizLeaderboardResponse {
   cefr_level_id: number;
   cefr_level_code: string;
   translation_direction: TranslationDirection;
+  min_games_played: number; // Minimum number of games required to appear on leaderboard
   leaderboard: VocabQuizLeaderboardEntry[];
 }

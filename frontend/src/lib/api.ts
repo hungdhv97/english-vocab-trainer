@@ -323,7 +323,7 @@ export async function getVocabQuizSessionStatistics(
 
 /**
  * Fetches the leaderboard for a vocab quiz game with specific CEFR level and translation direction.
- * Returns top 10 players who have played at least 5 games, ranked by accuracy percentage.
+ * Returns top 10 players who have played at least 1 games, ranked by accuracy percentage.
  * @param gameId - Game ID (vocab-quiz)
  * @param cefrLevelId - CEFR level ID (A1, A2, B1, etc.)
  * @param translationDirection - Translation direction ('en-to-vi' or 'vi-to-en')

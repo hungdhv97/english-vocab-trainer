@@ -88,6 +88,7 @@ type LeaderboardResponse struct {
 	CefrLevelID        int64              `json:"cefr_level_id"`
 	CefrLevelCode      string             `json:"cefr_level_code"`
 	TranslationDirection string           `json:"translation_direction"`
+	MinGamesPlayed    int                `json:"min_games_played"` // Minimum number of games required to appear on leaderboard
 	Leaderboard        []LeaderboardEntry `json:"leaderboard"`
 }
 

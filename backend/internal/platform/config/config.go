@@ -17,6 +17,7 @@ type Config struct {
 	Monitoring MonitoringConfig `mapstructure:"monitoring"`
 	Health     HealthConfig     `mapstructure:"health"`
 	Log        LogConfig        `mapstructure:"log"`
+	Leaderboard LeaderboardConfig `mapstructure:"leaderboard"`
 }
 
 // HTTPConfig holds HTTP server related configuration.
@@ -118,4 +119,9 @@ type HealthConfig struct {
 // LogConfig holds logging configuration.
 type LogConfig struct {
 	Level string `mapstructure:"level"`
+}
+
+// LeaderboardConfig holds leaderboard-related settings.
+type LeaderboardConfig struct {
+	MinGamesPlayed int `mapstructure:"min_games_played"` // Minimum number of games required to appear on leaderboard
 }

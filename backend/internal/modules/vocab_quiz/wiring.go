@@ -16,7 +16,11 @@ func RegisterRoutes(r *gin.RouterGroup, d *deps.Deps) {
 	cefrLevelSvc := cefrservice.New(d.PG)
 	translationSvc := transservice.New(d.PG)
 	vocabGameSvc := vocabgamesvc.New(d.PG)
-	svc := service.New(d.PG, cefrLevelSvc, translationSvc, vocabGameSvc)
+	minGamesPlayed := d.Cfg.Leaderboard.MinGamesPlayed
+	if minGamesPlayed <= 0 {
+		minGamesPlayed = 1 // Default to 1 if not configured
+	}
+	svc := service.New(d.PG, cefrLevelSvc, translationSvc, vocabGameSvc, minGamesPlayed)
 	h := handler.New(svc)
 
 	// Session management

@@ -67,3 +67,6 @@ jobs:
     enabled: true
     schedule: "0 * * * *"  # Every hour
     batch_size: 50  # Number of words to process per language per run
+
+leaderboard:
+  min_games_played: 1  # Minimum number of games required to appear on leaderboard

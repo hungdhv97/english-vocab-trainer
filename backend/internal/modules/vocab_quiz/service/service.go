@@ -23,15 +23,17 @@ type Service struct {
 	cefrLevelSvc    *cefrservice.Service
 	translationSvc  *transservice.Service
 	vocabGameSvc    *vocabgamesvc.Service
+	minGamesPlayed  int // Minimum number of games required to appear on leaderboard
 }
 
 // New creates a new vocab quiz service.
-func New(db *pgxpool.Pool, cefrLevelSvc *cefrservice.Service, translationSvc *transservice.Service, vocabGameSvc *vocabgamesvc.Service) *Service {
+func New(db *pgxpool.Pool, cefrLevelSvc *cefrservice.Service, translationSvc *transservice.Service, vocabGameSvc *vocabgamesvc.Service, minGamesPlayed int) *Service {
 	return &Service{
 		db:             db,
 		cefrLevelSvc:   cefrLevelSvc,
 		translationSvc: translationSvc,
 		vocabGameSvc:   vocabGameSvc,
+		minGamesPlayed: minGamesPlayed,
 	}
 }
 
@@ -592,9 +594,10 @@ func (s *Service) GetCefrLevelsUpTo(ctx context.Context, levelCode string) ([]st
 }
 
 // GetLeaderboard retrieves the top 10 players for a specific CEFR level and translation direction.
-// Only includes players who have completed at least 5 games for this combination.
+// Only includes players who have completed at least the configured minimum games for this combination.
 // Ranking is based on average accuracy percentage across all sessions.
-func (s *Service) GetLeaderboard(ctx context.Context, gameID int64, cefrLevelID int64, translationDirection string) ([]model.LeaderboardEntry, string, error) {
+// Returns leaderboard entries, CEFR level code, minimum games played requirement, and error.
+func (s *Service) GetLeaderboard(ctx context.Context, gameID int64, cefrLevelID int64, translationDirection string) ([]model.LeaderboardEntry, string, int, error) {
 	// Determine source and target languages based on translation direction
 	var fromLangCode, toLangCode string
 	if translationDirection == "en-to-vi" {
@@ -604,25 +607,25 @@ func (s *Service) GetLeaderboard(ctx context.Context, gameID int64, cefrLevelID 
 		fromLangCode = "vi"
 		toLangCode = "en"
 	} else {
-		return nil, "", errors.New("invalid translation direction")
+		return nil, "", 0, errors.New("invalid translation direction")
 	}
 
 	// Get language IDs
 	var fromLangID, toLangID int64
 	err := s.db.QueryRow(ctx, `SELECT id FROM languages WHERE code = $1`, fromLangCode).Scan(&fromLangID)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to get from language ID: %w", err)
+		return nil, "", 0, fmt.Errorf("failed to get from language ID: %w", err)
 	}
 	err = s.db.QueryRow(ctx, `SELECT id FROM languages WHERE code = $1`, toLangCode).Scan(&toLangID)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to get to language ID: %w", err)
+		return nil, "", 0, fmt.Errorf("failed to get to language ID: %w", err)
 	}
 
 	// Get CEFR level code
 	var cefrLevelCode string
 	err = s.db.QueryRow(ctx, `SELECT code FROM cefr_levels WHERE id = $1`, cefrLevelID).Scan(&cefrLevelCode)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to get CEFR level code: %w", err)
+		return nil, "", 0, fmt.Errorf("failed to get CEFR level code: %w", err)
 	}
 
 	// Query for leaderboard entries
@@ -642,7 +645,7 @@ func (s *Service) GetLeaderboard(ctx context.Context, gameID int64, cefrLevelID 
 				AND vgs.to_language_id = $4
 				AND vgs.finished_at IS NOT NULL
 			GROUP BY vgs.user_id
-			HAVING COUNT(*) >= 1
+			HAVING COUNT(*) >= $5
 		),
 		user_accuracy AS (
 			SELECT
@@ -672,9 +675,9 @@ func (s *Service) GetLeaderboard(ctx context.Context, gameID int64, cefrLevelID 
 		ORDER BY rank ASC
 	`
 
-	rows, err := s.db.Query(ctx, query, gameID, cefrLevelID, fromLangID, toLangID)
+	rows, err := s.db.Query(ctx, query, gameID, cefrLevelID, fromLangID, toLangID, s.minGamesPlayed)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to query leaderboard: %w", err)
+		return nil, "", 0, fmt.Errorf("failed to query leaderboard: %w", err)
 	}
 	defer rows.Close()
 
@@ -689,13 +692,13 @@ func (s *Service) GetLeaderboard(ctx context.Context, gameID int64, cefrLevelID 
 			&entry.GamesPlayed,
 		)
 		if err != nil {
-			return nil, "", fmt.Errorf("failed to scan leaderboard entry: %w", err)
+			return nil, "", 0, fmt.Errorf("failed to scan leaderboard entry: %w", err)
 		}
 		entries = append(entries, entry)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, "", fmt.Errorf("error iterating leaderboard rows: %w", err)
+		return nil, "", 0, fmt.Errorf("error iterating leaderboard rows: %w", err)
 	}
 
 	// Return empty slice instead of nil if no entries found
@@ -703,5 +706,5 @@ func (s *Service) GetLeaderboard(ctx context.Context, gameID int64, cefrLevelID 
 		entries = []model.LeaderboardEntry{}
 	}
 
-	return entries, cefrLevelCode, nil
+	return entries, cefrLevelCode, s.minGamesPlayed, nil
 }
