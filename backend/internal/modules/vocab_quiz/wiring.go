@@ -27,6 +27,10 @@ func RegisterRoutes(r *gin.RouterGroup, d *deps.Deps) {
 	r.POST("/vocab-quiz/session", h.CreateSession)
 	r.POST("/vocab-quiz/session/:sessionId/finish", h.FinishSession)
 	r.GET("/vocab-quiz/session/:sessionId/statistics", h.GetSessionStatistics)
+	r.GET("/vocab-quiz/session/:sessionId/details", h.GetSessionDetails)
+
+	// Word details
+	r.GET("/vocab-quiz/word/:wordId", h.GetWordDetail)
 
 	// Answer submission
 	r.POST("/vocab-quiz/answer", h.SubmitAnswer)

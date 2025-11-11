@@ -1,0 +1,467 @@
+openapi: 3.0.3
+info:
+  title: Session Statistics Page API
+  description: API contract for session statistics page feature
+  version: 1.0.0
+  contact:
+    name: English Vocabulary Trainer API
+
+servers:
+  - url: http://localhost:8180/api/v1
+    description: Development server
+  - url: https://api.example.com/api/v1
+    description: Production server
+
+tags:
+  - name: Session Statistics
+    description: Session statistics and details endpoints
+
+paths:
+  /vocab-quiz/session/{sessionId}/details:
+    get:
+      tags:
+        - Session Statistics
+      summary: Get detailed session data
+      description: |
+        Retrieves comprehensive session data including statistics, questions, answers, and session information.
+        Supports optional query parameters to return full or partial data.
+        
+        **Authorization**: User must be authenticated and own the session.
+        
+        **Query Parameters**:
+        - `include` (optional): Comma-separated list of data to include. Valid values: `statistics`, `questions`, `answers`, `session_info`. Default: all if not specified.
+        
+        **Response**: Returns session details including statistics, questions with answers, and session information.
+      operationId: getSessionDetails
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          description: Session ID
+          schema:
+            type: integer
+            format: int64
+            example: 123
+        - name: include
+          in: query
+          required: false
+          description: Comma-separated list of data to include (statistics, questions, answers, session_info). Default: all if not specified.
+          schema:
+            type: string
+            example: "statistics,questions,answers"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Session details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionDetailsResponse'
+              examples:
+                full_data:
+                  summary: Full session details
+                  value:
+                    session_id: 123
+                    statistics:
+                      session_id: 123
+                      total_score: 15
+                      correct_count: 15
+                      incorrect_count: 5
+                      accuracy_percentage: 75.0
+                      time_elapsed: 180.5
+                      session_start_time: "2025-01-27T10:00:00Z"
+                      session_end_time: "2025-01-27T10:03:00Z"
+                      level_information:
+                        cefr_level_id: 2
+                        cefr_level_code: "A2"
+                        level_name: "Elementary"
+                        group_name: "Basic User"
+                      translation_direction: "en-to-vi"
+                    questions:
+                      - question_id: 1
+                        session_question_id: 1
+                        question_number: 1
+                        word_id: 100
+                        word_text: "hello"
+                        translation_id: 200
+                        options:
+                          - letter: "a"
+                            text: "xin chào"
+                            word_id: 101
+                            translation_id: 201
+                          - letter: "b"
+                            text: "tạm biệt"
+                            word_id: 102
+                            translation_id: 202
+                          - letter: "c"
+                            text: "cảm ơn"
+                            word_id: 103
+                            translation_id: 203
+                          - letter: "d"
+                            text: "xin lỗi"
+                            word_id: 104
+                            translation_id: 204
+                        correct_answer: "a"
+                        user_answer:
+                          chosen_option: "a"
+                          is_correct: true
+                          answered_at: "2025-01-27T10:00:05Z"
+                          time_spent_ms: 5000
+                        time_spent_ms: 5000
+                    session_info:
+                      session_id: 123
+                      user_id: 1
+                      game_id: 1
+                      cefr_level_id: 2
+                      cefr_level_code: "A2"
+                      translation_direction: "en-to-vi"
+                      total_questions: 20
+                      started_at: "2025-01-27T10:00:00Z"
+                      finished_at: "2025-01-27T10:03:00Z"
+        '400':
+          description: Bad request (invalid session ID or query parameters)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "invalid_session_id"
+                message: "Session ID must be a positive integer"
+        '401':
+          description: Unauthorized (user not authenticated)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "unauthorized"
+                message: "Authentication required"
+        '403':
+          description: Forbidden (user doesn't have access to this session)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "forbidden"
+                message: "You don't have access to this session"
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "session_not_found"
+                message: "Session not found"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "internal_server_error"
+                message: "An error occurred while retrieving session details"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT authentication token
+
+  schemas:
+    SessionDetailsResponse:
+      type: object
+      required:
+        - session_id
+        - statistics
+        - questions
+        - session_info
+      properties:
+        session_id:
+          type: integer
+          format: int64
+          description: Session ID
+          example: 123
+        statistics:
+          $ref: '#/components/schemas/SessionStatistics'
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionQuestionDetail'
+        session_info:
+          $ref: '#/components/schemas/SessionInfo'
+
+    SessionStatistics:
+      type: object
+      required:
+        - session_id
+        - total_score
+        - correct_count
+        - incorrect_count
+        - accuracy_percentage
+        - session_start_time
+        - translation_direction
+      properties:
+        session_id:
+          type: integer
+          format: int64
+          example: 123
+        total_score:
+          type: integer
+          description: Total score (number of correct answers)
+          example: 15
+        correct_count:
+          type: integer
+          description: Number of correct answers
+          example: 15
+        incorrect_count:
+          type: integer
+          description: Number of incorrect answers
+          example: 5
+        accuracy_percentage:
+          type: number
+          format: float
+          description: Accuracy percentage (0-100)
+          example: 75.0
+        time_elapsed:
+          type: number
+          format: float
+          description: Time elapsed in seconds
+          example: 180.5
+        session_start_time:
+          type: string
+          format: date-time
+          description: Session start time (ISO 8601)
+          example: "2025-01-27T10:00:00Z"
+        session_end_time:
+          type: string
+          format: date-time
+          description: Session end time (ISO 8601, optional)
+          example: "2025-01-27T10:03:00Z"
+        level_information:
+          $ref: '#/components/schemas/LevelInformation'
+        translation_direction:
+          type: string
+          enum: [en-to-vi, vi-to-en]
+          description: Translation direction
+          example: "en-to-vi"
+
+    SessionQuestionDetail:
+      type: object
+      required:
+        - question_id
+        - session_question_id
+        - question_number
+        - word_id
+        - word_text
+        - translation_id
+        - options
+        - correct_answer
+      properties:
+        question_id:
+          type: integer
+          format: int64
+          description: Question ID
+          example: 1
+        session_question_id:
+          type: integer
+          format: int64
+          description: Session question ID
+          example: 1
+        question_number:
+          type: integer
+          description: Question number in session (1-based)
+          example: 1
+        word_id:
+          type: integer
+          format: int64
+          description: Word ID
+          example: 100
+        word_text:
+          type: string
+          description: Word text (question text)
+          example: "hello"
+        translation_id:
+          type: integer
+          format: int64
+          description: Translation ID for the question word
+          example: 200
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionOption'
+          description: Answer options (a, b, c, d)
+        correct_answer:
+          type: string
+          enum: [a, b, c, d]
+          description: Correct answer option
+          example: "a"
+        user_answer:
+          $ref: '#/components/schemas/UserAnswer'
+        time_spent_ms:
+          type: integer
+          format: int64
+          description: Time spent on question in milliseconds
+          example: 5000
+
+    QuestionOption:
+      type: object
+      required:
+        - letter
+        - text
+        - word_id
+        - translation_id
+      properties:
+        letter:
+          type: string
+          enum: [a, b, c, d]
+          description: Option letter
+          example: "a"
+        text:
+          type: string
+          description: Option text
+          example: "xin chào"
+        word_id:
+          type: integer
+          format: int64
+          description: Word ID for this option
+          example: 101
+        translation_id:
+          type: integer
+          format: int64
+          description: Translation ID for this option
+          example: 201
+
+    UserAnswer:
+      type: object
+      required:
+        - chosen_option
+        - is_correct
+        - answered_at
+      properties:
+        chosen_option:
+          type: string
+          enum: [A, B, C, D]
+          description: User's chosen option (uppercase)
+          example: "A"
+        is_correct:
+          type: boolean
+          description: Whether the answer is correct
+          example: true
+        answered_at:
+          type: string
+          format: date-time
+          description: Answer submission time (ISO 8601)
+          example: "2025-01-27T10:00:05Z"
+        time_spent_ms:
+          type: integer
+          format: int64
+          description: Time spent on question in milliseconds
+          example: 5000
+
+    SessionInfo:
+      type: object
+      required:
+        - session_id
+        - user_id
+        - game_id
+        - cefr_level_id
+        - cefr_level_code
+        - translation_direction
+        - total_questions
+        - started_at
+      properties:
+        session_id:
+          type: integer
+          format: int64
+          example: 123
+        user_id:
+          type: integer
+          format: int64
+          example: 1
+        game_id:
+          type: integer
+          format: int64
+          example: 1
+        cefr_level_id:
+          type: integer
+          format: int64
+          example: 2
+        cefr_level_code:
+          type: string
+          description: CEFR level code (A1, A2, B1, B2, C1, C2)
+          example: "A2"
+        translation_direction:
+          type: string
+          enum: [en-to-vi, vi-to-en]
+          description: Translation direction
+          example: "en-to-vi"
+        total_questions:
+          type: integer
+          description: Total number of questions in session
+          example: 20
+        started_at:
+          type: string
+          format: date-time
+          description: Session start time (ISO 8601)
+          example: "2025-01-27T10:00:00Z"
+        finished_at:
+          type: string
+          format: date-time
+          description: Session end time (ISO 8601, optional)
+          example: "2025-01-27T10:03:00Z"
+
+    LevelInformation:
+      type: object
+      required:
+        - cefr_level_id
+        - cefr_level_code
+        - level_name
+        - group_name
+      properties:
+        cefr_level_id:
+          type: integer
+          format: int64
+          example: 2
+        cefr_level_code:
+          type: string
+          description: CEFR level code (A1, A2, B1, B2, C1, C2)
+          example: "A2"
+        level_name:
+          type: string
+          description: Level name
+          example: "Elementary"
+        group_name:
+          type: string
+          description: Level group name
+          example: "Basic User"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code
+          example: "session_not_found"
+        message:
+          type: string
+          description: Error message
+          example: "Session not found"
+        code:
+          type: string
+          description: Optional error code
+          example: "SESSION_NOT_FOUND"
+        session_id:
+          type: integer
+          format: int64
+          description: Optional session ID
+          example: 123
+

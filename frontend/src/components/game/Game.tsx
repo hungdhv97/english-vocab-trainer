@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type {
@@ -11,7 +11,6 @@ import type {
 import CefrLevelSelector from '@/components/game/CefrLevelSelector';
 import DirectionSelector from '@/components/game/DirectionSelector';
 import QuestionDisplay from '@/components/game/QuestionDisplay';
-import StatisticsView from '@/components/game/StatisticsView';
 import { isGameImplemented } from '@/constants/games';
 import ComingSoon from '@/components/game/ComingSoon';
 import {
@@ -34,6 +33,7 @@ export default function Game({ userId }: Props) {
   // Extract game code from URL
   const { code } = useParams<{ code: string }>();
   const gameCode = code || '';
+  const navigate = useNavigate();
 
   // Handle empty or undefined game code - redirect to homepage
   if (!gameCode) {
@@ -64,7 +64,6 @@ export default function Game({ userId }: Props) {
   const [timeElapsed, setTimeElapsed] = useState(0);
   const timerRef = useRef<number | null>(null);
   const [answeredQuestions, setAnsweredQuestions] = useState<Set<number>>(new Set()); // T094: Prevent duplicate submissions
-  const [showStatisticsView, setShowStatisticsView] = useState(false); // T095: Show detailed statistics view
 
   // Route to Coming Soon page for unimplemented games
   if (!isVocabQuiz) {
@@ -270,16 +269,11 @@ export default function Game({ userId }: Props) {
     await handleFinishSession();
   };
 
-  // Handle view statistics (T095)
+  // Handle view statistics - navigate to statistics page
   const handleViewStatistics = () => {
-    if (sessionStatistics) {
-      setShowStatisticsView(true);
+    if (sessionId) {
+      navigate(`/session/${sessionId}/statistics`);
     }
-  };
-
-  // Handle close statistics view (T095)
-  const handleCloseStatisticsView = () => {
-    setShowStatisticsView(false);
   };
 
   // Handle back navigation (T076)
@@ -426,13 +420,6 @@ export default function Game({ userId }: Props) {
             </CardContent>
           </Card>
         </div>
-        {/* Show detailed statistics view modal (T095) */}
-        {showStatisticsView && sessionStatistics && (
-          <StatisticsView
-            statistics={sessionStatistics}
-            onClose={handleCloseStatisticsView}
-          />
-        )}
       </>
     );
   }

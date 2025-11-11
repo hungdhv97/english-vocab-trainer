@@ -117,6 +117,98 @@ export interface SessionStatistics {
   time_elapsed?: number; // in seconds
 }
 
+// Extended session statistics (for session details page)
+export interface ExtendedSessionStatistics {
+  session_id: number;
+  correct_count: number;
+  incorrect_count: number;
+  total_score: number;
+  accuracy_percentage: number;
+  time_elapsed?: number; // in seconds
+  session_start_time: string; // ISO 8601 timestamp
+  session_end_time?: string; // ISO 8601 timestamp
+  level_information?: LevelInformation;
+  translation_direction: TranslationDirection;
+}
+
+export interface LevelInformation {
+  cefr_level_id: number;
+  cefr_level_code: string;
+  level_name: string;
+  group_name: string;
+}
+
+// Session details (comprehensive session data)
+export interface SessionDetails {
+  session_id: number;
+  statistics: ExtendedSessionStatistics;
+  questions: SessionQuestionDetail[];
+  session_info: SessionInfo;
+}
+
+export interface SessionQuestionDetail {
+  question_id: number;
+  session_question_id: number;
+  question_number: number; // Order in session (1-based)
+  word_id: number;
+  word_text: string;
+  translation_id: number;
+  options: QuestionOption[];
+  correct_answer: string; // 'A', 'B', 'C', or 'D'
+  user_answer?: UserAnswer;
+  time_spent_ms?: number;
+}
+
+export interface QuestionOption {
+  letter: string; // 'a', 'b', 'c', or 'd' (lowercase)
+  text: string;
+  word_id: number;
+  translation_id: number;
+}
+
+export interface UserAnswer {
+  chosen_option: string; // 'A', 'B', 'C', or 'D' (uppercase)
+  is_correct: boolean;
+  answered_at: string; // ISO 8601 timestamp
+  time_spent_ms?: number;
+}
+
+export interface SessionInfo {
+  session_id: number;
+  user_id: number;
+  game_id: number;
+  cefr_level_id: number;
+  cefr_level_code: string;
+  translation_direction: TranslationDirection;
+  total_questions: number;
+  started_at: string; // ISO 8601 timestamp
+  finished_at?: string; // ISO 8601 timestamp
+}
+
+// Word Detail types
+export interface WordDetail {
+  word_id: number;
+  word_text: string;
+  language_code: string;
+  translations: WordTranslation[];
+  cefr_level_code: string;
+  examples?: WordExample[];
+  part_of_speech?: string;
+  phonetic?: string;
+}
+
+export interface WordTranslation {
+  translation_id: number;
+  target_language: string;
+  translation_text: string;
+}
+
+export interface WordExample {
+  example_id: number;
+  example_text: string;
+  translation_text: string;
+}
+
 // Vocab Quiz Leaderboard types
 export interface VocabQuizLeaderboardEntry {
   rank: number;

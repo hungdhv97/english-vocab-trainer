@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/vocab_quiz/model"
 	vocabquizservice "github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/vocab_quiz/service"
@@ -162,6 +164,76 @@ func (h *Handler) GetSessionStatistics(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, stats)
+}
+
+// GetSessionDetails retrieves comprehensive session details including statistics, questions, and answers.
+// TODO: Replace user_id query parameter with authentication middleware when JWT auth is implemented.
+func (h *Handler) GetSessionDetails(c *gin.Context) {
+	sessionIDStr := c.Param("sessionId")
+	sessionID, err := strconv.ParseInt(sessionIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid session_id"})
+		return
+	}
+
+	// Get user_id from query parameter (temporary - should come from auth middleware)
+	userIDStr := c.Query("user_id")
+	if userIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id is required"})
+		return
+	}
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user_id"})
+		return
+	}
+
+	ctx := c.Request.Context()
+	details, err := h.svc.GetSessionDetails(ctx, sessionID, userID)
+	if err != nil {
+		errMsg := err.Error()
+		// Check if error is authorization error
+		if errMsg == "unauthorized: session does not belong to user" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "unauthorized: session does not belong to user"})
+			return
+		}
+		// Check if error indicates session not found (check for pgx.ErrNoRows in error chain)
+		if errors.Is(err, pgx.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "session not found"})
+			return
+		}
+		// Generic error handling
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errMsg})
+		return
+	}
+
+	c.JSON(http.StatusOK, details)
+}
+
+// GetWordDetail retrieves comprehensive word information.
+func (h *Handler) GetWordDetail(c *gin.Context) {
+	wordIDStr := c.Param("wordId")
+	wordID, err := strconv.ParseInt(wordIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid word_id"})
+		return
+	}
+
+	ctx := c.Request.Context()
+	wordDetail, err := h.svc.GetWordDetail(ctx, wordID)
+	if err != nil {
+		errMsg := err.Error()
+		// Check if error indicates word not found
+		if errMsg == "word not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "word not found"})
+			return
+		}
+		// Generic error handling
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errMsg})
+		return
+	}
+
+	c.JSON(http.StatusOK, wordDetail)
 }
 
 // GenerateQuestions generates multiple-choice questions for a vocabulary quiz (for backward compatibility).

@@ -35,6 +35,21 @@ docker compose -f docker-compose.prod.yml up -d
 # Backend: cd backend && go run ./cmd/api
 ```
 
+## 📊 Features
+
+### Session Statistics
+- View comprehensive statistics for vocabulary quiz sessions
+- Visual charts showing accuracy breakdown, time analysis, and performance over time
+- Detailed questions and answers list with time spent per question
+- Navigate to word detail pages by clicking on words
+- Accessible via `/session/:sessionId/statistics` (requires authentication)
+
+### Word Detail Page
+- View comprehensive word information including translations, examples, and metadata
+- Display CEFR level, part of speech, and phonetic information
+- Accessible via `/word/:wordId` (public route)
+- Navigate back to session statistics or previous page
+
 ## 🛠️ Development Environment
 
 ### Project Structure

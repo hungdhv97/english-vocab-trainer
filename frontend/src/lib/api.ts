@@ -9,6 +9,8 @@ import type {
   VocabQuizSessionRequest,
   VocabQuizSessionResponse,
   SessionStatistics,
+  SessionDetails,
+  WordDetail,
   TranslationDirection,
   VocabQuizLeaderboardResponse,
 } from '@/types';
@@ -317,6 +319,74 @@ export async function getVocabQuizSessionStatistics(
   if (!res.ok) {
     const data = await res.json().catch(() => null);
     throw new Error(data?.error || 'Failed to get session statistics');
+  }
+  return res.json();
+}
+
+/**
+ * Gets comprehensive session details including statistics, questions, and answers.
+ * @param sessionId - Session ID as string (will be converted to number in URL)
+ * @param userId - User ID (optional, will be retrieved from localStorage if not provided)
+ * @throws Error if session is not found, user is unauthorized, or API call fails
+ */
+export async function getSessionDetails(
+  sessionId: string,
+  userId?: number,
+): Promise<SessionDetails> {
+  // Get user_id from parameter or localStorage
+  let user_id = userId;
+  if (!user_id) {
+    const userIdStr = localStorage.getItem('user_id');
+    if (!userIdStr) {
+      throw new Error('User ID not found. Please log in.');
+    }
+    user_id = parseInt(userIdStr, 10);
+    if (isNaN(user_id)) {
+      throw new Error('Invalid user ID');
+    }
+  }
+
+  const url = new URL(
+    `${API_BASE_URL}/vocab-quiz/session/${encodeURIComponent(sessionId)}/details`,
+  );
+  url.searchParams.set('user_id', String(user_id));
+
+  const res = await fetch(url.toString(), {
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    if (res.status === 404) {
+      throw new Error(data?.error || 'Session not found');
+    }
+    if (res.status === 403) {
+      throw new Error(data?.error || 'Unauthorized: You do not have access to this session');
+    }
+    throw new Error(data?.error || 'Failed to get session details');
+  }
+  return res.json();
+}
+
+/**
+ * Gets comprehensive word details including translations, examples, and metadata.
+ * @param wordId - Word ID as string (will be converted to number in URL)
+ * @throws Error if word is not found or API call fails
+ */
+export async function getWordDetail(wordId: string): Promise<WordDetail> {
+  const res = await fetch(
+    `${API_BASE_URL}/vocab-quiz/word/${encodeURIComponent(wordId)}`,
+    {
+      credentials: 'include',
+    },
+  );
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    if (res.status === 404) {
+      throw new Error(data?.error || 'Word not found');
+    }
+    throw new Error(data?.error || 'Failed to get word details');
   }
   return res.json();
 }

@@ -8,26 +8,30 @@ import Register from '@/components/auth/Register';
 // History functionality will be reimplemented using the new vocab_game tables if needed.
 import { HomePage } from '@/components/home/HomePage';
 import { LeaderboardPage } from '@/components/leaderboard/LeaderboardPage';
+import SessionStatisticsPage from '@/components/statistics/SessionStatisticsPage';
+import WordDetailPage from '@/components/word/WordDetailPage';
 import { Layout } from '@/components/layout/Layout';
 import { ModeToggle } from '@/components/mode-toggle';
 import { ThemeProvider } from '@/components/theme-provider';
-import { isAuthenticated } from '@/lib/api';
 
 function AppRoutes() {
-  const [userId, setUserId] = useState<number | null>(null);
-  const location = useLocation();
-  const isLoggingOut = useRef(false);
-
-  // T048 Fix: Check localStorage for existing JWT token on mount
-  useEffect(() => {
-    // If there's a valid JWT token in localStorage, try to restore user session
-    if (isAuthenticated()) {
-      const storedUserId = localStorage.getItem('user_id');
-      if (storedUserId) {
-        setUserId(parseInt(storedUserId, 10));
+  // Initialize userId from localStorage synchronously to avoid redirect before auth check completes
+  // This ensures that when accessing protected routes directly via URL, the userId is available immediately
+  const getInitialUserId = (): number | null => {
+    // Check localStorage directly for user_id (more reliable than isAuthenticated() which may have token validation logic)
+    const storedUserId = localStorage.getItem('user_id');
+    if (storedUserId) {
+      const userId = parseInt(storedUserId, 10);
+      if (!isNaN(userId)) {
+        return userId;
       }
     }
-  }, []);
+    return null;
+  };
+
+  const [userId, setUserId] = useState<number | null>(getInitialUserId);
+  const location = useLocation();
+  const isLoggingOut = useRef(false);
 
   // T063 Fix: Clear state when we're on a public route after logout
   useEffect(() => {
@@ -88,6 +92,23 @@ function AppRoutes() {
           
           {/* Leaderboard Page - Public route (no authentication required) */}
           <Route path="/leaderboard" element={<LeaderboardPage />} />
+          
+          {/* Session Statistics Page - Requires authentication */}
+          <Route
+            path="/session/:sessionId/statistics"
+            element={
+              userId !== null && !isLoggingOut.current ? (
+                <SessionStatisticsPage />
+              ) : isLoggingOut.current ? (
+                <Navigate to="/" replace />
+              ) : (
+                <Navigate to={`/login?redirect_to=${encodeURIComponent(location.pathname)}`} />
+              )
+            }
+          />
+          
+          {/* Word Detail Page - Public route (no authentication required) */}
+          <Route path="/word/:wordId" element={<WordDetailPage />} />
           
           {/* Fallback - redirect unknown routes to home */}
           <Route path="*" element={<Navigate to="/" />} />

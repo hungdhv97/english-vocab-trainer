@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	cefrservice "github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/cefr_level/service"
@@ -530,6 +531,370 @@ func (s *Service) GetSessionStatistics(ctx context.Context, sessionID int64) (*m
 	}
 
 	return stats, nil
+}
+
+// GetSessionDetails retrieves comprehensive session details including statistics, questions, and answers.
+func (s *Service) GetSessionDetails(ctx context.Context, sessionID int64, userID int64) (*model.SessionDetailsResponse, error) {
+	// Get session and verify ownership (authorization)
+	session, err := s.vocabGameSvc.GetSession(ctx, sessionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get session: %w", err)
+	}
+
+	// Authorization check: verify session belongs to user
+	if session.UserID != userID {
+		return nil, fmt.Errorf("unauthorized: session does not belong to user")
+	}
+
+	// Get CEFR level information
+	cefrLevel, err := s.cefrLevelSvc.GetByID(session.CefrLevelID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get CEFR level: %w", err)
+	}
+
+	// Determine translation direction from language IDs
+	var fromLangCode, toLangCode string
+	err = s.db.QueryRow(ctx, `SELECT code FROM languages WHERE id = $1`, session.FromLanguageID).Scan(&fromLangCode)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get from language code: %w", err)
+	}
+	err = s.db.QueryRow(ctx, `SELECT code FROM languages WHERE id = $1`, session.ToLanguageID).Scan(&toLangCode)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get to language code: %w", err)
+	}
+
+	translationDirection := fromLangCode + "-to-" + toLangCode
+
+	// Calculate statistics
+	correctCount := session.CorrectAnswers
+	var totalAnswered int
+	err = s.db.QueryRow(ctx, `
+		SELECT COUNT(*)
+		FROM vocab_game_session_answers a
+		JOIN vocab_game_session_questions q ON a.session_question_id = q.id
+		WHERE q.session_id = $1`,
+		sessionID,
+	).Scan(&totalAnswered)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count answered questions: %w", err)
+	}
+
+	incorrectCount := totalAnswered - correctCount
+	var accuracyPercentage float64
+	if totalAnswered > 0 {
+		accuracyPercentage = float64(correctCount) / float64(totalAnswered) * 100.0
+	}
+
+	var timeElapsed *float64
+	if session.FinishedAt != nil {
+		elapsed := session.FinishedAt.Sub(session.StartedAt).Seconds()
+		timeElapsed = &elapsed
+	} else {
+		elapsed := time.Since(session.StartedAt).Seconds()
+		timeElapsed = &elapsed
+	}
+
+	// Build extended statistics
+	levelInfo := &model.LevelInformation{
+		CefrLevelID:   cefrLevel.ID,
+		CefrLevelCode: cefrLevel.Code,
+		LevelName:     cefrLevel.LevelName,
+		GroupName:     cefrLevel.GroupName,
+	}
+
+	extendedStats := model.ExtendedSessionStatistics{
+		SessionID:          sessionID,
+		TotalScore:         correctCount,
+		CorrectCount:       correctCount,
+		IncorrectCount:     incorrectCount,
+		AccuracyPercentage: accuracyPercentage,
+		TimeElapsed:        timeElapsed,
+		SessionStartTime:   session.StartedAt,
+		SessionEndTime:     session.FinishedAt,
+		LevelInformation:   levelInfo,
+		TranslationDirection: translationDirection,
+	}
+
+	// Get session questions with translations and word texts
+	sessionQuestions, err := s.vocabGameSvc.GetSessionQuestions(ctx, sessionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get session questions: %w", err)
+	}
+
+	questionDetails := make([]model.SessionQuestionDetail, 0, len(sessionQuestions))
+	for _, sq := range sessionQuestions {
+		// Get word text for the question (from translation's from_word_id)
+		var wordID int64
+		var wordText string
+		err := s.db.QueryRow(ctx, `
+			SELECT w.id, w.word_text
+			FROM translations t
+			JOIN words w ON t.from_word_id = w.id
+			WHERE t.id = $1`,
+			sq.TranslationID,
+		).Scan(&wordID, &wordText)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get word text for translation %d: %w", sq.TranslationID, err)
+		}
+
+		// Get options with translations and word texts
+		options := make([]model.QuestionOption, 0, 4)
+		optionTranslationIDs := []int64{sq.OptionATranslationID, sq.OptionBTranslationID, sq.OptionCTranslationID, sq.OptionDTranslationID}
+		optionLetters := []string{"A", "B", "C", "D"}
+
+		for i, transID := range optionTranslationIDs {
+			var optionWordID int64
+			var optionText string
+			err := s.db.QueryRow(ctx, `
+				SELECT w.id, w.word_text
+				FROM translations t
+				JOIN words w ON t.to_word_id = w.id
+				WHERE t.id = $1`,
+				transID,
+			).Scan(&optionWordID, &optionText)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get option text for translation %d: %w", transID, err)
+			}
+
+			options = append(options, model.QuestionOption{
+				Letter:        optionLetters[i],
+				Text:          optionText,
+				WordID:        optionWordID,
+				TranslationID: transID,
+			})
+		}
+
+		// Get user answer if exists
+		var userAnswer *model.UserAnswer
+		answer, err := s.vocabGameSvc.GetSessionAnswer(ctx, sq.ID)
+		if err == nil && answer != nil {
+			userAnswer = &model.UserAnswer{
+				ChosenOption: answer.ChosenOption,
+				IsCorrect:    answer.IsCorrect,
+				AnsweredAt:   answer.AnsweredAt,
+				TimeSpentMs:  answer.TimeSpentMs,
+			}
+		} else if err != nil {
+			// Check if error is "no rows" (question not answered yet)
+			// GetSessionAnswer wraps the error with %w, so errors.Is should work
+			if !errors.Is(err, pgx.ErrNoRows) {
+				// If it's not a "no rows" error, it's a real error - return it
+				return nil, fmt.Errorf("failed to get answer for question %d: %w", sq.ID, err)
+			}
+			// If it's a "no rows" error, userAnswer remains nil (question not answered)
+		}
+
+		// Set TimeSpentMs from userAnswer if it exists
+		var timeSpentMs *int
+		if userAnswer != nil {
+			timeSpentMs = userAnswer.TimeSpentMs
+		}
+
+		questionDetails = append(questionDetails, model.SessionQuestionDetail{
+			QuestionID:        sq.ID,
+			SessionQuestionID: sq.ID,
+			QuestionNumber:    sq.QuestionNo,
+			WordID:            wordID,
+			WordText:          wordText,
+			TranslationID:     sq.TranslationID,
+			Options:           options,
+			CorrectAnswer:     sq.CorrectOption,
+			UserAnswer:        userAnswer,
+			TimeSpentMs:       timeSpentMs,
+		})
+	}
+
+	// Build session info
+	sessionInfo := model.SessionInfo{
+		SessionID:          sessionID,
+		UserID:             session.UserID,
+		GameID:             session.GameID,
+		CefrLevelID:        session.CefrLevelID,
+		CefrLevelCode:      cefrLevel.Code,
+		TranslationDirection: translationDirection,
+		TotalQuestions:     session.TotalQuestions,
+		StartedAt:          session.StartedAt,
+		FinishedAt:         session.FinishedAt,
+	}
+
+	// Build response
+	response := &model.SessionDetailsResponse{
+		SessionID:   sessionID,
+		Statistics:  extendedStats,
+		Questions:   questionDetails,
+		SessionInfo: sessionInfo,
+	}
+
+	return response, nil
+}
+
+// GetWordDetail retrieves comprehensive word information including translations, examples, and metadata.
+func (s *Service) GetWordDetail(ctx context.Context, wordID int64) (*model.WordDetailResponse, error) {
+	// Get word basic information
+	var wordText string
+	var languageID int64
+	var phonetic *string
+	var partOfSpeech *string
+	err := s.db.QueryRow(ctx, `
+		SELECT word_text, language_id, phonetic, part_of_speech
+		FROM words
+		WHERE id = $1`,
+		wordID,
+	).Scan(&wordText, &languageID, &phonetic, &partOfSpeech)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("word not found")
+		}
+		return nil, fmt.Errorf("failed to get word: %w", err)
+	}
+
+	// Get language code
+	var languageCode string
+	err = s.db.QueryRow(ctx, `SELECT code FROM languages WHERE id = $1`, languageID).Scan(&languageCode)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get language code: %w", err)
+	}
+
+	// Get translations (both directions: from_word and to_word)
+	translations := make([]model.WordTranslation, 0)
+	
+	// Get translations where this word is the source (from_word)
+	rows, err := s.db.Query(ctx, `
+		SELECT t.id, l.code, w.word_text
+		FROM translations t
+		JOIN words w ON t.to_word_id = w.id
+		JOIN languages l ON w.language_id = l.id
+		WHERE t.from_word_id = $1
+		ORDER BY t.meaning_order ASC`,
+		wordID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get translations: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var trans model.WordTranslation
+		err := rows.Scan(&trans.TranslationID, &trans.TargetLanguage, &trans.TranslationText)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan translation: %w", err)
+		}
+		translations = append(translations, trans)
+	}
+
+	// Get translations where this word is the target (to_word) - reverse direction
+	rows, err = s.db.Query(ctx, `
+		SELECT t.id, l.code, w.word_text
+		FROM translations t
+		JOIN words w ON t.from_word_id = w.id
+		JOIN languages l ON w.language_id = l.id
+		WHERE t.to_word_id = $1
+		ORDER BY t.meaning_order ASC`,
+		wordID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get reverse translations: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var trans model.WordTranslation
+		err := rows.Scan(&trans.TranslationID, &trans.TargetLanguage, &trans.TranslationText)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan reverse translation: %w", err)
+		}
+		translations = append(translations, trans)
+	}
+
+	// Get examples
+	examples := make([]model.WordExample, 0)
+	rows, err = s.db.Query(ctx, `
+		SELECT id, example_text, translation_text
+		FROM examples
+		WHERE word_id = $1
+		ORDER BY id ASC`,
+		wordID,
+	)
+	if err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var ex model.WordExample
+			err := rows.Scan(&ex.ExampleID, &ex.ExampleText, &ex.TranslationText)
+			if err != nil {
+				// Log error but continue
+				continue
+			}
+			examples = append(examples, ex)
+		}
+	}
+
+	// Get CEFR level code from multiple sources:
+	// 1. First try translations with cefr_level_id (if available)
+	// 2. Fall back to sessions where this word was used (question or option)
+	// Use the most common CEFR level from all sources
+	var cefrLevelCode string
+	err = s.db.QueryRow(ctx, `
+		WITH cefr_sources AS (
+			-- Get CEFR level from translations (if cefr_level_id is set)
+			SELECT c.code, 1 as priority, COUNT(*) as usage_count
+			FROM translations t
+			JOIN cefr_levels c ON t.cefr_level_id = c.id
+			WHERE (t.from_word_id = $1 OR t.to_word_id = $1)
+			AND t.cefr_level_id IS NOT NULL
+			GROUP BY c.code
+			
+			UNION ALL
+			
+			-- Get CEFR level from sessions where this word was used as a question word
+			SELECT c.code, 2 as priority, COUNT(DISTINCT q.id) as usage_count
+			FROM vocab_game_sessions s
+			JOIN vocab_game_session_questions q ON s.id = q.session_id
+			JOIN translations t ON q.translation_id = t.id
+			JOIN cefr_levels c ON s.cefr_level_id = c.id
+			WHERE (t.from_word_id = $1 OR t.to_word_id = $1)
+			GROUP BY c.code
+			
+			UNION ALL
+			
+			-- Get CEFR level from sessions where this word was used as an option word
+			SELECT c.code, 2 as priority, COUNT(DISTINCT q.id) as usage_count
+			FROM vocab_game_sessions s
+			JOIN vocab_game_session_questions q ON s.id = q.session_id
+			JOIN translations t ON (
+				q.option_a_translation_id = t.id OR
+				q.option_b_translation_id = t.id OR
+				q.option_c_translation_id = t.id OR
+				q.option_d_translation_id = t.id
+			)
+			JOIN cefr_levels c ON s.cefr_level_id = c.id
+			WHERE (t.from_word_id = $1 OR t.to_word_id = $1)
+			GROUP BY c.code
+		)
+		SELECT code
+		FROM cefr_sources
+		GROUP BY code
+		ORDER BY MIN(priority) ASC, SUM(usage_count) DESC
+		LIMIT 1`,
+		wordID,
+	).Scan(&cefrLevelCode)
+	if err != nil {
+		// If no CEFR level found from any source, set empty string (optional field)
+		cefrLevelCode = ""
+	}
+
+	// Build response
+	response := &model.WordDetailResponse{
+		WordID:        wordID,
+		WordText:      wordText,
+		LanguageCode:  languageCode,
+		Translations:  translations,
+		CefrLevelCode: cefrLevelCode,
+		Examples:      examples,
+		PartOfSpeech:  partOfSpeech,
+		Phonetic:      phonetic,
+	}
+
+	return response, nil
 }
 
 // GetSessionByQuestionID retrieves a session by question ID.

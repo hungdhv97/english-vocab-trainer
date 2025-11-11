@@ -12,6 +12,7 @@ Auto-generated from all feature plans. Last updated: 2025-11-07
 - PostgreSQL 15+ (primary data store), Redis 7+ (caching) (006-vocab-quiz-redesign)
 - TypeScript 5.8+, React 19+ + shadcn UI (tabs component), React Router 7+, existing API functions (007-leaderboard-game-tabs)
 - N/A (frontend-only feature, uses existing backend APIs) (007-leaderboard-game-tabs)
+- PostgreSQL (existing vocab_game_sessions, vocab_game_session_questions, vocab_game_session_answers tables) (008-session-statistics-page)
 
 - (002-homepage-redesign)
 
@@ -31,9 +32,9 @@ tests/
 : Follow standard conventions
 
 ## Recent Changes
+- 008-session-statistics-page: Added PostgreSQL (existing vocab_game_sessions, vocab_game_session_questions, vocab_game_session_answers tables)
 - 007-leaderboard-game-tabs: Added TypeScript 5.8+, React 19+ + shadcn UI (tabs component), React Router 7+, existing API functions
 - 006-vocab-quiz-redesign: Added Go 1.24+, TypeScript 5+, React 19+
-- 005-fix-session-tag: Added Go 1.25+, TypeScript 5+, React 19+ + Gin (HTTP framework), React (frontend), shadcn UI (components)
 
 
 <!-- MANUAL ADDITIONS START -->
