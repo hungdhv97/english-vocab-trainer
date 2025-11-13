@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -28,14 +29,14 @@ func NewHandler(svc *service.Service) *Handler {
 func (h *Handler) ListGames(c *gin.Context) {
 	games, err := h.service.ListActiveGames(c.Request.Context())
 	if err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Internal server error",
 			"message": "Failed to retrieve games",
 		})
 		return
 	}
 
-	c.JSON(200, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"games": games,
 	})
 }
@@ -48,7 +49,7 @@ func (h *Handler) GetLeaderboard(c *gin.Context) {
 	gameIDStr := c.Param("id")
 	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
 	if err != nil {
-		c.JSON(400, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "Invalid game ID",
 			"message": "Game ID must be a valid integer",
 		})
@@ -58,7 +59,7 @@ func (h *Handler) GetLeaderboard(c *gin.Context) {
 	// Fetch leaderboard from service
 	entries, err := h.service.GetLeaderboard(c.Request.Context(), gameID)
 	if err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Internal server error",
 			"message": "Failed to retrieve leaderboard",
 			"details": err.Error(),
@@ -72,7 +73,7 @@ func (h *Handler) GetLeaderboard(c *gin.Context) {
 	}
 
 	// Return the leaderboard
-	c.JSON(200, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"game_id":     gameID,
 		"leaderboard": entries,
 	})
@@ -85,7 +86,7 @@ func (h *Handler) GetGameByCode(c *gin.Context) {
 	// Get game code from URL parameter
 	code := c.Param("code")
 	if code == "" {
-		c.JSON(400, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "Invalid game code",
 			"message": "Game code is required",
 		})
@@ -97,7 +98,7 @@ func (h *Handler) GetGameByCode(c *gin.Context) {
 	if err != nil {
 		// Check if game not found (pgx.ErrNoRows)
 		if err == pgx.ErrNoRows {
-			c.JSON(404, gin.H{
+			c.JSON(http.StatusNotFound, gin.H{
 				"error":   "Game not found",
 				"message": "No game found with code: " + code,
 			})
@@ -105,7 +106,7 @@ func (h *Handler) GetGameByCode(c *gin.Context) {
 		}
 
 		// Other database errors
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Internal server error",
 			"message": "Failed to retrieve game",
 			"details": err.Error(),
@@ -114,7 +115,7 @@ func (h *Handler) GetGameByCode(c *gin.Context) {
 	}
 
 	// Return the game
-	c.JSON(200, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"game": game,
 	})
 }
