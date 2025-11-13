@@ -30,7 +30,7 @@ export function ProfileBanner() {
         // Check profile completion status
         const status = await checkProfileCompletion();
         setShowBanner(!status.is_complete);
-      } catch (error) {
+      } catch {
         // If error, don't show banner
         setShowBanner(false);
       } finally {

@@ -93,7 +93,7 @@ export function Header({ onLogout }: HeaderProps) {
             setUsername(storedUsername);
           }
         }
-      } catch (error) {
+      } catch {
         // Silently fail - profile might not exist yet
         setProfile(null);
       }

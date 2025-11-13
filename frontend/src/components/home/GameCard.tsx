@@ -1,8 +1,6 @@
-import { useNavigate } from 'react-router-dom';
 import type { Game } from '@/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { isAuthenticated } from '@/lib/api';
 import {
   Tooltip,
   TooltipContent,
@@ -20,10 +18,7 @@ interface GameCardProps {
  * GameCard displays a single game with its icon, name, description, and category.
  * Includes Play button.
  */
-export function GameCard({ game, onClick, userId }: GameCardProps) {
-  const navigate = useNavigate();
-  const authenticated = isAuthenticated() && userId !== null;
-
+export function GameCard({ game, onClick }: GameCardProps) {
   // Note: handleViewHistory has been removed as history functionality has been removed
   const categoryColors: Record<string, string> = {
     vocabulary: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
