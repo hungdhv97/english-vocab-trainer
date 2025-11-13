@@ -1,4 +1,4 @@
-package cefr_level
+package cefrlevel
 
 import (
 	"github.com/gin-gonic/gin"
@@ -15,4 +15,3 @@ func RegisterRoutes(r *gin.RouterGroup, d *deps.Deps) {
 	r.GET("/cefr-levels", h.List)
 	r.GET("/cefr-levels/:code", h.GetByCode)
 }
-

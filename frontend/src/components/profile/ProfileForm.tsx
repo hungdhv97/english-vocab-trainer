@@ -69,7 +69,7 @@ export function ProfileForm({
       }
 
       await onSubmit(formData);
-    } catch (error) {
+    } catch {
       // Error handling is done in parent component
     } finally {
       setIsSubmitting(false);

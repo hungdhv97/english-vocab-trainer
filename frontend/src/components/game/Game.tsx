@@ -35,11 +35,6 @@ export default function Game({ userId }: Props) {
   const gameCode = code || '';
   const navigate = useNavigate();
 
-  // Handle empty or undefined game code - redirect to homepage
-  if (!gameCode) {
-    return null; // Will be handled by App.tsx route fallback
-  }
-
   // Check if this is the Vocabulary Quiz game
   const isVocabQuiz = gameCode === 'vocab-quiz' && isGameImplemented(gameCode);
 
@@ -63,15 +58,14 @@ export default function Game({ userId }: Props) {
   const [startTime, setStartTime] = useState<number | null>(null);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const timerRef = useRef<number | null>(null);
-  const [answeredQuestions, setAnsweredQuestions] = useState<Set<number>>(new Set()); // T094: Prevent duplicate submissions
-
-  // Route to Coming Soon page for unimplemented games
-  if (!isVocabQuiz) {
-    return <ComingSoon gameCode={gameCode} />;
-  }
+  const [answeredQuestions, setAnsweredQuestions] = useState<Set<number>>(() => new Set()); // T094: Prevent duplicate submissions
 
   // Fetch game and CEFR levels on mount
   useEffect(() => {
+    if (!gameCode) {
+      return;
+    }
+
     const loadData = async () => {
       try {
         // Fetch game to get game_id
@@ -174,7 +168,11 @@ export default function Game({ userId }: Props) {
     }
 
     // Mark question as answered to prevent duplicate submissions (T094)
-    answeredQuestions.add(currentQuestion.id);
+    setAnsweredQuestions((prev) => {
+      const next = new Set(prev);
+      next.add(currentQuestion.id);
+      return next;
+    });
     setSelectedAnswer(letter);
     setSubmittedAnswer(letter);
     setCorrectAnswer(currentQuestion.correct_answer);
@@ -220,7 +218,11 @@ export default function Game({ userId }: Props) {
       setLoading(false);
       // Reset submission state on error
       setSubmittedAnswer(null);
-      answeredQuestions.delete(currentQuestion.id);
+      setAnsweredQuestions((prev) => {
+        const next = new Set(prev);
+        next.delete(currentQuestion.id);
+        return next;
+      });
     }
   };
 
@@ -242,7 +244,7 @@ export default function Game({ userId }: Props) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
-    } catch (err) {
+    } catch {
       // If finish fails, try to get statistics anyway
       try {
         const stats = await getVocabQuizSessionStatistics(sessionId.toString());
@@ -252,7 +254,9 @@ export default function Game({ userId }: Props) {
         });
         setGameState('completed');
       } catch (statsErr) {
-        setError(err instanceof Error ? err.message : 'Failed to finish session');
+        setError(
+          statsErr instanceof Error ? statsErr.message : 'Failed to finish session'
+        );
       }
     }
   };
@@ -304,7 +308,7 @@ export default function Game({ userId }: Props) {
     setError(null);
     setStartTime(null);
     setTimeElapsed(0);
-    answeredQuestions.clear();
+    setAnsweredQuestions(new Set());
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -314,9 +318,19 @@ export default function Game({ userId }: Props) {
   // Reset answered questions when starting new quiz
   useEffect(() => {
     if (gameState === 'playing' && questions.length > 0) {
-      answeredQuestions.clear();
+      setAnsweredQuestions(new Set());
     }
   }, [gameState, questions.length]);
+
+  // Handle empty or undefined game code - let router fallback handle navigation
+  if (!gameCode) {
+    return null;
+  }
+
+  // Route to Coming Soon page for unimplemented games
+  if (!isVocabQuiz) {
+    return <ComingSoon gameCode={gameCode} />;
+  }
 
   // Render level selection
   if (gameState === 'level-selection') {

@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/cefr_level"
+	cefrlevel "github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/cefr_level"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/example"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/game"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/language"
@@ -26,7 +26,7 @@ func NewRouter(d *deps.Deps) *gin.Engine {
 	word.RegisterRoutes(api, d)
 	game.RegisterRoutes(api, d)
 	language.RegisterRoutes(api, d)
-	cefr_level.RegisterRoutes(api, d)
+	cefrlevel.RegisterRoutes(api, d)
 	translation.RegisterRoutes(api, d)
 	example.RegisterRoutes(api, d)
 	vocabquiz.RegisterRoutes(api, d)
