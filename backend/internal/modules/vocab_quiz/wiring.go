@@ -1,4 +1,4 @@
-package vocab_quiz
+package vocabquiz
 
 import (
 	"github.com/gin-gonic/gin"
@@ -34,7 +34,7 @@ func RegisterRoutes(r *gin.RouterGroup, d *deps.Deps) {
 
 	// Answer submission
 	r.POST("/vocab-quiz/answer", h.SubmitAnswer)
-	
+
 	// Question generation (for backward compatibility - questions are now included in session creation)
 	r.POST("/vocab-quiz/questions", h.GenerateQuestions)
 

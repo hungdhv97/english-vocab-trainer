@@ -1,2 +1,2 @@
-// Package vocab_quiz wires the vocabulary quiz module into the application.
-package vocab_quiz
+// Package vocabquiz wires the vocabulary quiz module into the application.
+package vocabquiz
