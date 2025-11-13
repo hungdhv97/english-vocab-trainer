@@ -226,3 +226,22 @@ export interface VocabQuizLeaderboardResponse {
   min_games_played: number; // Minimum number of games required to appear on leaderboard
   leaderboard: VocabQuizLeaderboardEntry[];
 }
+
+// ===== User Profile Types =====
+
+export interface UserProfile {
+  user_id: number;
+  display_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  created_at: string;
+  updated_at: string;
+  is_complete: boolean;
+}
+
+export interface ProfileCompletionStatus {
+  is_complete: boolean;
+  has_display_name: boolean;
+  has_avatar: boolean;
+  has_bio: boolean;
+}

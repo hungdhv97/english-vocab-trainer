@@ -14,4 +14,12 @@ func RegisterRoutes(r *gin.RouterGroup, d *deps.Deps) {
 	h := handler.New(svc)
 	r.POST("/register", h.Register)
 	r.POST("/login", h.Login)
+
+	// Profile routes
+	profileGroup := r.Group("/profile")
+	{
+		profileGroup.GET("", h.GetProfile)
+		profileGroup.POST("", h.UpdateProfile)
+		profileGroup.GET("/complete", h.CheckProfileCompletion)
+	}
 }

@@ -13,6 +13,8 @@ import type {
   WordDetail,
   TranslationDirection,
   VocabQuizLeaderboardResponse,
+  UserProfile,
+  ProfileCompletionStatus,
 } from '@/types';
 
 // In development, use relative path (proxied by Vite)
@@ -414,6 +416,126 @@ export async function fetchVocabQuizLeaderboard(
   if (!res.ok) {
     const data = await res.json().catch(() => null);
     throw new Error(data?.error || 'Failed to fetch leaderboard');
+  }
+  return res.json();
+}
+
+// ===== User Profile API Functions =====
+
+/**
+ * Gets the current user's profile information.
+ * @param userId - User ID (retrieved from localStorage if not provided)
+ */
+export async function getProfile(userId?: number): Promise<UserProfile> {
+  let user_id = userId;
+  if (!user_id) {
+    const userIdStr = localStorage.getItem('user_id');
+    if (!userIdStr) {
+      throw new Error('User ID not found. Please log in.');
+    }
+    user_id = parseInt(userIdStr, 10);
+    if (isNaN(user_id)) {
+      throw new Error('Invalid user ID');
+    }
+  }
+
+  const url = new URL(`${API_BASE_URL}/profile`);
+  url.searchParams.set('user_id', String(user_id));
+
+  const res = await fetch(url.toString(), {
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    if (res.status === 404) {
+      // Profile doesn't exist yet - return empty profile
+      return {
+        user_id: user_id,
+        display_name: null,
+        avatar_url: null,
+        bio: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        is_complete: false,
+      };
+    }
+    throw new Error(data?.error || 'Failed to get profile');
+  }
+  return res.json();
+}
+
+/**
+ * Updates the current user's profile information.
+ * @param data - FormData containing display_name, bio, and optionally avatar file
+ * @param userId - User ID (retrieved from localStorage if not provided)
+ */
+export async function updateProfile(
+  data: FormData,
+  userId?: number,
+): Promise<UserProfile> {
+  let user_id = userId;
+  if (!user_id) {
+    const userIdStr = localStorage.getItem('user_id');
+    if (!userIdStr) {
+      throw new Error('User ID not found. Please log in.');
+    }
+    user_id = parseInt(userIdStr, 10);
+    if (isNaN(user_id)) {
+      throw new Error('Invalid user ID');
+    }
+  }
+
+  // Add user_id to FormData if not already present
+  if (!data.has('user_id')) {
+    data.append('user_id', String(user_id));
+  }
+
+  const res = await fetch(`${API_BASE_URL}/profile`, {
+    method: 'POST',
+    credentials: 'include',
+    body: data,
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => null);
+    if (res.status === 413) {
+      throw new Error(errorData?.error || 'File too large. Maximum size is 2MB.');
+    }
+    throw new Error(errorData?.error || 'Failed to update profile');
+  }
+  return res.json();
+}
+
+/**
+ * Checks if the current user's profile is complete.
+ * @param userId - User ID (retrieved from localStorage if not provided)
+ */
+export async function checkProfileCompletion(
+  userId?: number,
+): Promise<ProfileCompletionStatus> {
+  let user_id = userId;
+  if (!user_id) {
+    const userIdStr = localStorage.getItem('user_id');
+    if (!userIdStr) {
+      throw new Error('User ID not found. Please log in.');
+    }
+    user_id = parseInt(userIdStr, 10);
+    if (isNaN(user_id)) {
+      throw new Error('Invalid user ID');
+    }
+  }
+
+  const url = new URL(`${API_BASE_URL}/profile/complete`);
+  url.searchParams.set('user_id', String(user_id));
+
+  const res = await fetch(url.toString(), {
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error || 'Failed to check profile completion');
   }
   return res.json();
 }

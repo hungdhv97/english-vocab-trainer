@@ -27,7 +27,16 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
+                allOf:
+                  - $ref: "#/components/schemas/User"
+                  - type: object
+                    properties:
+                      profile_incomplete:
+                        type: boolean
+                        description: Indicates if user profile is incomplete
+                      redirect_to:
+                        type: string
+                        description: Validated redirect URL (if provided)
         "400":
           description: Bad request
 
@@ -53,9 +62,102 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
+                allOf:
+                  - $ref: "#/components/schemas/User"
+                  - type: object
+                    properties:
+                      profile_incomplete:
+                        type: boolean
+                        description: Indicates if user profile is incomplete
+                      redirect_to:
+                        type: string
+                        description: Validated redirect URL (if provided)
         "401":
           description: Unauthorized
+
+  /profile:
+    get:
+      summary: Get user profile
+      description: Retrieves the current authenticated user's profile information
+      tags: [profile]
+      parameters:
+        - in: query
+          name: user_id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileResponse"
+        "400":
+          description: Bad request - user_id required
+        "404":
+          description: Profile not found (user has no profile yet)
+    post:
+      summary: Create or update user profile
+      description: Creates a new profile or updates existing profile. Accepts multipart/form-data for avatar upload.
+      tags: [profile]
+      parameters:
+        - in: query
+          name: user_id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                display_name:
+                  type: string
+                  maxLength: 50
+                bio:
+                  type: string
+                  maxLength: 500
+                avatar:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileResponse"
+        "400":
+          description: Bad request - validation error
+        "413":
+          description: Payload too large - avatar file exceeds 2MB limit
+
+  /profile/complete:
+    get:
+      summary: Check profile completion status
+      description: Returns whether the current user's profile is complete (has at least one field populated)
+      tags: [profile]
+      parameters:
+        - in: query
+          name: user_id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Completion status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileCompletionResponse"
+        "400":
+          description: Bad request - user_id required
 
   /session:
     post:
@@ -414,3 +516,42 @@ components:
             - target_rules
             - score_rules
           additionalProperties: false
+
+    ProfileResponse:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          format: int64
+        display_name:
+          type: string
+          nullable: true
+          maxLength: 50
+        avatar_url:
+          type: string
+          nullable: true
+          maxLength: 255
+        bio:
+          type: string
+          nullable: true
+          maxLength: 500
+        is_complete:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ProfileCompletionResponse:
+      type: object
+      properties:
+        is_complete:
+          type: boolean
+        has_display_name:
+          type: boolean
+        has_avatar:
+          type: boolean
+        has_bio:
+          type: boolean

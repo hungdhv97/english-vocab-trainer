@@ -40,6 +40,9 @@ export default function Login({ onLogin }: Props) {
       if (user.user_id) {
         localStorage.setItem('user_id', user.user_id.toString());
       }
+      if (user.username) {
+        localStorage.setItem('username', user.username);
+      }
       
       onLogin(user.user_id);
       
@@ -57,6 +60,7 @@ export default function Login({ onLogin }: Props) {
           navigate(user.redirect_to);
         } else {
           // No redirect or invalid redirect - navigate to home page
+          // Note: Profile completion banner will show if profile is incomplete (User Story 2)
           navigate('/');
         }
       }, 50);

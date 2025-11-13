@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { isAuthenticated } from '@/lib/api';
+import { isAuthenticated, getProfile } from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import type { UserProfile } from '@/types';
 
 interface HeaderProps {
   onLogout?: () => void;
@@ -17,6 +18,8 @@ export function Header({ onLogout }: HeaderProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [authenticated, setAuthenticated] = useState(isAuthenticated());
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [username, setUsername] = useState<string>('');
 
   // Update authentication state when location changes, storage events occur, or focus events
   useEffect(() => {
@@ -61,13 +64,55 @@ export function Header({ onLogout }: HeaderProps) {
     };
   }, [location]);
 
+  // Fetch user profile when authenticated
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!authenticated) {
+        setProfile(null);
+        setUsername('');
+        return;
+      }
+
+      try {
+        const userIdStr = localStorage.getItem('user_id');
+        if (userIdStr) {
+          const userProfile = await getProfile();
+          setProfile(userProfile);
+          // Get username from localStorage as fallback
+          const storedUsername = localStorage.getItem('username');
+          if (storedUsername) {
+            setUsername(storedUsername);
+          }
+        }
+      } catch (error) {
+        // Silently fail - profile might not exist yet
+        setProfile(null);
+      }
+    };
+
+    fetchProfile();
+    
+    // Listen for profile updates
+    const handleProfileUpdate = () => {
+      fetchProfile();
+    };
+    window.addEventListener('auth-state-changed', handleProfileUpdate);
+    
+    return () => {
+      window.removeEventListener('auth-state-changed', handleProfileUpdate);
+    };
+  }, [authenticated, location]);
+
   const handleLogout = () => {
     // Remove auth data from localStorage
     localStorage.removeItem('jwt_token');
     localStorage.removeItem('user_id');
+    localStorage.removeItem('username');
     
     // Update local state
     setAuthenticated(false);
+    setProfile(null);
+    setUsername('');
     
     // Dispatch custom event to notify other components of auth state change
     window.dispatchEvent(new Event('auth-state-changed'));
@@ -128,15 +173,25 @@ export function Header({ onLogout }: HeaderProps) {
 
             {/* Authentication-aware Navigation */}
             {authenticated ? (
-              <Button
-                onClick={handleLogout}
-                variant="outline"
-                size="sm"
-                className="text-gray-700 dark:text-gray-300"
-                aria-label="Logout"
-              >
-                Logout
-              </Button>
+              <div className="flex items-center gap-3">
+                {/* User Indicator - Avatar only */}
+                {profile?.avatar_url && (
+                  <img
+                    src={profile.avatar_url.startsWith('http') ? profile.avatar_url : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8180'}${profile.avatar_url}`}
+                    alt="Avatar"
+                    className="w-8 h-8 rounded-full object-cover border border-gray-300 dark:border-gray-600"
+                  />
+                )}
+                <Button
+                  onClick={handleLogout}
+                  variant="outline"
+                  size="sm"
+                  className="text-gray-700 dark:text-gray-300"
+                  aria-label="Logout"
+                >
+                  Logout
+                </Button>
+              </div>
             ) : (
               <>
                 <Link

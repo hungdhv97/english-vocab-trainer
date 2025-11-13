@@ -10,6 +10,7 @@ import { HomePage } from '@/components/home/HomePage';
 import { LeaderboardPage } from '@/components/leaderboard/LeaderboardPage';
 import SessionStatisticsPage from '@/components/statistics/SessionStatisticsPage';
 import WordDetailPage from '@/components/word/WordDetailPage';
+import ProfilePage from '@/components/profile/ProfilePage';
 import { Layout } from '@/components/layout/Layout';
 import { ModeToggle } from '@/components/mode-toggle';
 import { ThemeProvider } from '@/components/theme-provider';
@@ -109,6 +110,20 @@ function AppRoutes() {
           
           {/* Word Detail Page - Public route (no authentication required) */}
           <Route path="/word/:wordId" element={<WordDetailPage />} />
+          
+          {/* Profile Page - Requires authentication */}
+          <Route
+            path="/profile"
+            element={
+              userId !== null && !isLoggingOut.current ? (
+                <ProfilePage />
+              ) : isLoggingOut.current ? (
+                <Navigate to="/" replace />
+              ) : (
+                <Navigate to={`/login?redirect_to=${encodeURIComponent('/profile')}`} />
+              )
+            }
+          />
           
           {/* Fallback - redirect unknown routes to home */}
           <Route path="*" element={<Navigate to="/" />} />

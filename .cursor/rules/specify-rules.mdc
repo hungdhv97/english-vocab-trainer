@@ -13,6 +13,8 @@ Auto-generated from all feature plans. Last updated: 2025-11-07
 - TypeScript 5.8+, React 19+ + shadcn UI (tabs component), React Router 7+, existing API functions (007-leaderboard-game-tabs)
 - N/A (frontend-only feature, uses existing backend APIs) (007-leaderboard-game-tabs)
 - PostgreSQL (existing vocab_game_sessions, vocab_game_session_questions, vocab_game_session_answers tables) (008-session-statistics-page)
+- Go 1.24+, TypeScript 5+, React 19+ + Gin (HTTP routing), pgx (PostgreSQL driver), React Router, shadcn UI, react-hot-toast (009-profile-completion)
+- PostgreSQL 15+ (user_profiles table), file system (avatar images), browser sessionStorage (banner dismissal state) (009-profile-completion)
 
 - (002-homepage-redesign)
 
@@ -32,9 +34,9 @@ tests/
 : Follow standard conventions
 
 ## Recent Changes
+- 009-profile-completion: Added Go 1.24+, TypeScript 5+, React 19+ + Gin (HTTP routing), pgx (PostgreSQL driver), React Router, shadcn UI, react-hot-toast
 - 008-session-statistics-page: Added PostgreSQL (existing vocab_game_sessions, vocab_game_session_questions, vocab_game_session_answers tables)
 - 007-leaderboard-game-tabs: Added TypeScript 5.8+, React 19+ + shadcn UI (tabs component), React Router 7+, existing API functions
-- 006-vocab-quiz-redesign: Added Go 1.24+, TypeScript 5+, React 19+
 
 
 <!-- MANUAL ADDITIONS START -->

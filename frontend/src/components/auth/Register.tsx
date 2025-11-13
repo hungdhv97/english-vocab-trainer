@@ -40,6 +40,9 @@ export default function Register({ onRegister }: Props) {
       if (user.user_id) {
         localStorage.setItem('user_id', user.user_id.toString());
       }
+      if (user.username) {
+        localStorage.setItem('username', user.username);
+      }
       
       onRegister(user.user_id);
       
@@ -53,6 +56,9 @@ export default function Register({ onRegister }: Props) {
         if (user.redirect_to && typeof user.redirect_to === 'string' && user.redirect_to.trim() !== '') {
           // Backend validated the redirect URL - navigate to it
           navigate(user.redirect_to);
+        } else if (user.profile_incomplete) {
+          // Profile incomplete - redirect to profile page with onboarding context
+          navigate('/profile?onboarding=true');
         } else {
           // No redirect or invalid redirect - navigate to home page
           navigate('/');

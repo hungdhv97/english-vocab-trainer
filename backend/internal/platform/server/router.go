@@ -31,6 +31,9 @@ func NewRouter(d *deps.Deps) *gin.Engine {
 	example.RegisterRoutes(api, d)
 	vocabquiz.RegisterRoutes(api, d)
 
+	// Serve uploaded files (avatars, etc.) under /api/v1/uploads
+	api.Static("/uploads", "./uploads")
+
 	r.GET("/openapi.yaml", func(c *gin.Context) { c.File("docs/openapi.yaml") })
 	r.GET("/docs", func(c *gin.Context) {
 		html := `<!doctype html>

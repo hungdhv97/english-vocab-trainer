@@ -39,6 +39,9 @@ Thumbs.db
 *.test
 *.out
 
+# Uploads (user-generated content)
+backend/uploads/
+
 # Node/TypeScript specific  
 *.tsbuildinfo
 .eslintcache

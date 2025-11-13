@@ -1,0 +1,191 @@
+openapi: 3.0.3
+info:
+  title: User Profile API
+  description: API endpoints for user profile management and completion flow
+  version: 1.0.0
+servers:
+  - url: http://localhost:8180/api/v1
+    description: Development server
+
+paths:
+  /profile:
+    get:
+      summary: Get user profile
+      description: Retrieves the current authenticated user's profile information
+      operationId: getProfile
+      security:
+        - JWT: []
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '401':
+          description: Unauthorized - user not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Profile not found (user has no profile yet)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Create or update user profile
+      description: Creates a new profile or updates existing profile. Accepts multipart/form-data for avatar upload.
+      operationId: updateProfile
+      security:
+        - JWT: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdateRequest'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '400':
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - user not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: Payload too large - avatar file exceeds 2MB limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /profile/complete:
+    get:
+      summary: Check profile completion status
+      description: Returns whether the current user's profile is complete (has at least one field populated)
+      operationId: checkProfileCompletion
+      security:
+        - JWT: []
+      responses:
+        '200':
+          description: Completion status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileCompletionResponse'
+        '401':
+          description: Unauthorized - user not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    JWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token in Authorization header
+
+  schemas:
+    ProfileResponse:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          description: User ID
+          example: 123
+        display_name:
+          type: string
+          nullable: true
+          maxLength: 50
+          description: User's display name
+          example: "John Doe"
+        avatar_url:
+          type: string
+          nullable: true
+          maxLength: 255
+          description: URL path to avatar image
+          example: "/uploads/avatars/123_1703001234.jpg"
+        bio:
+          type: string
+          nullable: true
+          maxLength: 500
+          description: User's biographical text
+          example: "English learner from Vietnam"
+        created_at:
+          type: string
+          format: date-time
+          description: Profile creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Profile last update timestamp
+        is_complete:
+          type: boolean
+          description: Whether profile is complete (has at least one field)
+          example: true
+
+    ProfileUpdateRequest:
+      type: object
+      properties:
+        display_name:
+          type: string
+          nullable: true
+          maxLength: 50
+          description: User's display name (optional)
+          example: "John Doe"
+        avatar:
+          type: string
+          format: binary
+          description: Avatar image file (JPEG or PNG, max 2MB)
+        bio:
+          type: string
+          nullable: true
+          maxLength: 500
+          description: User's biographical text (optional)
+          example: "English learner from Vietnam"
+
+    ProfileCompletionResponse:
+      type: object
+      properties:
+        is_complete:
+          type: boolean
+          description: Whether profile is complete (has at least one field populated)
+          example: false
+        has_display_name:
+          type: boolean
+          description: Whether display_name is populated
+          example: false
+        has_avatar:
+          type: boolean
+          description: Whether avatar_url is populated
+          example: false
+        has_bio:
+          type: boolean
+          description: Whether bio is populated
+          example: false
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: "Validation failed: display_name exceeds 50 characters"
+

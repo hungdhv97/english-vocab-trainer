@@ -77,7 +77,7 @@
 - [x] T024b [US1] Update HomePage to get userId from localStorage and pass to GameGrid
 - [x] T024c [US1] Update GameGrid to accept userId prop and pass to GameCard
 - [x] T024d [US1] Update GameCard to accept userId prop and show View History button when authenticated
-- [ ] T025 [US1] Manual verification: Homepage loads with header, game listing (without leaderboards), and footer within 2 seconds
+- [x] T025 [US1] Manual verification: Homepage loads with header, game listing (without leaderboards), and footer within 2 seconds
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and manually verified. Homepage displays correctly with header, footer, and game cards without leaderboard information.
 
