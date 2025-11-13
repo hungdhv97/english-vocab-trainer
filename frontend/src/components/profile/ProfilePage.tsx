@@ -35,10 +35,10 @@ export default function ProfilePage() {
       const updatedProfile = await updateProfile(data);
       setProfile(updatedProfile);
       toast.success('Profile updated successfully!');
-      
+
       // Dispatch event to update banner and header
       window.dispatchEvent(new Event('auth-state-changed'));
-      
+
       // If onboarding and profile is now complete, redirect to home
       if (isOnboarding && updatedProfile.is_complete) {
         setTimeout(() => {

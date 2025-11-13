@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -9,15 +9,40 @@ interface AvatarUploadProps {
 }
 
 export function AvatarUpload({ currentAvatarUrl, onFileSelect, error }: AvatarUploadProps) {
-  const [preview, setPreview] = useState<string | null>(currentAvatarUrl || null);
+  const [preview, setPreview] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Get formatted avatar URL
+  const getAvatarUrl = (): string | null => {
+    if (!currentAvatarUrl || currentAvatarUrl.trim() === '') {
+      return null;
+    }
+    const avatarUrl = currentAvatarUrl.trim();
+    if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
+      return avatarUrl;
+    }
+    // Ensure the URL starts with / if it doesn't already
+    const path = avatarUrl.startsWith('/') ? avatarUrl : `/${avatarUrl}`;
+    return `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8180'}${path}`;
+  };
+
+  // Update preview when currentAvatarUrl changes
+  useEffect(() => {
+    if (!fileInputRef.current?.files?.[0]) {
+      // Only update if no new file is selected
+      const avatarUrl = getAvatarUrl();
+      setPreview(avatarUrl);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentAvatarUrl]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) {
       onFileSelect(null);
-      setPreview(currentAvatarUrl || null);
+      const avatarUrl = getAvatarUrl();
+      setPreview(avatarUrl);
       setFileError('');
       return;
     }
@@ -52,12 +77,15 @@ export function AvatarUpload({ currentAvatarUrl, onFileSelect, error }: AvatarUp
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-    setPreview(currentAvatarUrl || null);
+    const avatarUrl = getAvatarUrl();
+    setPreview(avatarUrl);
     onFileSelect(null);
     setFileError('');
   };
 
   const displayError = error || fileError;
+  const currentAvatarUrlFormatted = getAvatarUrl();
+  const isNewPreview = preview && preview !== currentAvatarUrlFormatted;
 
   return (
     <div className="space-y-2">
@@ -69,8 +97,12 @@ export function AvatarUpload({ currentAvatarUrl, onFileSelect, error }: AvatarUp
               src={preview}
               alt="Avatar preview"
               className="w-20 h-20 rounded-full object-cover border-2 border-gray-300 dark:border-gray-600"
+              onError={(e) => {
+                // Hide image on error
+                e.currentTarget.style.display = 'none';
+              }}
             />
-            {preview !== currentAvatarUrl && (
+            {isNewPreview && (
               <button
                 type="button"
                 onClick={handleRemove}

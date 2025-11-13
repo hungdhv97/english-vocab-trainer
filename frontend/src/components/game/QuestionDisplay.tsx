@@ -9,7 +9,6 @@ interface QuestionDisplayProps {
   correctAnswer: string | null;
   onSelectAnswer: (letter: string) => void;
   disabled?: boolean;
-  showFeedback?: boolean;
   questionNumber: number;
   totalQuestions: number;
   onStop?: () => void;
@@ -22,7 +21,6 @@ export default function QuestionDisplay({
   correctAnswer,
   onSelectAnswer,
   disabled = false,
-  showFeedback = false,
   questionNumber,
   totalQuestions,
   onStop,
@@ -56,7 +54,6 @@ export default function QuestionDisplay({
           correctAnswer={correctAnswer}
           onSelect={onSelectAnswer}
           disabled={disabled}
-          showFeedback={showFeedback}
         />
       </CardContent>
     </Card>

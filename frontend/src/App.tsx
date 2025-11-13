@@ -11,8 +11,8 @@ import { LeaderboardPage } from '@/components/leaderboard/LeaderboardPage';
 import SessionStatisticsPage from '@/components/statistics/SessionStatisticsPage';
 import WordDetailPage from '@/components/word/WordDetailPage';
 import ProfilePage from '@/components/profile/ProfilePage';
+import { MyProgressPage } from '@/components/progress/MyProgressPage';
 import { Layout } from '@/components/layout/Layout';
-import { ModeToggle } from '@/components/mode-toggle';
 import { ThemeProvider } from '@/components/theme-provider';
 
 function AppRoutes() {
@@ -50,9 +50,6 @@ function AppRoutes() {
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <div className="fixed top-4 right-4 z-[9999]">
-        <ModeToggle />
-      </div>
       <Toaster position="top-center" />
       <Layout>
         <Routes>
@@ -121,6 +118,20 @@ function AppRoutes() {
                 <Navigate to="/" replace />
               ) : (
                 <Navigate to={`/login?redirect_to=${encodeURIComponent('/profile')}`} />
+              )
+            }
+          />
+          
+          {/* My Progress Page - Requires authentication */}
+          <Route
+            path="/my-progress"
+            element={
+              userId !== null && !isLoggingOut.current ? (
+                <MyProgressPage />
+              ) : isLoggingOut.current ? (
+                <Navigate to="/" replace />
+              ) : (
+                <Navigate to={`/login?redirect_to=${encodeURIComponent('/my-progress')}`} />
               )
             }
           />

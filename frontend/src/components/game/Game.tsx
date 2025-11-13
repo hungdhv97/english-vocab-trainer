@@ -200,7 +200,7 @@ export default function Game({ userId }: Props) {
       }
 
       // Show feedback immediately (T089)
-      // Feedback is shown via showFeedback prop in QuestionDisplay
+      // Feedback is always shown when selectedAnswer is provided
 
       // Move to next question after a delay
       setTimeout(() => {
@@ -473,7 +473,6 @@ export default function Game({ userId }: Props) {
           correctAnswer={submittedAnswer ? correctAnswer : null}
           onSelectAnswer={handleAnswerSelect}
           disabled={submittedAnswer !== null || loading}
-          showFeedback={submittedAnswer !== null}
           questionNumber={currentQuestionIndex + 1}
           totalQuestions={questions.length}
           onStop={handleStop}

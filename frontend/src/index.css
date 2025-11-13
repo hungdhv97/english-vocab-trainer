@@ -167,7 +167,18 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    /* Hide scrollbar but keep scroll functionality */
+    /* Firefox */
+    scrollbar-width: none;
+    /* IE and Edge */
+    -ms-overflow-style: none;
   }
+  
+  /* Webkit browsers (Chrome, Safari, Edge) */
+  *::-webkit-scrollbar {
+    display: none;
+  }
+  
   body {
     @apply bg-background text-foreground;
   }
