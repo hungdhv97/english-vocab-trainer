@@ -1,6 +1,6 @@
 openapi: 3.0.0
 info:
-  title: English Vocabulary Trainer API
+  title: English Coach API
   version: 1.0.0
 servers:
   - url: http://localhost:8180/api/v1

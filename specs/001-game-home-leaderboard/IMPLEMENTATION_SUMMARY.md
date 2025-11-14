@@ -345,7 +345,7 @@ curl http://localhost:8180/api/v1/games/1/leaderboard
 ---
 
 **Generated**: 2025-11-07  
-**Project**: English Vocabulary Trainer  
+**Project**: English Coach  
 **Feature**: Game Home Page with Leaderboards  
 **Status**: 🟢 **PRODUCTION READY** (pending final manual verification)
 

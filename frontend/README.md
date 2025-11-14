@@ -1,6 +1,6 @@
 # Frontend
 
-This folder contains the React + TypeScript client for the English Vocabulary Trainer.
+This folder contains the React + TypeScript client for the English Coach.
 
 ## Available Scripts
 

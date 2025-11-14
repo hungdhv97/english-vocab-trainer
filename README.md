@@ -1,6 +1,6 @@
-# English Vocabulary Trainer
+# English Coach
 
-This project is a full-stack web application that helps users build their English vocabulary. It uses a spaced repetition system based on the SM-2 algorithm so learners can review a configurable number of new words each day.
+This project is a full-stack web application that helps users improve their English skills through interactive coaching. It uses a spaced repetition system based on the SM-2 algorithm so learners can review a configurable number of new words each day.
 
 ## 🚀 Tech Stack
 
@@ -38,7 +38,7 @@ docker compose -f docker-compose.prod.yml up -d
 ## 📊 Features
 
 ### Session Statistics
-- View comprehensive statistics for vocabulary quiz sessions
+- View comprehensive statistics for quiz sessions
 - Visual charts showing accuracy breakdown, time analysis, and performance over time
 - Detailed questions and answers list with time spent per question
 - Navigate to word detail pages by clicking on words

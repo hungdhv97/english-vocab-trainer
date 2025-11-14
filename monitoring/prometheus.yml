@@ -1,9 +1,9 @@
-# Prometheus Configuration for English Vocabulary Trainer
+# Prometheus Configuration for English Coach
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
   external_labels:
-    monitor: 'english-vocab-trainer'
+    monitor: 'english-coach'
     environment: 'production'
 
 # Alertmanager configuration (optional)

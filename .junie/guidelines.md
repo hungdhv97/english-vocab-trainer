@@ -1,4 +1,4 @@
-# English Vocabulary Trainer - Development Guidelines
+# English Coach - Development Guidelines
 
 ## Project Architecture
 

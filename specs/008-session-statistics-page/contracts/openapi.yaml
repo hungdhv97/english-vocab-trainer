@@ -4,7 +4,7 @@ info:
   description: API contract for session statistics page feature
   version: 1.0.0
   contact:
-    name: English Vocabulary Trainer API
+    name: English Coach API
 
 servers:
   - url: http://localhost:8180/api/v1

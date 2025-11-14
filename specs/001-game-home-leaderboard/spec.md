@@ -9,7 +9,7 @@
 
 ### User Story 1 - Browse Available Games (Priority: P1)
 
-As a visitor to the English Vocab Trainer platform, I want to see all available games on the home page so I can understand what learning options are available before committing to an account.
+As a visitor to the English Coach platform, I want to see all available games on the home page so I can understand what learning options are available before committing to an account.
 
 **Why this priority**: This is the primary discovery mechanism for the platform. Without this, users cannot explore what the platform offers, making it the foundational feature for user acquisition and engagement.
 
@@ -109,7 +109,7 @@ As a visitor who wants to play a game, I need to login or register before I can 
 
 ### Key Entities
 
-- **Game**: Represents a vocabulary learning game with attributes including name, description, visual representation (icon/image), and category/difficulty information
+- **Game**: Represents an English learning game with attributes including name, description, visual representation (icon/image), and category/difficulty information
 - **Leaderboard Entry**: Represents a player's score record for a specific game, including player identifier, score value, rank position, and timestamp
 - **User/Player**: Represents an authenticated user who can play games and appear on leaderboards, with necessary authentication credentials and profile information
 - **Authentication Session**: Represents the user's authentication state and tracks the intended game selection during the login/registration flow

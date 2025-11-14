@@ -61,7 +61,7 @@ The frontend will be available at `http://localhost:5173` (or the port shown in 
 **Steps**:
 1. Navigate to `http://localhost:5173/`
 2. Verify header is visible at the top with:
-   - Application title: "English Vocabulary Trainer"
+   - Application title: "English Coach"
    - Subtitle/description
    - Navigation links (Home, Leaderboard, Login/Register or Dashboard/Logout)
 3. Verify game cards are displayed in a responsive grid layout showing:
@@ -169,7 +169,7 @@ export function Header() {
   
   return (
     <header>
-      <h1>English Vocabulary Trainer</h1>
+      <h1>English Coach</h1>
       <nav>
         <Link to="/">Home</Link>
         <Link to="/leaderboard">Leaderboard</Link>
@@ -199,7 +199,7 @@ export function Header() {
 export function Footer() {
   return (
     <footer>
-      <p>© 2025 English Vocabulary Trainer. All rights reserved.</p>
+      <p>© 2025 English Coach. All rights reserved.</p>
     </footer>
   );
 }

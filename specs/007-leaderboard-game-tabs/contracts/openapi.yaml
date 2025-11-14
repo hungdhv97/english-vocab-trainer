@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: English Vocab Trainer - Leaderboard Game Tabs API
+  title: English Coach - Leaderboard Game Tabs API
   description: |
     API endpoints for the Leaderboard Page Redesign with Game Tabs feature.
     
@@ -12,7 +12,7 @@ info:
     **Version**: 1.0.0
   version: 1.0.0
   contact:
-    name: English Vocab Trainer Team
+    name: English Coach Team
 
 servers:
   - url: http://localhost:8080/api/v1
