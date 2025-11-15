@@ -84,7 +84,6 @@ export interface Question {
 export interface AnswerRequest {
   session_question_id: number; // ID of the session question
   chosen_option: string; // A, B, C, or D (uppercase)
-  time_spent_ms?: number; // Optional time spent in milliseconds
 }
 
 export interface AnswerResponse {
@@ -112,9 +111,9 @@ export interface SessionStatistics {
   session_id: number; // Integer session ID
   correct_count: number;
   incorrect_count: number;
-  total_score: number;
+  total_questions: number;
   accuracy_percentage: number;
-  time_elapsed?: number; // in seconds
+  time_elapsed: number; // in seconds (always present)
 }
 
 // Extended session statistics (for session details page)
@@ -122,9 +121,9 @@ export interface ExtendedSessionStatistics {
   session_id: number;
   correct_count: number;
   incorrect_count: number;
-  total_score: number;
+  total_questions: number;
   accuracy_percentage: number;
-  time_elapsed?: number; // in seconds
+  time_elapsed: number; // in seconds (always present)
   session_start_time: string; // ISO 8601 timestamp
   session_end_time?: string; // ISO 8601 timestamp
   level_information?: LevelInformation;
@@ -156,7 +155,7 @@ export interface SessionQuestionDetail {
   options: QuestionOption[];
   correct_answer: string; // 'A', 'B', 'C', or 'D'
   user_answer?: UserAnswer;
-  time_spent_ms?: number;
+  time_answer_ms?: number;
 }
 
 export interface QuestionOption {
@@ -170,7 +169,7 @@ export interface UserAnswer {
   chosen_option: string; // 'A', 'B', 'C', or 'D' (uppercase)
   is_correct: boolean;
   answered_at: string; // ISO 8601 timestamp
-  time_spent_ms?: number;
+  time_answer_ms?: number;
 }
 
 export interface SessionInfo {

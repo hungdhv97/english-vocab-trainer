@@ -27,7 +27,7 @@ export default function CefrLevelSelector({
   );
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-8">
+    <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-8 px-4">
       <Card className="w-full max-w-2xl text-center relative">
         {onBack && (
           <Button

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import type { Game } from '@/types';
-import { fetchGames, isAuthenticated } from '@/lib/api';
+import { isAuthenticated } from '@/lib/api';
 import { GameGrid } from './GameGrid';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { useGames } from '@/hooks/queries/useGames';
 
 /**
  * HomePage is the main landing page displaying all available games.
@@ -17,10 +18,17 @@ import { Button } from '@/components/ui/button';
 export function HomePage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [games, setGames] = useState<Game[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<number | null>(null);
+
+  // Use React Query for games data
+  const { data: gamesData, isLoading: loading, error: gamesError } = useGames();
+
+  // Process games data
+  const games = gamesData
+    ?.filter(game => game.is_active)
+    .sort((a, b) => a.display_order - b.display_order) || [];
+
+  const error = gamesError ? (gamesError as Error).message : null;
 
   // Get userId from localStorage if authenticated and update on auth state changes
   useEffect(() => {
@@ -46,45 +54,21 @@ export function HomePage() {
     };
   }, [location]);
 
-  useEffect(() => {
-    const loadGames = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Fetch all games
-        const gamesData = await fetchGames();
-        
-        // Filter to show only active games and sort by display_order
-        const activeGames = gamesData
-          .filter(game => game.is_active)
-          .sort((a, b) => a.display_order - b.display_order);
-        
-        setGames(activeGames);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load games');
-        console.error('Failed to fetch games:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadGames();
-  }, []);
-
   /**
    * Handles game selection and navigation.
-   * T043-T044: Check authentication status and route accordingly:
+   * Routes to /game/:code where GameRouter will handle game-specific routing.
    * - If authenticated: navigate directly to game
    * - If not authenticated: navigate to login with redirect_to parameter
    */
   const handleGameClick = (game: Game) => {
+    const gameRoute = `/game/${game.code}`;
+    
     if (isAuthenticated()) {
       // User is authenticated - navigate directly to game
-      navigate(`/game/${game.code}`);
+      navigate(gameRoute);
     } else {
       // User not authenticated - redirect to login with redirect_to parameter
-      navigate(`/login?redirect_to=/game/${game.code}`);
+      navigate(`/login?redirect_to=${encodeURIComponent(gameRoute)}`);
     }
   };
 

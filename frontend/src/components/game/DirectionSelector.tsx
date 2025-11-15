@@ -15,7 +15,7 @@ export default function DirectionSelector({
   onBack,
 }: DirectionSelectorProps) {
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-8">
+    <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-8 px-4">
       <Card className="w-full max-w-md text-center relative">
         <Button
           onClick={onBack}

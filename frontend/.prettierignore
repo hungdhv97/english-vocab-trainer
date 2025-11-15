@@ -2,3 +2,8 @@ node_modules
 dist
 public
 *.min.js
+build
+coverage
+package-lock.json
+yarn.lock
+pnpm-lock.yaml

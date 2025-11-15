@@ -30,10 +30,10 @@ type QuestionOption struct {
 
 // UserAnswer represents the user's answer to a question.
 type UserAnswer struct {
-	ChosenOption string    `json:"chosen_option"` // "A", "B", "C", or "D"
-	IsCorrect    bool      `json:"is_correct"`
-	AnsweredAt   time.Time `json:"answered_at"`
-	TimeSpentMs  *int      `json:"time_spent_ms,omitempty"`
+	ChosenOption  string    `json:"chosen_option"` // "A", "B", "C", or "D"
+	IsCorrect     bool      `json:"is_correct"`
+	AnsweredAt    time.Time `json:"answered_at"`
+	TimeAnswerMs  *int      `json:"time_answer_ms,omitempty"`
 }
 
 // QuestionRequest represents a request to generate questions.
@@ -58,7 +58,6 @@ type CreateSessionRequest struct {
 type AnswerRequest struct {
 	SessionQuestionID int64  `json:"session_question_id"` // ID of the session question
 	ChosenOption      string `json:"chosen_option"`       // A, B, C, or D
-	TimeSpentMs       *int   `json:"time_spent_ms,omitempty"` // Optional time spent in milliseconds
 }
 
 // AnswerResponse represents the response after submitting an answer.
@@ -70,12 +69,12 @@ type AnswerResponse struct {
 
 // SessionStatistics represents statistics for a game session.
 type SessionStatistics struct {
-	SessionID          int64    `json:"session_id"`
-	TotalScore         int      `json:"total_score"`
-	CorrectCount       int      `json:"correct_count"`
-	IncorrectCount     int      `json:"incorrect_count"`
-	AccuracyPercentage float64  `json:"accuracy_percentage"`
-	TimeElapsed        *float64 `json:"time_elapsed,omitempty"` // in seconds
+	SessionID          int64   `json:"session_id"`
+	TotalQuestions     int     `json:"total_questions"`
+	CorrectCount       int     `json:"correct_count"`
+	IncorrectCount     int     `json:"incorrect_count"`
+	AccuracyPercentage float64 `json:"accuracy_percentage"`
+	TimeElapsed        float64 `json:"time_elapsed"` // in seconds (always present)
 }
 
 // CreateSessionResponse represents the response after creating a session.
@@ -112,16 +111,16 @@ type LeaderboardResponse struct {
 
 // SessionQuestionDetail represents a question with answer details.
 type SessionQuestionDetail struct {
-	QuestionID        int64           `json:"question_id"`
-	SessionQuestionID int64           `json:"session_question_id"`
-	QuestionNumber    int             `json:"question_number"`
-	WordID            int64           `json:"word_id"`
-	WordText          string          `json:"word_text"`
-	TranslationID     int64           `json:"translation_id"`
+	QuestionID        int64            `json:"question_id"`
+	SessionQuestionID int64            `json:"session_question_id"`
+	QuestionNumber    int              `json:"question_number"`
+	WordID            int64            `json:"word_id"`
+	WordText          string           `json:"word_text"`
+	TranslationID     int64            `json:"translation_id"`
 	Options           []QuestionOption `json:"options"`
-	CorrectAnswer     string          `json:"correct_answer"` // "A", "B", "C", or "D"
-	UserAnswer        *UserAnswer     `json:"user_answer,omitempty"`
-	TimeSpentMs       *int            `json:"time_spent_ms,omitempty"`
+	CorrectAnswer     string           `json:"correct_answer"` // "A", "B", "C", or "D"
+	UserAnswer        *UserAnswer      `json:"user_answer,omitempty"`
+	TimeAnswerMs      *int             `json:"time_answer_ms"` // Always include, even if null
 }
 
 // SessionInfo represents session metadata.
@@ -147,16 +146,16 @@ type LevelInformation struct {
 
 // ExtendedSessionStatistics represents extended statistics for a game session.
 type ExtendedSessionStatistics struct {
-	SessionID          int64             `json:"session_id"`
-	TotalScore         int               `json:"total_score"`
-	CorrectCount       int               `json:"correct_count"`
-	IncorrectCount     int               `json:"incorrect_count"`
-	AccuracyPercentage float64           `json:"accuracy_percentage"`
-	TimeElapsed        *float64          `json:"time_elapsed,omitempty"` // in seconds
-	SessionStartTime   time.Time         `json:"session_start_time"`
-	SessionEndTime     *time.Time        `json:"session_end_time,omitempty"`
-	LevelInformation   *LevelInformation `json:"level_information,omitempty"`
-	TranslationDirection string          `json:"translation_direction"` // "en-to-vi" or "vi-to-en"
+	SessionID            int64             `json:"session_id"`
+	TotalQuestions       int               `json:"total_questions"`
+	CorrectCount         int               `json:"correct_count"`
+	IncorrectCount       int               `json:"incorrect_count"`
+	AccuracyPercentage   float64           `json:"accuracy_percentage"`
+	TimeElapsed          float64           `json:"time_elapsed"` // in seconds (always present)
+	SessionStartTime     time.Time         `json:"session_start_time"`
+	SessionEndTime       *time.Time        `json:"session_end_time,omitempty"`
+	LevelInformation     *LevelInformation `json:"level_information,omitempty"`
+	TranslationDirection string            `json:"translation_direction"` // "en-to-vi" or "vi-to-en"
 }
 
 // SessionDetailsResponse represents the comprehensive session data response.

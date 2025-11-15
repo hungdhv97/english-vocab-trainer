@@ -1,34 +1,25 @@
-import { useCallback, memo } from 'react';
+import { memo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { ExtendedSessionStatistics } from '@/types';
+import { formatDuration } from '@/lib/utils';
 
 interface StatisticsOverviewProps {
   statistics: ExtendedSessionStatistics;
 }
 
 function StatisticsOverviewComponent({ statistics }: StatisticsOverviewProps) {
-  // Memoize format function to avoid recreating on each render
-  const formatTimeElapsed = useCallback((seconds?: number): string => {
-    if (!seconds) return 'N/A';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    if (mins > 0) {
-      return `${mins}m ${secs}s`;
-    }
-    return `${secs}s`;
-  }, []);
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
-      {/* Total Score */}
+      {/* Total Questions */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
-            Total Score
+            Total Questions
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{statistics.total_score}</div>
+          <div className="text-2xl font-bold">{statistics.total_questions}</div>
         </CardContent>
       </Card>
 
@@ -83,7 +74,7 @@ function StatisticsOverviewComponent({ statistics }: StatisticsOverviewProps) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            {formatTimeElapsed(statistics.time_elapsed)}
+            {formatDuration(statistics.time_elapsed)}
           </div>
         </CardContent>
       </Card>

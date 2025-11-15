@@ -92,7 +92,7 @@ func (h *Handler) SubmitAnswer(c *gin.Context) {
 
 	// Submit answer
 	ctx := c.Request.Context()
-	isCorrect, err := h.svc.SubmitAnswer(ctx, req.SessionQuestionID, req.ChosenOption, req.TimeSpentMs)
+	isCorrect, err := h.svc.SubmitAnswer(ctx, req.SessionQuestionID, req.ChosenOption)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

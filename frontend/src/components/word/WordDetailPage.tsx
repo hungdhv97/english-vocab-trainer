@@ -64,7 +64,7 @@ export default function WordDetailPage() {
   // Loading state with skeleton - enhanced to match final layout structure
   if (loading) {
     return (
-      <div className="container mx-auto py-6 space-y-6">
+      <div className="container mx-auto py-6 px-4 space-y-6">
         {/* Breadcrumb skeleton */}
         <div className="flex items-center gap-2">
           <Skeleton className="h-4 w-16" />
@@ -154,7 +154,7 @@ export default function WordDetailPage() {
     };
 
     return (
-      <div className="container mx-auto py-6 space-y-6">
+      <div className="container mx-auto py-6 px-4 space-y-6">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -215,7 +215,7 @@ export default function WordDetailPage() {
   // Handle edge case: missing mandatory fields (translations are mandatory)
   if (!wordDetail.translations || wordDetail.translations.length === 0) {
     return (
-      <div className="container mx-auto py-6 space-y-6">
+      <div className="container mx-auto py-6 px-4 space-y-6">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -272,7 +272,7 @@ export default function WordDetailPage() {
   }, {} as Record<string, typeof wordDetail.translations>);
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto py-6 px-4 space-y-6">
       {/* Breadcrumb Navigation */}
       <Breadcrumb>
         <BreadcrumbList>

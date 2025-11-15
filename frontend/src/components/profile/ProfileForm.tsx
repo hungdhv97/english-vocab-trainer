@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { AvatarUpload } from './AvatarUpload';
+import { profileSchema, type ProfileFormData } from '@/schemas';
 import type { UserProfile } from '@/types';
 
 interface ProfileFormProps {
@@ -19,89 +22,73 @@ export function ProfileForm({
   isOnboarding = false,
   isLoading = false,
 }: ProfileFormProps) {
-  const [displayName, setDisplayName] = useState(profile?.display_name || '');
-  const [bio, setBio] = useState(profile?.bio || '');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [errors, setErrors] = useState<{ displayName?: string; bio?: string; avatar?: string }>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<ProfileFormData>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      display_name: profile?.display_name ?? '',
+      bio: profile?.bio ?? '',
+    },
+  });
+
+  const displayNameValue = watch('display_name') ?? '';
+  const bioValue = watch('bio') ?? '';
 
   useEffect(() => {
-    if (profile) {
-      setDisplayName(profile.display_name || '');
-      setBio(profile.bio || '');
-    }
-  }, [profile]);
+    reset({
+      display_name: profile?.display_name ?? '',
+      bio: profile?.bio ?? '',
+    });
+  }, [profile, reset]);
 
-  const validate = (): boolean => {
-    const newErrors: { displayName?: string; bio?: string; avatar?: string } = {};
+  const onFormSubmit = async (values: ProfileFormData) => {
+    const formData = new FormData();
 
-    if (displayName.trim().length > 50) {
-      newErrors.displayName = 'Display name must be 50 characters or less';
-    }
-
-    if (bio.trim().length > 500) {
-      newErrors.bio = 'Bio must be 500 characters or less';
+    if (values.display_name?.trim()) {
+      formData.append('display_name', values.display_name.trim());
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validate()) {
-      return;
+    if (values.bio?.trim()) {
+      formData.append('bio', values.bio.trim());
     }
 
-    setIsSubmitting(true);
-    try {
-      const formData = new FormData();
-      
-      if (displayName.trim()) {
-        formData.append('display_name', displayName.trim());
-      }
-      if (bio.trim()) {
-        formData.append('bio', bio.trim());
-      }
-      if (avatarFile) {
-        formData.append('avatar', avatarFile);
-      }
-
-      await onSubmit(formData);
-    } catch {
-      // Error handling is done in parent component
-    } finally {
-      setIsSubmitting(false);
+    if (avatarFile) {
+      formData.append('avatar', avatarFile);
     }
+
+    await onSubmit(formData);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
       <div>
         <label htmlFor="display_name" className="text-sm font-medium">
           Display Name
         </label>
         <Input
           id="display_name"
-          value={displayName}
-          onChange={(e) => setDisplayName(e.target.value)}
           placeholder="Enter your display name (optional)"
           maxLength={50}
           className="mt-1"
+          {...register('display_name')}
         />
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          {displayName.length}/50 characters
+          {displayNameValue.length}/50 characters
         </p>
-        {errors.displayName && (
-          <p className="text-sm text-red-500 mt-1">{errors.displayName}</p>
+        {errors.display_name && (
+          <p className="text-sm text-red-500 mt-1">{errors.display_name.message}</p>
         )}
       </div>
 
       <AvatarUpload
         currentAvatarUrl={profile?.avatar_url || null}
         onFileSelect={setAvatarFile}
-        error={errors.avatar}
       />
 
       <div>
@@ -110,19 +97,16 @@ export function ProfileForm({
         </label>
         <textarea
           id="bio"
-          value={bio}
-          onChange={(e) => setBio(e.target.value)}
           placeholder="Tell us about yourself (optional)"
           maxLength={500}
           rows={4}
           className="mt-1 flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          {...register('bio')}
         />
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          {bio.length}/500 characters
+          {bioValue.length}/500 characters
         </p>
-        {errors.bio && (
-          <p className="text-sm text-red-500 mt-1">{errors.bio}</p>
-        )}
+        {errors.bio && <p className="text-sm text-red-500 mt-1">{errors.bio.message}</p>}
       </div>
 
       <div className="flex gap-4">

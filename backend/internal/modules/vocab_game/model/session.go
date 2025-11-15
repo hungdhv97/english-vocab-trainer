@@ -38,7 +38,6 @@ type VocabGameSessionAnswer struct {
 	ChosenOption     string    `json:"chosen_option" db:"chosen_option"`
 	IsCorrect        bool      `json:"is_correct" db:"is_correct"`
 	AnsweredAt       time.Time `json:"answered_at" db:"answered_at"`
-	TimeSpentMs      *int      `json:"time_spent_ms,omitempty" db:"time_spent_ms"`
 }
 
 // VocabUserWordStats represents user statistics for a word.

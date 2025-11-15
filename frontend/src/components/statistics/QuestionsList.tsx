@@ -18,8 +18,8 @@ interface QuestionsListProps {
 
 function QuestionsListComponent({ questions, onWordClick }: QuestionsListProps) {
   // Memoize format function to avoid recreating on each render
-  const formatTimeSpent = useCallback((ms?: number): string => {
-    if (!ms) return 'N/A';
+  const formatTimeSpent = useCallback((ms?: number | null): string => {
+    if (ms === undefined || ms === null) return 'N/A';
     const seconds = (ms / 1000).toFixed(1);
     return `${seconds}s`;
   }, []);
@@ -147,7 +147,7 @@ function QuestionsListComponent({ questions, onWordClick }: QuestionsListProps) 
                     )}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {formatTimeSpent(question.time_spent_ms)}
+                    {formatTimeSpent(question.time_answer_ms)}
                   </TableCell>
                 </TableRow>
               ))}

@@ -64,7 +64,7 @@ func (s *Service) CreateSessionQuestions(ctx context.Context, sessionID int64, q
 }
 
 // SubmitAnswer submits an answer for a question and returns whether it was correct.
-func (s *Service) SubmitAnswer(ctx context.Context, sessionQuestionID int64, chosenOption string, timeSpentMs *int) (bool, error) {
+func (s *Service) SubmitAnswer(ctx context.Context, sessionQuestionID int64, chosenOption string) (bool, error) {
 	// Get the correct option for this question
 	var correctOption string
 	var sessionID int64
@@ -86,9 +86,9 @@ func (s *Service) SubmitAnswer(ctx context.Context, sessionQuestionID int64, cho
 	// Insert answer
 	_, err = s.db.Exec(ctx, `
 		INSERT INTO vocab_game_session_answers
-		(session_question_id, chosen_option, is_correct, time_spent_ms)
-		VALUES ($1, $2, $3, $4)`,
-		sessionQuestionID, chosenOption, isCorrect, timeSpentMs,
+		(session_question_id, chosen_option, is_correct)
+		VALUES ($1, $2, $3)`,
+		sessionQuestionID, chosenOption, isCorrect,
 	)
 	if err != nil {
 		return false, fmt.Errorf("failed to insert answer: %w", err)
@@ -151,7 +151,7 @@ func (s *Service) updateUserWordStats(ctx context.Context, sessionQuestionID int
 	// Update or insert user word stats
 	_, err = s.db.Exec(ctx, `
 		INSERT INTO vocab_user_word_stats (user_id, word_id, times_seen, times_correct, last_seen_at)
-		VALUES ($1, $2, 1, $3, NOW())
+		VALUES ($1, $2, 1, CASE WHEN $3 THEN 1 ELSE 0 END, NOW())
 		ON CONFLICT (user_id, word_id)
 		DO UPDATE SET
 			times_seen = vocab_user_word_stats.times_seen + 1,
@@ -260,13 +260,13 @@ func (s *Service) GetSessionQuestionByNumber(ctx context.Context, sessionID int6
 func (s *Service) GetSessionAnswer(ctx context.Context, sessionQuestionID int64) (*model.VocabGameSessionAnswer, error) {
 	var answer model.VocabGameSessionAnswer
 	err := s.db.QueryRow(ctx, `
-		SELECT id, session_question_id, chosen_option, is_correct, answered_at, time_spent_ms
+		SELECT id, session_question_id, chosen_option, is_correct, answered_at
 		FROM vocab_game_session_answers
 		WHERE session_question_id = $1`,
 		sessionQuestionID,
 	).Scan(
 		&answer.ID, &answer.SessionQuestionID, &answer.ChosenOption, &answer.IsCorrect,
-		&answer.AnsweredAt, &answer.TimeSpentMs,
+		&answer.AnsweredAt,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get answer: %w", err)

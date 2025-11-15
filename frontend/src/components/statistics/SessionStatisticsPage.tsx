@@ -67,7 +67,7 @@ export default function SessionStatisticsPage() {
   // Loading state with skeleton - enhanced to match final layout structure
   if (loading) {
     return (
-      <div className="container mx-auto py-6 space-y-6">
+      <div className="container mx-auto py-6 px-4 space-y-6">
         {/* Breadcrumb skeleton */}
         <div className="flex items-center gap-2">
           <Skeleton className="h-4 w-16" />
@@ -163,7 +163,7 @@ export default function SessionStatisticsPage() {
     };
 
     return (
-      <div className="container mx-auto py-6 space-y-6">
+      <div className="container mx-auto py-6 px-4 space-y-6">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -214,7 +214,7 @@ export default function SessionStatisticsPage() {
   // Handle edge cases: empty session or missing data
   if (sessionDetails.questions.length === 0) {
     return (
-      <div className="container mx-auto py-6 space-y-6">
+      <div className="container mx-auto py-6 px-4 space-y-6">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -252,7 +252,7 @@ export default function SessionStatisticsPage() {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto py-6 px-4 space-y-6">
       {/* Breadcrumb Navigation */}
       <Breadcrumb>
         <BreadcrumbList>

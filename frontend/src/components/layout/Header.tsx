@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { isAuthenticated, getProfile } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -9,9 +8,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { BarChart3, User, LogOut } from 'lucide-react';
+import { BarChart3, User, LogOut, Menu } from 'lucide-react';
 import { ModeToggle } from '@/components/mode-toggle';
-import type { UserProfile } from '@/types';
+import { useAuthStore } from '@/stores/authStore';
+import { useProfile } from '@/hooks/queries';
 
 interface HeaderProps {
   onLogout?: () => void;
@@ -26,105 +26,28 @@ interface HeaderProps {
 export function Header({ onLogout }: HeaderProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [authenticated, setAuthenticated] = useState(isAuthenticated());
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const authenticated = useAuthStore((state) => state.isAuthenticated);
+  const logout = useAuthStore((state) => state.logout);
+  const authUser = useAuthStore((state) => state.user);
+  const { data: profile } = useProfile({ enabled: authenticated });
   const [username, setUsername] = useState<string>('');
 
-  // Update authentication state when location changes, storage events occur, or focus events
   useEffect(() => {
-    const updateAuthState = () => {
-      const isAuth = isAuthenticated();
-      setAuthenticated(isAuth);
-    };
-
-    // Update immediately on mount and location change (navigation)
-    // Use a small delay to ensure localStorage is read correctly after navigation
-    updateAuthState();
-    const immediateTimeout = setTimeout(updateAuthState, 100);
-
-    // Listen for storage changes (logout/login from other tabs/components)
-    const handleStorage = () => updateAuthState();
-    window.addEventListener('storage', handleStorage);
-
-    // Listen for focus events (when user returns to tab after login in same tab)
-    const handleFocus = () => updateAuthState();
-    window.addEventListener('focus', handleFocus);
-
-    // Listen for custom auth events (triggered by login/logout in same tab)
-    const handleAuthChange = () => {
-      // Multiple checks with delays to ensure we catch the state change
-      updateAuthState();
-      setTimeout(updateAuthState, 50);
-      setTimeout(updateAuthState, 150);
-    };
-    window.addEventListener('auth-state-changed', handleAuthChange);
-
-    // Poll localStorage periodically to catch changes in same tab
-    // This is a fallback for cases where events don't fire
-    // Using 300ms interval for better responsiveness
-    const intervalId = setInterval(updateAuthState, 300);
-
-    return () => {
-      clearTimeout(immediateTimeout);
-      window.removeEventListener('storage', handleStorage);
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('auth-state-changed', handleAuthChange);
-      clearInterval(intervalId);
-    };
-  }, [location]);
-
-  // Fetch user profile when authenticated
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (!authenticated) {
-        setProfile(null);
-        setUsername('');
-        return;
-      }
-
-      try {
-        const userIdStr = localStorage.getItem('user_id');
-        if (userIdStr) {
-          const userProfile = await getProfile();
-          setProfile(userProfile);
-          // Get username from localStorage as fallback
-          const storedUsername = localStorage.getItem('username');
-          if (storedUsername) {
-            setUsername(storedUsername);
-          }
-        }
-      } catch {
-        // Silently fail - profile might not exist yet
-        setProfile(null);
-      }
-    };
-
-    fetchProfile();
-
-    // Listen for profile updates
-    const handleProfileUpdate = () => {
-      fetchProfile();
-    };
-    window.addEventListener('auth-state-changed', handleProfileUpdate);
-
-    return () => {
-      window.removeEventListener('auth-state-changed', handleProfileUpdate);
-    };
-  }, [authenticated, location]);
+    if (authenticated) {
+      setUsername(localStorage.getItem('username') ?? '');
+    } else {
+      setUsername('');
+    }
+  }, [authenticated]);
 
   const handleLogout = () => {
-    // Remove auth data from localStorage
-    localStorage.removeItem('jwt_token');
-    localStorage.removeItem('user_id');
-    localStorage.removeItem('username');
+    // Call logout from Zustand store (which handles localStorage and events)
+    logout();
 
-    // Update local state
-    setAuthenticated(false);
+    // Clear local component state
     setProfile(null);
     setUsername('');
-
-    // Dispatch custom event to notify other components of auth state change
-    window.dispatchEvent(new Event('auth-state-changed'));
 
     if (onLogout) {
       onLogout();
@@ -133,6 +56,8 @@ export function Header({ onLogout }: HeaderProps) {
       navigate('/', { replace: true });
     }
   };
+
+  const resolvedProfile = authenticated ? profile ?? authUser ?? null : null;
 
   // Get user initials for avatar fallback
   const getInitials = (displayName: string | null, username: string): string => {
@@ -147,8 +72,8 @@ export function Header({ onLogout }: HeaderProps) {
 
   // Get display name with fallback
   const getDisplayName = (): string => {
-    if (profile?.display_name) {
-      return profile.display_name;
+    if (resolvedProfile?.display_name) {
+      return resolvedProfile.display_name;
     }
     if (username) {
       return username;
@@ -158,11 +83,11 @@ export function Header({ onLogout }: HeaderProps) {
 
   // Get avatar URL or null
   const getAvatarUrl = (): string | null => {
-    if (profile?.avatar_url) {
-      if (profile.avatar_url.startsWith('http')) {
-        return profile.avatar_url;
+    if (resolvedProfile?.avatar_url) {
+      if (resolvedProfile.avatar_url.startsWith('http')) {
+        return resolvedProfile.avatar_url;
       }
-      return `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8180'}${profile.avatar_url}`;
+      return `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8180'}${resolvedProfile.avatar_url}`;
     }
     return null;
   };
@@ -170,9 +95,18 @@ export function Header({ onLogout }: HeaderProps) {
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative flex flex-col sm:flex-row sm:items-center py-4 sm:py-6 gap-2 sm:gap-4">
-          {/* Logo Section (Left) */}
-          <div className="flex items-center sm:absolute sm:left-0">
+        <div className="relative flex flex-row items-center justify-between py-4 sm:py-6">
+          {/* Mobile Menu Button - Left on mobile, hidden on desktop */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 rounded-md hover:bg-accent transition-colors"
+            aria-label="Toggle mobile menu"
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+
+          {/* Logo Section - Center on mobile, Left on desktop */}
+          <div className="flex items-center md:absolute md:left-0">
             <Link to="/" className="hover:opacity-80 transition-opacity flex items-center">
               <img
                 src="/logo.png"
@@ -186,8 +120,8 @@ export function Header({ onLogout }: HeaderProps) {
             </Link>
           </div>
 
-          {/* Navigation Section (Middle) - Centered */}
-          <nav className="flex items-center justify-center gap-2 sm:gap-4 flex-1" aria-label="Main navigation">
+          {/* Navigation Section (Middle) - Hidden on mobile, visible on desktop, Centered */}
+          <nav className="hidden md:flex items-center justify-center gap-2 sm:gap-4 flex-1" aria-label="Main navigation">
             <Link
               to="/"
               className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${location.pathname === '/'
@@ -210,8 +144,8 @@ export function Header({ onLogout }: HeaderProps) {
             </Link>
           </nav>
 
-          {/* Auth/User Section (Right) */}
-          <div className="flex items-center gap-2 sm:gap-4 sm:absolute sm:right-0">
+          {/* Auth/User Section (Right) - Always visible */}
+          <div className="flex items-center gap-2 md:absolute md:right-0">
             {/* Theme Toggle - First element */}
             <ModeToggle />
             {authenticated ? (
@@ -241,7 +175,7 @@ export function Header({ onLogout }: HeaderProps) {
                       className={`w-8 h-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-sm font-medium ${getAvatarUrl() ? 'hidden' : ''
                         }`}
                     >
-                      {getInitials(profile?.display_name || null, username)}
+                      {getInitials(resolvedProfile?.display_name || null, username)}
                     </div>
                   </button>
                 </DropdownMenuTrigger>
@@ -293,6 +227,34 @@ export function Header({ onLogout }: HeaderProps) {
             )}
           </div>
         </div>
+
+        {/* Mobile Menu - Collapsible navigation for mobile */}
+        {mobileMenuOpen && (
+          <div className="md:hidden pb-4 border-t border-gray-200 dark:border-gray-700 mt-2 pt-2">
+            <nav className="flex flex-col gap-2" aria-label="Mobile navigation">
+              <Link
+                to="/"
+                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${location.pathname === '/'
+                  ? 'bg-accent text-accent-foreground'
+                  : 'text-foreground hover:bg-accent hover:text-accent-foreground'
+                  }`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Games
+              </Link>
+              <Link
+                to="/leaderboard"
+                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${location.pathname === '/leaderboard'
+                  ? 'bg-accent text-accent-foreground'
+                  : 'text-foreground hover:bg-accent hover:text-accent-foreground'
+                  }`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Leaderboard
+              </Link>
+            </nav>
+          </div>
+        )}
       </div>
     </header>
   );

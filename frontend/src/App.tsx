@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import Game from '@/components/game/Game';
+import GameRouter from '@/components/game/GameRouter';
 import Login from '@/components/auth/Login';
 import Register from '@/components/auth/Register';
 // Note: History component has been removed as it was used with the old plays and game_sessions tables.
@@ -14,8 +14,16 @@ import ProfilePage from '@/components/profile/ProfilePage';
 import { MyProgressPage } from '@/components/progress/MyProgressPage';
 import { Layout } from '@/components/layout/Layout';
 import { ThemeProvider } from '@/components/theme-provider';
+import { useAuthStore } from '@/stores/authStore';
 
 function AppRoutes() {
+  const initialize = useAuthStore(state => state.initialize);
+
+  // Initialize authStore on mount
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+
   // Initialize userId from localStorage synchronously to avoid redirect before auth check completes
   // This ensures that when accessing protected routes directly via URL, the userId is available immediately
   const getInitialUserId = (): number | null => {
@@ -58,24 +66,12 @@ function AppRoutes() {
             path="/register"
             element={<Register onRegister={handleLoggedIn} />}
           />
-          <Route
-            path="/game"
-            element={
-              userId !== null && !isLoggingOut.current ? (
-                <Game userId={userId} />
-              ) : isLoggingOut.current ? (
-                <Navigate to="/" replace />
-              ) : (
-                <Navigate to="/login" />
-              )
-            }
-          />
-          {/* T048 Fix: Add route for /game/:code to handle game-specific navigation */}
+          {/* Game Router - Routes to correct game component based on :code parameter */}
           <Route
             path="/game/:code"
             element={
               userId !== null && !isLoggingOut.current ? (
-                <Game userId={userId} />
+                <GameRouter userId={userId} />
               ) : isLoggingOut.current ? (
                 <Navigate to="/" replace />
               ) : (
@@ -87,10 +83,10 @@ function AppRoutes() {
               History functionality will be reimplemented using the new vocab_game tables if needed. */}
           {/* Home Page - Public route (no authentication required) */}
           <Route path="/" element={<HomePage />} />
-          
+
           {/* Leaderboard Page - Public route (no authentication required) */}
           <Route path="/leaderboard" element={<LeaderboardPage />} />
-          
+
           {/* Session Statistics Page - Requires authentication */}
           <Route
             path="/session/:sessionId/statistics"
@@ -104,10 +100,10 @@ function AppRoutes() {
               )
             }
           />
-          
+
           {/* Word Detail Page - Public route (no authentication required) */}
           <Route path="/word/:wordId" element={<WordDetailPage />} />
-          
+
           {/* Profile Page - Requires authentication */}
           <Route
             path="/profile"
@@ -121,7 +117,7 @@ function AppRoutes() {
               )
             }
           />
-          
+
           {/* My Progress Page - Requires authentication */}
           <Route
             path="/my-progress"
@@ -135,7 +131,7 @@ function AppRoutes() {
               )
             }
           />
-          
+
           {/* Fallback - redirect unknown routes to home */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

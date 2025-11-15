@@ -1,0 +1,42 @@
+# Version control
+.git
+.gitignore
+
+# Node / frontend artifacts
+node_modules
+frontend/node_modules
+frontend/dist
+frontend/build
+frontend/coverage
+frontend/.vite
+frontend/.eslintcache
+
+# Backend / Go artifacts
+backend/bin
+backend/tmp
+backend/vendor
+backend/coverage
+backend/coverage.out
+backend/uploads
+
+# Environment & config
+.env
+.env.*
+*.env
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+
+# Documentation & local specs (not needed in builds)
+specs/
+docs/
+

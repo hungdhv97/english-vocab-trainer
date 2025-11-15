@@ -1,0 +1,9 @@
+node_modules/
+dist/
+build/
+coverage/
+coverage-*/
+vite.config.ts
+tsconfig*.json
+*.min.js
+

@@ -31,16 +31,17 @@ function StatisticsChartsComponent({ statistics, questions }: StatisticsChartsPr
 
   // Memoize time analysis data (bar chart) - only recalculate when questions change
   const timeAnalysisData = useMemo(() => {
+    console.log('questions', questions);
     return questions
-      .filter(q => q.time_spent_ms !== undefined && q.time_spent_ms !== null)
+      .filter(q => q.time_answer_ms !== undefined && q.time_answer_ms !== null)
       .map(q => ({
         question_number: q.question_number,
-        time_spent_seconds: (q.time_spent_ms || 0) / 1000,
+        time_answer_seconds: (q.time_answer_ms || 0) / 1000,
       }));
   }, [questions]);
 
   const timeAnalysisConfig: ChartConfig = useMemo(() => ({
-    time_spent_seconds: {
+    time_answer_seconds: {
       label: 'Time (seconds)',
       color: 'hsl(217, 91%, 60%)',
     },
@@ -78,16 +79,18 @@ function StatisticsChartsComponent({ statistics, questions }: StatisticsChartsPr
   }), []);
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 w-full">
       {/* Accuracy Breakdown Chart (Pie/Donut) */}
-      <Card>
+      <Card className="w-full overflow-hidden">
         <CardHeader>
           <CardTitle>Accuracy Breakdown</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="w-full overflow-hidden">
           {accuracyData.length > 0 ? (
-            <ChartContainer config={accuracyConfig} className="h-[300px]">
+            <ChartContainer config={accuracyConfig} className="h-[300px] w-full">
               <PieChart
+                width={400}
+                height={300}
                 role="img"
                 aria-label="Accuracy breakdown chart showing correct and incorrect answers"
               >
@@ -123,17 +126,19 @@ function StatisticsChartsComponent({ statistics, questions }: StatisticsChartsPr
       </Card>
 
       {/* Time Analysis Chart (Bar Chart) */}
-      <Card>
+      <Card className="w-full overflow-hidden">
         <CardHeader>
           <CardTitle>Time Analysis</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="w-full overflow-hidden">
           {timeAnalysisData.length > 0 ? (
-            <ChartContainer config={timeAnalysisConfig} className="h-[300px]">
+            <ChartContainer config={timeAnalysisConfig} className="h-[300px] w-full">
               <BarChart
+                width={400}
+                height={300}
                 data={timeAnalysisData}
                 role="img"
-                aria-label="Time analysis chart showing time spent per question in seconds"
+                aria-label="Time analysis chart showing time between answers in seconds"
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
@@ -147,9 +152,9 @@ function StatisticsChartsComponent({ statistics, questions }: StatisticsChartsPr
                 />
                 <Tooltip />
                 <Bar
-                  dataKey="time_spent_seconds"
+                  dataKey="time_answer_seconds"
                   fill="hsl(217, 91%, 60%)"
-                  aria-label="Time spent bar"
+                  aria-label="Time between answers bar"
                 />
               </BarChart>
             </ChartContainer>
@@ -166,14 +171,16 @@ function StatisticsChartsComponent({ statistics, questions }: StatisticsChartsPr
       </Card>
 
       {/* Performance Over Time Chart (Line Chart with Dual Axis) */}
-      <Card className="lg:col-span-2">
+      <Card className="lg:col-span-2 w-full overflow-hidden">
         <CardHeader>
           <CardTitle>Performance Over Time</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="w-full overflow-hidden">
           {performanceData.length > 0 ? (
-            <ChartContainer config={performanceConfig} className="h-[300px]">
+            <ChartContainer config={performanceConfig} className="h-[300px] w-full">
               <LineChart
+                width={800}
+                height={300}
                 data={performanceData}
                 role="img"
                 aria-label="Performance over time chart showing running accuracy and correct/incorrect indicators"

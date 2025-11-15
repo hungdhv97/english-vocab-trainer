@@ -23,10 +23,10 @@ export default function MultipleChoice({
     }
 
     if (letter === correctAnswer) {
-      return 'bg-green-600 text-white';
+      return '!bg-green-600 text-white';
     }
     else if (letter === selectedAnswer && letter !== correctAnswer) {
-      return 'bg-red-600 text-white';
+      return '!bg-red-600 text-white';
     }
     return '';
   };
@@ -40,11 +40,11 @@ export default function MultipleChoice({
           disabled={disabled}
           variant="outline"
           className={cn(
-            'h-auto py-4 text-left justify-start',
+            'h-auto min-h-[4rem] py-4 text-left justify-start whitespace-normal break-words',
             getButtonClassName(option.letter),
           )}
         >
-          <span className="font-semibold mr-2">{option.letter.toUpperCase()}.</span>
+          <span className="font-semibold mr-2 shrink-0">{option.letter.toUpperCase()}.</span>
           <span className="font-semibold">{option.text}</span>
         </Button>
       ))}

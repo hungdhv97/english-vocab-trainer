@@ -472,8 +472,8 @@ func (s *Service) getDistractorTranslationIDs(ctx context.Context, toLangCode st
 }
 
 // SubmitAnswer submits an answer for a session question.
-func (s *Service) SubmitAnswer(ctx context.Context, sessionQuestionID int64, chosenOption string, timeSpentMs *int) (bool, error) {
-	return s.vocabGameSvc.SubmitAnswer(ctx, sessionQuestionID, chosenOption, timeSpentMs)
+func (s *Service) SubmitAnswer(ctx context.Context, sessionQuestionID int64, chosenOption string) (bool, error) {
+	return s.vocabGameSvc.SubmitAnswer(ctx, sessionQuestionID, chosenOption)
 }
 
 // FinishSession marks a session as finished.
@@ -511,19 +511,17 @@ func (s *Service) GetSessionStatistics(ctx context.Context, sessionID int64) (*m
 	}
 
 	// Calculate time elapsed
-	var timeElapsed *float64
+	var timeElapsed float64
 	if session.FinishedAt != nil {
-		elapsed := session.FinishedAt.Sub(session.StartedAt).Seconds()
-		timeElapsed = &elapsed
+		timeElapsed = session.FinishedAt.Sub(session.StartedAt).Seconds()
 	} else {
 		// Calculate elapsed time from start to now
-		elapsed := time.Since(session.StartedAt).Seconds()
-		timeElapsed = &elapsed
+		timeElapsed = time.Since(session.StartedAt).Seconds()
 	}
 
 	stats := &model.SessionStatistics{
 		SessionID:          sessionID,
-		TotalScore:         correctCount, // Score is just correct count
+		TotalQuestions:     correctCount + incorrectCount, // Total questions answered
 		CorrectCount:       correctCount,
 		IncorrectCount:     incorrectCount,
 		AccuracyPercentage: accuracyPercentage,
@@ -585,13 +583,11 @@ func (s *Service) GetSessionDetails(ctx context.Context, sessionID int64, userID
 		accuracyPercentage = float64(correctCount) / float64(totalAnswered) * 100.0
 	}
 
-	var timeElapsed *float64
+	var timeElapsed float64
 	if session.FinishedAt != nil {
-		elapsed := session.FinishedAt.Sub(session.StartedAt).Seconds()
-		timeElapsed = &elapsed
+		timeElapsed = session.FinishedAt.Sub(session.StartedAt).Seconds()
 	} else {
-		elapsed := time.Since(session.StartedAt).Seconds()
-		timeElapsed = &elapsed
+		timeElapsed = time.Since(session.StartedAt).Seconds()
 	}
 
 	// Build extended statistics
@@ -603,15 +599,15 @@ func (s *Service) GetSessionDetails(ctx context.Context, sessionID int64, userID
 	}
 
 	extendedStats := model.ExtendedSessionStatistics{
-		SessionID:          sessionID,
-		TotalScore:         correctCount,
-		CorrectCount:       correctCount,
-		IncorrectCount:     incorrectCount,
-		AccuracyPercentage: accuracyPercentage,
-		TimeElapsed:        timeElapsed,
-		SessionStartTime:   session.StartedAt,
-		SessionEndTime:     session.FinishedAt,
-		LevelInformation:   levelInfo,
+		SessionID:            sessionID,
+		TotalQuestions:       correctCount + incorrectCount, // Total questions answered
+		CorrectCount:         correctCount,
+		IncorrectCount:       incorrectCount,
+		AccuracyPercentage:   accuracyPercentage,
+		TimeElapsed:          timeElapsed,
+		SessionStartTime:     session.StartedAt,
+		SessionEndTime:       session.FinishedAt,
+		LevelInformation:     levelInfo,
 		TranslationDirection: translationDirection,
 	}
 
@@ -622,6 +618,8 @@ func (s *Service) GetSessionDetails(ctx context.Context, sessionID int64, userID
 	}
 
 	questionDetails := make([]model.SessionQuestionDetail, 0, len(sessionQuestions))
+	previousAnswerTime := session.StartedAt
+
 	for _, sq := range sessionQuestions {
 		// Get word text for the question (from translation's from_word_id)
 		var wordID int64
@@ -672,7 +670,6 @@ func (s *Service) GetSessionDetails(ctx context.Context, sessionID int64, userID
 				ChosenOption: answer.ChosenOption,
 				IsCorrect:    answer.IsCorrect,
 				AnsweredAt:   answer.AnsweredAt,
-				TimeSpentMs:  answer.TimeSpentMs,
 			}
 		} else if err != nil {
 			// Check if error is "no rows" (question not answered yet)
@@ -684,10 +681,21 @@ func (s *Service) GetSessionDetails(ctx context.Context, sessionID int64, userID
 			// If it's a "no rows" error, userAnswer remains nil (question not answered)
 		}
 
-		// Set TimeSpentMs from userAnswer if it exists
-		var timeSpentMs *int
+		// Calculate time between answers (or from session start for first answer)
+		var timeAnswerMs *int
 		if userAnswer != nil {
-			timeSpentMs = userAnswer.TimeSpentMs
+			diff := userAnswer.AnsweredAt.Sub(previousAnswerTime)
+			if diff < 0 {
+				diff = 0
+			}
+			ms := int(diff / time.Millisecond)
+			if ms < 0 {
+				ms = 0
+			}
+			timeValue := ms
+			timeAnswerMs = &timeValue
+			userAnswer.TimeAnswerMs = timeAnswerMs
+			previousAnswerTime = userAnswer.AnsweredAt
 		}
 
 		questionDetails = append(questionDetails, model.SessionQuestionDetail{
@@ -700,7 +708,7 @@ func (s *Service) GetSessionDetails(ctx context.Context, sessionID int64, userID
 			Options:           options,
 			CorrectAnswer:     sq.CorrectOption,
 			UserAnswer:        userAnswer,
-			TimeSpentMs:       timeSpentMs,
+			TimeAnswerMs:      timeAnswerMs,
 		})
 	}
 
