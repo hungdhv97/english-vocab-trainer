@@ -8,9 +8,9 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./deployment/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deployment/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./deployment/nginx/ssl:/etc/nginx/ssl:ro
       - nginx_logs:/var/log/nginx
     depends_on:
       - backend
@@ -45,7 +45,7 @@ services:
     expose:
       - "8180"
     env_file:
-      - config/prod/.env
+      - ./deployment/config/prod/.env
     depends_on:
       postgres:
         condition: service_healthy
@@ -75,7 +75,7 @@ services:
     ports:
       - "127.0.0.1:5434:5432"  # Bind to localhost only for security
     env_file:
-      - config/prod/.env
+      - ./deployment/config/prod/.env
     environment:
       POSTGRESQL_USERNAME: ${APP_POSTGRES_USER}
       POSTGRESQL_PASSWORD: ${APP_POSTGRES_PASSWORD}
@@ -112,7 +112,7 @@ services:
     ports:
       - "127.0.0.1:6379:6379"  # Bind to localhost only for security
     env_file:
-      - config/prod/.env
+      - ./deployment/config/prod/.env
     environment:
       REDIS_PASSWORD: ${APP_REDIS_PASSWORD}
       # Production optimizations
@@ -147,7 +147,7 @@ services:
     ports:
       - "127.0.0.1:9090:9090"
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -165,14 +165,14 @@ services:
     ports:
       - "127.0.0.1:3000:3000"
     env_file:
-      - config/prod/.env
+      - ./deployment/config/prod/.env
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./observability/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./observability/monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
     restart: unless-stopped
     networks:
       - app-network
