@@ -7,7 +7,6 @@ type Config struct {
 	Postgres   PostgresConfig   `mapstructure:"postgres"`
 	Redis      RedisConfig      `mapstructure:"redis"`
 	Cursor     CursorConfig     `mapstructure:"cursor"`
-	DeepL      DeepLConfig      `mapstructure:"deepl"`
 	JWT        JWTConfig        `mapstructure:"jwt"`
 	CORS       CORSConfig       `mapstructure:"cors"`
 	RateLimit  RateLimitConfig  `mapstructure:"rate_limit"`
@@ -45,11 +44,6 @@ type RedisConfig struct {
 // CursorConfig holds JWT cursor settings.
 type CursorConfig struct {
 	Secret string `mapstructure:"secret"`
-}
-
-// DeepLConfig holds DeepL API settings.
-type DeepLConfig struct {
-	APIKey string `mapstructure:"apikey"`
 }
 
 // JWTConfig holds JWT authentication settings.

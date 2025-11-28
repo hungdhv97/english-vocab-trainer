@@ -7,7 +7,6 @@ import (
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/platform/db"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/platform/deps"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/platform/server"
-	"github.com/hungdhv97/english-vocab-trainer/backend/internal/platform/translator"
 	"go.uber.org/zap"
 )
 
@@ -32,19 +31,7 @@ func main() {
 	}
 	defer rdb.Close()
 
-	// Validate DeepL API key
-	if cfg.DeepL.APIKey == "" {
-		logger.Fatal("DeepL API key is required",
-			zap.String("hint", "Please set the APP_DEEPL_API_KEY environment variable"))
-	}
-
-	// Initialize DeepL translator
-	deepLTranslator, err := translator.NewDeepLTranslator(cfg.DeepL.APIKey)
-	if err != nil {
-		logger.Fatal("deepl translator", zap.Error(err))
-	}
-
-	d := &deps.Deps{Cfg: cfg, Log: logger, PG: pg, RDB: rdb, Translator: deepLTranslator}
+	d := &deps.Deps{Cfg: cfg, Log: logger, PG: pg, RDB: rdb}
 	r := server.NewRouter(d)
 
 	logger.Info("Starting server", zap.String("addr", cfg.HTTP.Addr))

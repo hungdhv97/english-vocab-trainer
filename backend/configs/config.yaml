@@ -20,9 +20,6 @@ redis:
 cursor:
   secret: "changeme"
 
-deepl:
-  apikey: ""
-
 jwt:
   secret: "changeme-jwt-secret"
 

@@ -20,9 +20,6 @@ redis:
 cursor:
   secret: "dev-super-secret-jwt-key-for-development-only-not-for-production"
 
-deepl:
-  apikey: "82aa2c21-9d7b-49c6-9149-7382172e07cd:fx"
-
 jwt:
   secret: "dev-super-secret-jwt-key-for-development-only-not-for-production"
 

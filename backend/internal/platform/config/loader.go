@@ -28,7 +28,6 @@ func Load() (*Config, error) {
 	v.SetDefault("redis.pool_size", 10)
 	v.SetDefault("redis.min_idle_conns", 5)
 	v.SetDefault("cursor.secret", "changeme")
-	v.SetDefault("deepl.apikey", "")
 
 	// JWT defaults
 	v.SetDefault("jwt.secret", "changeme-jwt-secret")

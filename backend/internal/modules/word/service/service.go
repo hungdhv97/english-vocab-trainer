@@ -12,20 +12,18 @@ import (
 	redis "github.com/redis/go-redis/v9"
 
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/modules/word/model"
-	"github.com/hungdhv97/english-vocab-trainer/backend/internal/platform/translator"
 )
 
 // Service provides word-related operations.
 type Service struct {
-	db         *pgxpool.Pool
-	cache      *redis.Client
-	jwtSecret  []byte
-	translator *translator.DeepLTranslator
+	db        *pgxpool.Pool
+	cache     *redis.Client
+	jwtSecret []byte
 }
 
 // New creates a new word service.
-func New(db *pgxpool.Pool, cache *redis.Client, secret string, translator *translator.DeepLTranslator) *Service {
-	return &Service{db: db, cache: cache, jwtSecret: []byte(secret), translator: translator}
+func New(db *pgxpool.Pool, cache *redis.Client, secret string) *Service {
+	return &Service{db: db, cache: cache, jwtSecret: []byte(secret)}
 }
 
 // GetRandomWords returns random words matching language and difficulty using a
@@ -264,86 +262,8 @@ func (s *Service) GetMeaning(wordID int64, language string) (string, error) {
 		return correct, nil
 	}
 
-	// Fallback to old schema for backward compatibility during migration
-	// This will be removed once all data is migrated
-	var sourceLangCode, sourceText string
-	var sourceLangID int64
-	err = s.db.QueryRow(ctx, `
-		SELECT w.word_text, w.language_id, l.code
-		FROM words w
-		JOIN languages l ON w.language_id = l.id
-		WHERE w.id = $1`, wordID).Scan(&sourceText, &sourceLangID, &sourceLangCode)
-	if err != nil {
-		return "", errors.New("word not found")
-	}
-
-	// Get target language ID
-	var targetLangID int64
-	err = s.db.QueryRow(ctx, `SELECT id FROM languages WHERE LOWER(code) = LOWER($1)`, language).Scan(&targetLangID)
-	if err != nil {
-		return "", errors.New("target language not found")
-	}
-
-	// Translate using DeepL
-	translated, err := s.translator.Translate(sourceText, sourceLangCode, language)
-	if err != nil {
-		return "", err
-	}
-
-	// Find or create target word
-	var targetWordID int64
-	err = s.db.QueryRow(ctx, `
-		SELECT id FROM words 
-		WHERE language_id = $1 AND word_text = $2 
-		LIMIT 1`, targetLangID, translated).Scan(&targetWordID)
-	
-	if err != nil {
-		// Target word doesn't exist, create it
-		// Note: We don't have phonetic or part_of_speech, so they'll be NULL
-		err = s.db.QueryRow(ctx, `
-			INSERT INTO words (language_id, word_text)
-			VALUES ($1, $2)
-			RETURNING id`, targetLangID, translated).Scan(&targetWordID)
-		if err != nil {
-			return "", fmt.Errorf("failed to create target word: %w", err)
-		}
-	}
-
-	// Check if translation already exists
-	var existingTranslationID int64
-	err = s.db.QueryRow(ctx, `
-		SELECT id FROM translations 
-		WHERE from_word_id = $1 AND to_word_id = $2 
-		LIMIT 1`, wordID, targetWordID).Scan(&existingTranslationID)
-	
-	if err != nil {
-		// Translation doesn't exist, create it
-		// Note: We don't set cefr_level_id here as we don't know the level
-		_, insertErr := s.db.Exec(ctx, `
-			INSERT INTO translations (from_word_id, to_word_id, meaning_order, note)
-			VALUES ($1, $2, 1, 'Auto-translated')`, wordID, targetWordID)
-		if insertErr != nil {
-			// If insert fails, translation might have been created concurrently
-			// Try to get it again
-			err = s.db.QueryRow(ctx, `
-				SELECT w2.word_text
-				FROM translations t
-				JOIN words w2 ON t.to_word_id = w2.id
-				JOIN languages l ON w2.language_id = l.id
-				WHERE t.from_word_id = $1
-				AND LOWER(l.code) = LOWER($2)
-				ORDER BY t.meaning_order ASC
-				LIMIT 1`, wordID, language).Scan(&translated)
-			if err != nil {
-				return "", fmt.Errorf("failed to create translation: %w", insertErr)
-			}
-		}
-	}
-
-	if s.cache != nil && translated != "" {
-		_ = s.cache.Set(ctx, cacheKey, translated, 10*time.Minute).Err()
-	}
-	return translated, nil
+	// No translation found
+	return "", errors.New("translation not found")
 }
 
 // gcd computes the greatest common divisor using Euclid's algorithm.
