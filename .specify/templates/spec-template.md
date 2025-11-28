@@ -5,17 +5,17 @@
 **Status**: Draft  
 **Input**: User description: "$ARGUMENTS"
 
-## User Scenarios & Verification *(mandatory)*
+## User Scenarios & Testing *(mandatory)*
 
 <!--
   IMPORTANT: User stories should be PRIORITIZED as user journeys ordered by importance.
-  Each user story/journey must be INDEPENDENTLY VERIFIABLE - meaning if you implement just ONE of them,
+  Each user story/journey must be INDEPENDENTLY TESTABLE - meaning if you implement just ONE of them,
   you should still have a viable MVP (Minimum Viable Product) that delivers value.
   
   Assign priorities (P1, P2, P3, etc.) to each story, where P1 is the most critical.
   Think of each story as a standalone slice of functionality that can be:
   - Developed independently
-  - Manually verified independently
+  - Tested independently
   - Deployed independently
   - Demonstrated to users independently
 -->
@@ -26,7 +26,7 @@
 
 **Why this priority**: [Explain the value and why it has this priority level]
 
-**Manual Verification**: [Describe how this can be manually verified independently - e.g., "Can be fully verified by [specific action] and delivers [specific value]"]
+**Independent Test**: [Describe how this can be tested independently - e.g., "Can be fully tested by [specific action] and delivers [specific value]"]
 
 **Acceptance Scenarios**:
 
@@ -75,6 +75,18 @@
 - What happens when [boundary condition]?
 - How does system handle [error scenario]?
 
+## Manual Test Plan *(mandatory per Constitution Principle 7)*
+
+1. **Scenario**: [Happy path identifier]
+   - **Environment/Data**: [State, seed data, user role]
+   - **Steps**: [Step-by-step manual actions]
+   - **Expected Outcome**: [UI/API response, logs, persisted data]
+2. **Scenario**: [Primary error path]
+   - **Steps**: [Actions to trigger failure]
+   - **Expected Outcome**: [Error schema `{ code, message, details? }`, user messaging]
+3. **Scenario**: [Additional critical flow]
+   - **Evidence Capture**: [Screenshot/log link/reference in tasks.md]
+
 ## Requirements *(mandatory)*
 
 <!--
@@ -99,6 +111,8 @@
 
 - **[Entity 1]**: [What it represents, key attributes without implementation]
 - **[Entity 2]**: [What it represents, relationships to other entities]
+
+> Document shared FE/BE TypeScript interfaces here so both sides stay in sync with Principle 2.
 
 ## Success Criteria *(mandatory)*
 
