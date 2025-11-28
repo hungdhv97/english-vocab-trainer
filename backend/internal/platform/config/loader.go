@@ -62,11 +62,6 @@ func Load() (*Config, error) {
 	// Logging defaults
 	v.SetDefault("log.level", "info")
 
-	// jobs defaults
-	v.SetDefault("jobs.translate_missing.enabled", true)
-	v.SetDefault("jobs.translate_missing.schedule", "0 * * * *") // Every hour
-	// Note: batch_size removed - job now processes all words (full scan) (T067)
-
 	// config file
 	v.SetConfigName("config")
 	v.SetConfigType("yaml")

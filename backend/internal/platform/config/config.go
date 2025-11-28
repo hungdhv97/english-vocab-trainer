@@ -8,7 +8,6 @@ type Config struct {
 	Redis      RedisConfig      `mapstructure:"redis"`
 	Cursor     CursorConfig     `mapstructure:"cursor"`
 	DeepL      DeepLConfig      `mapstructure:"deepl"`
-	Jobs       JobsConfig       `mapstructure:"jobs"`
 	JWT        JWTConfig        `mapstructure:"jwt"`
 	CORS       CORSConfig       `mapstructure:"cors"`
 	RateLimit  RateLimitConfig  `mapstructure:"rate_limit"`
@@ -51,26 +50,6 @@ type CursorConfig struct {
 // DeepLConfig holds DeepL API settings.
 type DeepLConfig struct {
 	APIKey string `mapstructure:"apikey"`
-}
-
-// JobsConfig holds cron job settings.
-type JobsConfig struct {
-	TranslateMissing TranslateMissingJobConfig `mapstructure:"translate_missing"`
-	UniverseIndex    UniverseIndexJobConfig    `mapstructure:"universe_index"`
-}
-
-// TranslateMissingJobConfig holds configuration for the translate missing job.
-// Processes batches of English and Vietnamese words that need translations.
-type TranslateMissingJobConfig struct {
-	Schedule   string `mapstructure:"schedule"`
-	Enabled    bool   `mapstructure:"enabled"`
-	BatchSize  int    `mapstructure:"batch_size"` // Number of words to process per language per run
-}
-
-// UniverseIndexJobConfig holds configuration for the universe index rebuild job.
-type UniverseIndexJobConfig struct {
-	Schedule string `mapstructure:"schedule"`
-	Enabled  bool   `mapstructure:"enabled"`
 }
 
 // JWTConfig holds JWT authentication settings.

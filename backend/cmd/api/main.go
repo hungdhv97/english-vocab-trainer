@@ -6,7 +6,6 @@ import (
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/platform/config"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/platform/db"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/platform/deps"
-	"github.com/hungdhv97/english-vocab-trainer/backend/internal/platform/jobs"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/platform/server"
 	"github.com/hungdhv97/english-vocab-trainer/backend/internal/platform/translator"
 	"go.uber.org/zap"
@@ -46,7 +45,6 @@ func main() {
 	}
 
 	d := &deps.Deps{Cfg: cfg, Log: logger, PG: pg, RDB: rdb, Translator: deepLTranslator}
-	jobs.Start(d)
 	r := server.NewRouter(d)
 
 	logger.Info("Starting server", zap.String("addr", cfg.HTTP.Addr))

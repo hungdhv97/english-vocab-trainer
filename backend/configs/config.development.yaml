@@ -59,14 +59,5 @@ health:
 log:
   level: "debug"
 
-jobs:
-  universe_index:
-    enabled: true
-    schedule: "0 2 * * *"  # 2:00 AM daily
-  translate_missing:
-    enabled: true
-    schedule: "0/5 * * * *"  # Every 5 minutes
-    batch_size: 50  # Number of words to process per language per run
-
 leaderboard:
   min_games_played: 1  # Minimum number of games required to appear on leaderboard

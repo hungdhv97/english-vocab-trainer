@@ -57,14 +57,5 @@ health:
 log:
   level: "info"
 
-jobs:
-  universe_index:
-    enabled: true
-    schedule: "0 3 * * *"  # 3:00 AM daily in production
-  translate_missing:
-    enabled: true
-    schedule: "0 */2 * * *"  # Every 2 hours in production
-    batch_size: 50  # Number of words to process per language per run
-
 leaderboard:
   min_games_played: 5  # Minimum number of games required to appear on leaderboard
